@@ -684,3 +684,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - README 已与 118M 镜像完全对齐
+
+
+## Session 19: Revert admin to admin/admin
+<!-- trellis-session: v=2 fp=ffabdabb42d3ce58 -->
+
+**Date**: 2026-08-30
+**Task**: Revert admin to admin/admin
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将默认管理员改回 admin/admin（must_change:true）
+
+### Main Changes
+
+- data/litepan.db: HashPassword(admin) → pbkdf2 83f88b..., 清空 session_generation
+- README.md + AGENTS.md: admin/123456 → admin/admin, must_change:false → true
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7f5eea5` | chore(admin): revert default to admin/admin |
+| `a73e3ce` | chore(task): archive 08-30-revert-admin-to-admin-admin |
+
+### Testing
+
+- [OK] login admin/admin 200 must_change:true, 123456 401, health 200
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续改密必先建 Trellis 任务
