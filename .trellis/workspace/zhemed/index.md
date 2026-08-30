@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
+- **Total Sessions**: 14
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~498 | Active |
+| `journal-1.md` | ~536 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 14 | 2026-08-30 | Keep only 115 189 LocalFs drivers | `70ee23d`, `ccf0399` | `main` |
 | 13 | 2026-08-30 | Update spec for crosstransfer removal | `f1cd69e`, `6e8fec5` | `main` |
 | 12 | 2026-08-30 | Remove cross-drive instant transfer | `cc36596`, `dc9fac3` | `main` |
 | 11 | 2026-08-30 | Update spec for aux enhanced tools removal | `f615b9e`, `8cdba64` | `main` |

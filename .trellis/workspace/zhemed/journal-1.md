@@ -496,3 +496,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec 已与 119M nocross 对齐
+
+
+## Session 14: Keep only 115 189 LocalFs drivers
+<!-- trellis-session: v=2 fp=86689c33ab32ca3c -->
+
+**Date**: 2026-08-30
+**Task**: Keep only 115 189 LocalFs drivers
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+存储管理仅保留115、天翼云盘、本机存储，彻底移除其余8驱动
+
+### Main Changes
+
+- rm -rf drivers/123_Open/139Cloud/Baidu_Open/Guangya/OneDrive/OpenList/Quark/WebDAV 8 目录 13012 行
+- drivers/all.go 11→3 导入，仅 115_Open/189Cloud/LocalFs
+- GET /admin/drivers 11→3，镜像 119M→118M
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `70ee23d` | refactor(drivers): keep only 115 189 LocalFs |
+| `ccf0399` | chore(task): archive 08-30-keep-only-three-drivers |
+
+### Testing
+
+- [OK] go vet 0, build 32M, type-check 0, build 104 files, docker 118M, drivers 3
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 需 trellis-update-spec 清理驱动描述
