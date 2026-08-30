@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 33
+- **Total Sessions**: 34
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1240 | Active |
+| `journal-1.md` | ~1277 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 34 | 2026-08-30 | Adapt install-docker to all systems | `32d1a19`, `a59cbd1` | `main` |
 | 33 | 2026-08-30 | Fix install-docker gpg missing | `d54f5e1`, `f925cc1` | `main` |
 | 32 | 2026-08-30 | Remove instance install-docker hosting | `1ebaa2a`, `64d0e0e` | `main` |
 | 31 | 2026-08-30 | Correct install-docker hosting to repo and update README | `a0fe719`, `e9dc128` | `main` |

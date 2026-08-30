@@ -1238,3 +1238,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 他人可 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash
+
+
+## Session 34: Adapt install-docker to all systems
+<!-- trellis-session: v=2 fp=7f2fcb08c6ea2d10 -->
+
+**Date**: 2026-08-30
+**Task**: Adapt install-docker to all systems
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+适配所有系统并移除已hold注释
+
+### Main Changes
+
+- install-docker.sh: Debian/Ubuntu 外走 get.docker.com 通用兜底
+- README.md + install-docker.sh 去 已 hold 注释
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `32d1a19` | fix(install-docker): adapt to all systems and remove hold comment |
+| `a59cbd1` | chore(task): archive 08-30-adapt-install-docker-all-systems |
+
+### Testing
+
+- [OK] grep 已 hold 0, bash -n 0, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 他人可 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash 全平台
