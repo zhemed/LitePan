@@ -26,8 +26,7 @@ import (
 	"litepan/internal/automation"
 	"litepan/internal/backuprestore"
 	"litepan/internal/cache"
-	"litepan/internal/crosstransfer"
-	"litepan/internal/domain"
+		"litepan/internal/domain"
 	"litepan/internal/favorites"
 	"litepan/internal/file"
 	"litepan/internal/fusemount"
@@ -59,7 +58,6 @@ type Deps struct {
 	Playback          *playback.Service
 	Automation        *automation.Service
 	Fuse              *fusemount.Service
-	CrossTransfer     *crosstransfer.Service
 	ApiKeys           *apikey.Service
 	Auth              *auth.Service
 	AuthSched         *auth.Scheduler
@@ -88,7 +86,6 @@ type Handler struct {
 	playback          *playback.Service
 	automation        *automation.Service
 	fuse              *fusemount.Service
-	crossTransfer     *crosstransfer.Service
 	apiKeys           *apikey.Service
 	auth              *auth.Service
 	authSched         *auth.Scheduler
@@ -125,7 +122,6 @@ func NewRouter(d Deps) http.Handler {
 		playback:          d.Playback,
 		automation:        d.Automation,
 		fuse:              d.Fuse,
-		crossTransfer:     d.CrossTransfer,
 		apiKeys:           d.ApiKeys,
 		auth:              d.Auth,
 		authSched:         d.AuthSched,
@@ -160,13 +156,6 @@ func NewRouter(d Deps) http.Handler {
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(h.requireAdmin)
-			r.Route("/cross-transfer", func(r chi.Router) {
-				r.Get("/routes", h.crossTransferRoutes)
-				r.Post("/scan", h.crossTransferScan)
-				r.Post("/scan/stream", h.crossTransferScanStream)
-				r.Post("/probe", h.crossTransferProbe)
-				r.Post("/execute", h.crossTransferExecute)
-			})
 			r.Get("/logs", h.listLogs)
 			r.Get("/logs/stats", h.logStats)
 			r.Post("/logs/ack-errors", h.ackRecentErrors)

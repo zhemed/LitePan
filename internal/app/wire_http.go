@@ -62,7 +62,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Playback:         svc.playback,
 		Automation:       svc.automation,
 		Fuse:             svc.fuse,
-		CrossTransfer:    svc.crossTransfer,
 		ApiKeys:          apiKeySvc,
 		Auth:             core.auth,
 		AuthSched:        core.sched,

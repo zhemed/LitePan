@@ -7,8 +7,7 @@ import (
 	"litepan/internal/accountprofile"
 	"litepan/internal/automation"
 	"litepan/internal/config"
-	"litepan/internal/crosstransfer"
-	"litepan/internal/domain"
+		"litepan/internal/domain"
 	"litepan/internal/favorites"
 	"litepan/internal/file"
 	"litepan/internal/fusemount"
@@ -30,7 +29,6 @@ type servicesBundle struct {
 	automation       *automation.Service
 	fuse             *fusemount.Service
 	fuseReadCache    *fusereadcache.Service
-	crossTransfer    *crosstransfer.Service
 	favorites        *favorites.Service
 }
 
@@ -103,12 +101,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	lifecycle.uploads = uploadSvc
 	offlineDownloadSvc.SetUploads(uploadSvc)
 	fuseSvc.SetUploads(uploadSvc)
-	crossTransferSvc := crosstransfer.New(crosstransfer.Options{
-		Exec:    core.exec,
-		Files:   fileSvc,
-		Uploads: uploadSvc,
-		Log:     logs.For(logx.ModuleAPI),
-	})
 	automationSvc := automation.New(automation.Options{
 		Rules: st.store.AutomationRules,
 		Runs:  st.store.AutomationRuns,
@@ -127,7 +119,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		automation:       automationSvc,
 		fuse:             fuseSvc,
 		fuseReadCache:    fuseReadCache,
-		crossTransfer:    crossTransferSvc,
 		favorites:        favoritesSvc,
 	}
 }

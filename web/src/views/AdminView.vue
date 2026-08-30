@@ -22,14 +22,12 @@ const adminPageLoaders = {
   settings: () => import("@/components/admin/SystemSettings.vue"),
   tasks: () => import("@/components/admin/TaskManagement.vue"),
   tools: () => import("@/components/admin/AuxToolsManagement.vue"),
-  "cross-transfer": () => import("@/components/admin/CrossDriveTransfer.vue"),
 };
 const DashboardManagement = defineAsyncComponent(adminPageLoaders.dashboard);
 const AccountManagement = defineAsyncComponent(adminPageLoaders.accounts);
 const SystemSettings = defineAsyncComponent(adminPageLoaders.settings);
 const TaskManagement = defineAsyncComponent(adminPageLoaders.tasks);
 const AuxToolsManagement = defineAsyncComponent(adminPageLoaders.tools);
-const CrossDriveTransfer = defineAsyncComponent(adminPageLoaders["cross-transfer"]);
 import { logout, fetchSystemConfig } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
 import { provideAdminPageContext } from "@/composables/useAdminLoadingBar";
@@ -46,7 +44,6 @@ const nav = [
   { key: "settings", label: "系统设置", icon: "cogs" },
   { key: "tasks", label: "任务管理", icon: "tasks" },
   { key: "tools", label: "辅助工具", icon: "toolbox" },
-  { key: "cross-transfer", label: "跨盘秒传", icon: "right-left" },
 ];
 const navKeys = nav.map((n) => n.key);
 
@@ -314,7 +311,7 @@ onBeforeUnmount(() => {
     />
 
     <AdminEmptyState
-      v-if="!cachedPageComponent && !['settings', 'cross-transfer'].includes(page)"
+      v-if="!cachedPageComponent && !['settings'].includes(page)"
       icon="🚧"
       :title="`「${nav.find((n) => n.key === page)?.label}」功能开发中`"
     />
@@ -326,7 +323,6 @@ onBeforeUnmount(() => {
         @password-updated="handlePasswordUpdated"
         @admin-ui-updated="loadAdminUiConfig"
       />
-      <CrossDriveTransfer v-else-if="page === 'cross-transfer'" />
       <component :is="cachedPageComponent" v-else-if="cachedPageComponent" :key="page" />
     </KeepAlive>
   </AdminShell>
