@@ -945,3 +945,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - README 已与 118M 实际一致
+
+
+## Session 26: Final README minimal 66 lines
+<!-- trellis-session: v=2 fp=34230a491b9e1c3f -->
+
+**Date**: 2026-08-30
+**Task**: Final README minimal 66 lines
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底重写README为66行极简版（GHCR单镜像）
+
+### Main Changes
+
+- 新 4 屏：顶部GHCR/一句话/支持网盘3行/快速开始ghcr compose
+- 删除旧 4格表格中跨盘/整理
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f29d59` | docs(readme): minimal 66 lines thorough rewrite |
+| `df09b0a` | chore(task): archive 08-30-final-readme-minimal |
+
+### Testing
+
+- [OK] grep ghcr 3, wc -l 66, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已与 118M 实际一致
