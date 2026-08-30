@@ -13,8 +13,6 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vu
 import AdminShell from "@/components/admin/AdminShell.vue";
 import WarningBanner from "@/components/admin/WarningBanner.vue";
 import AdminEmptyState from "@/components/admin/AdminEmptyState.vue";
-import AdminAnnouncementModal from "@/components/admin/AdminAnnouncementModal.vue";
-import { useAnnouncement } from "@/composables/useAnnouncement";
 
 const adminPageLoaders = {
   dashboard: () => import("@/components/admin/DashboardManagement.vue"),
@@ -76,7 +74,6 @@ const preloadedPages = new Set<string>();
 const mustChangePassword = computed(() => auth.mustChangePassword);
 const passwordChangeReason = computed(() => auth.passwordChangeReason);
 
-const announcement = useAnnouncement();
 
 const passwordChangeMessage = computed(() => {
   if (passwordChangeReason.value === "default_credentials") {
@@ -269,7 +266,6 @@ onMounted(async () => {
   if (!auth.loaded) await auth.load();
   // 后台 UI 配置只影响“返回首页”按钮样式，不在首屏关键路径上，后台并行拉取。
   void loadAdminUiConfig();
-  void announcement.check();
   if (mustChangePassword.value) {
     page.value = "settings";
     router.replace({ query: buildPageQuery("settings") });
@@ -304,10 +300,6 @@ onBeforeUnmount(() => {
       <span>{{ passwordChangeMessage }}</span>
     </WarningBanner>
 
-    <AdminAnnouncementModal
-      :open="announcement.open.value"
-      :item="announcement.item.value"
-      @close="announcement.dismiss()"
     />
 
     <AdminEmptyState

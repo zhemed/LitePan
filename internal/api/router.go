@@ -20,8 +20,7 @@ import (
 	"litepan/internal/account"
 	"litepan/internal/accountprofile"
 	"litepan/internal/adminauth"
-	"litepan/internal/announcement"
-	"litepan/internal/apikey"
+		"litepan/internal/apikey"
 	"litepan/internal/auth"
 	"litepan/internal/automation"
 	"litepan/internal/backuprestore"
@@ -63,7 +62,6 @@ type Deps struct {
 	AuthSched         *auth.Scheduler
 	AdminAuth         *adminauth.Service
 	Notifications     *notification.Service
-	Announcement      *announcement.Service
 	BackupRestore     *backuprestore.Service
 	DataDir           string
 	OnSettingsUpdated func(map[string]string)
@@ -91,7 +89,6 @@ type Handler struct {
 	authSched         *auth.Scheduler
 	adminAuth         *adminauth.Service
 	notifications     *notification.Service
-	announcement      *announcement.Service
 	backupRestore     *backuprestore.Service
 	dataDir           string
 	onSettingsUpdated func(map[string]string)
@@ -127,7 +124,6 @@ func NewRouter(d Deps) http.Handler {
 		authSched:         d.AuthSched,
 		adminAuth:         d.AdminAuth,
 		notifications:     d.Notifications,
-		announcement:      d.Announcement,
 		backupRestore:     d.BackupRestore,
 		dataDir:           d.DataDir,
 		onSettingsUpdated: d.OnSettingsUpdated,
@@ -208,8 +204,6 @@ func NewRouter(d Deps) http.Handler {
 				r.Delete("/notifications", h.deleteAllNotifications)
 				r.Post("/notifications/{id}/read", h.markNotificationRead)
 				r.Delete("/notifications/{id}", h.deleteNotification)
-				r.Get("/announcement", h.getAnnouncement)
-				r.Post("/announcement/read", h.markAnnouncementRead)
 				r.Route("/tools/local-upload", func(r chi.Router) {
 					r.Get("/config", h.getLocalUploadConfig)
 					r.Put("/config", h.updateLocalUploadConfig)

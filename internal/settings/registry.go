@@ -27,7 +27,6 @@ const (
 	KeyLogLevel                    = "log_level"
 	KeyLogRetentionDays            = "log_retention_days"
 	KeyLogErrorAckAt               = "log_error_ack_at"
-	KeyAnnouncementReadVersion     = "announcement_read_version"
 	KeyLocalUploadEnabled          = "local_upload_enabled"
 	KeyLocalUploadMappings         = "local_upload_mappings"
 )
@@ -133,14 +132,7 @@ func defaultSpecs() []Spec {
 			Type:    TypeString,
 			Default: "",
 			Hidden:  true,
-		},
-		{
-			Key:     KeyAnnouncementReadVersion,
-			Type:    TypeString,
-			Default: "",
-			Hidden:  true,
-		},
-		{
+		},		{
 			Key:     KeyLocalUploadEnabled,
 			Type:    TypeBool,
 			Default: "false",

@@ -3,7 +3,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch
 import { useAuthStore } from "@/stores/auth";
 import { APP_NAME, APP_VERSION } from "@/version";
 import { useDeveloperUnlock } from "@/composables/useDeveloperUnlock";
-import { useAnnouncement } from "@/composables/useAnnouncement";
 import { toast } from "@/composables/useToast";
 import AppModal from "@/components/base/AppModal.vue";
 import AppInput from "@/components/base/AppInput.vue";
@@ -17,7 +16,6 @@ const emit = defineEmits<{ logout: [] }>();
 
 const auth = useAuthStore();
 const { unlocked: devUnlocked, init: devUnlockInit, unlock } = useDeveloperUnlock();
-const announcement = useAnnouncement();
 const open = ref(false);
 const wrapRef = ref<HTMLElement | null>(null);
 const menuPos = ref({ left: 0, bottom: 0 });
@@ -67,9 +65,7 @@ function handleLogout() {
 // 点「关于」：关闭菜单并弹出公告（已读过也可再次查看，手动查看不改变已读状态）。
 function handleAboutClick() {
   closeMenu();
-  void announcement.forceOpen().then((ok) => {
-    if (!ok) toast.info("暂无公告");
-  });
+  toast.info("暂无公告");
 }
 
 // 点「关于」前面的图标：1.8s 内连点 5 次触发开发者解锁（隐藏入口）。
