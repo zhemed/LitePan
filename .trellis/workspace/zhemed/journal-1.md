@@ -834,3 +834,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 非 LitePan-own 提交，已隔离
+
+
+## Session 23: Build ghcr image and thoroughly refactor README
+<!-- trellis-session: v=2 fp=72c5cf6c7faf8007 -->
+
+**Date**: 2026-08-30
+**Task**: Build ghcr image and thoroughly refactor README
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+构建 ghcr.io/zhemed/litepan:v0.5.2-Beta 并彻底重构README为 ghcr 单列流
+
+### Main Changes
+
+- docker build -t ghcr.io/zhemed/litepan:v0.5.2-Beta + latest, login ghcr.io, push both, pull 验证
+- README 7 章→6 章单列流：顶部 ghcr badge、简介、支持网盘 3 行、功能 7 项、快速开始 ghcr compose、技术栈
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bcb538d` | docs(readme): thoroughly refactor for ghcr v0.5.2-Beta |
+| `5054d12` | chore(task): archive 08-30-build-ghcr-and-refactor-readme |
+
+### Testing
+
+- [OK] docker images ghcr 118M, pull ok, grep ghcr 6, go vet 0, README 133 行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 非 LitePan-own 提交
