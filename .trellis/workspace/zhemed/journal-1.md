@@ -609,3 +609,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 后续 git push 默认 github main，upstream 可 fetch Ponphil 更新
+
+
+## Session 17: Refactor README for three-drivers actual
+<!-- trellis-session: v=2 fp=d58632a1ccbc0b02 -->
+
+**Date**: 2026-08-30
+**Task**: Refactor README for three-drivers actual
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按实际精简后重构README，移除已删功能
+
+### Main Changes
+
+- 功能简述 4→2 格：仅 115/天翼/本机存储 + 自动联动（仅 delay），删跨盘秒传/目录整理及图片
+- 挂载段改为 FUSE + 从服务器上传，新增支持网盘 3 项列表，已移除 8 驱动
+- 快速开始 image: zhemed/litepan:latest，version v0.6.0-lite，删 tmdb extra_hosts
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `775bc62` | docs(readme): refactor for three-drivers actual |
+| `1876af8` | chore(task): archive 08-30-refactor-readme-actual |
+
+### Testing
+
+- [OK] grep 跨盘 0/已移除备注 1, go vet 0, README 12+27
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已与 118M 镜像对齐

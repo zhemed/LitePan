@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~611 | Active |
+| `journal-1.md` | ~649 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-08-30 | Refactor README for three-drivers actual | `775bc62`, `1876af8` | `main` |
 | 16 | 2026-08-30 | Create GitHub repo LitePan and sync | `e58475f`, `dca7574` | `main` |
 | 15 | 2026-08-30 | Update spec for drivers keep only three | `4283b83`, `542ea57` | `main` |
 | 14 | 2026-08-30 | Keep only 115 189 LocalFs drivers | `70ee23d`, `ccf0399` | `main` |
