@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 10
+- **Total Sessions**: 11
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~385 | Active |
+| `journal-1.md` | ~423 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 11 | 2026-08-30 | Update spec for aux enhanced tools removal | `f615b9e`, `8cdba64` | `main` |
 | 10 | 2026-08-30 | Remove aux enhanced tools keep local-upload | `a101eef`, `7c40560` | `main` |
 | 9 | 2026-08-30 | Record mandatory trellis rule | `02afdd6`, `551bac7` | `main` |
 | 8 | 2026-08-30 | Fix coverextract nil panic (Trellis retro) | `2f1b620`, `e2e3e03` | `main` |

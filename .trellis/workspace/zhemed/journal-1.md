@@ -383,3 +383,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec 需 trellis-update-spec 清理增强工具描述
+
+
+## Session 11: Update spec for aux enhanced tools removal
+<!-- trellis-session: v=2 fp=606f8f46cb5bcc39 -->
+
+**Date**: 2026-08-30
+**Task**: Update spec for aux enhanced tools removal
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将 spec 中 7 项增强工具标记为已移除，仅保留 LocalUpload
+
+### Main Changes
+
+- backend api-layering: Deps 仅 local-upload, directory-structure 标注已移除 7 目录
+- frontend api-client: cloudTools 仅 localUploadApi, directory-structure/component-guidelines 标注 7 卡片已删
+- guides/index 新增已移除备注
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f615b9e` | docs(spec): update for aux enhanced tools removal keep local-upload |
+| `8cdba64` | chore(task): archive 08-30-update-spec-aux-enhanced-removed |
+
+### Testing
+
+- [OK] grep 2026-08-30 精简 7 处, go vet 0, type-check 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 已与 119M 镜像对齐
