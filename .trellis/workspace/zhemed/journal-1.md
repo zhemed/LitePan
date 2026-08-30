@@ -1386,3 +1386,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 后续按0.0.2递增
+
+
+## Session 38: Fix AdminView stray />
+<!-- trellis-session: v=2 fp=3e4a125cd8bd98f1 -->
+
+**Date**: 2026-08-31
+**Task**: Fix AdminView stray />
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+移除 AdminView 孤立 /> 并发布 0.0.2
+
+### Main Changes
+
+- 删 web/src/views/AdminView.vue:303 孤立 />
+- README v0.0.1 -> v0.0.2, vite build -> internal/api/web
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ef108b` | fix(admin): remove stray /> in AdminView (announcement cleanup residue) |
+
+### Testing
+
+- [OK] vue-tsc pass, go vet pass, docker 118MB 0.0.2/v0.0.2/latest 同 digest 42c47fc
+
+### Status
+
+[OK] **Completed**
