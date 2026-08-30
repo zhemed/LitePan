@@ -31,13 +31,13 @@ type retentionTaskDTO struct {
 	TimeWindowEnabled bool   `json:"time_window_enabled"`
 	TimeStart         string `json:"time_start"`
 	TimeEnd           string `json:"time_end"`
-	ScannedDirs         int    `json:"scanned_dirs,omitempty"`
-	ScannedFiles        int    `json:"scanned_files,omitempty"`
-	CurrentDir          string `json:"current_dir,omitempty"`
-	StartedAt           string `json:"started_at,omitempty"`
-	CurrentDurationMs   int    `json:"current_duration_ms,omitempty"`
-	IsRunning           bool   `json:"is_running"`
-	IsPending           bool   `json:"is_pending"`
+	ScannedDirs       int    `json:"scanned_dirs,omitempty"`
+	ScannedFiles      int    `json:"scanned_files,omitempty"`
+	CurrentDir        string `json:"current_dir,omitempty"`
+	StartedAt         string `json:"started_at,omitempty"`
+	CurrentDurationMs int    `json:"current_duration_ms,omitempty"`
+	IsRunning         bool   `json:"is_running"`
+	IsPending         bool   `json:"is_pending"`
 	CreatedAt         string `json:"created_at,omitempty"`
 	UpdatedAt         string `json:"updated_at,omitempty"`
 }
@@ -69,8 +69,8 @@ func toRetentionDTO(t *domain.CacheRetentionTask, svc *cacheretention.Service) r
 		TimeEnd:           t.TimeEnd,
 		IsRunning:         svc != nil && svc.IsExecuting(t.ID),
 		IsPending:         svc != nil && svc.IsPending(t.ID),
-		CreatedAt:           FormatAPITime(t.CreatedAt),
-		UpdatedAt:           FormatAPITime(t.UpdatedAt),
+		CreatedAt:         FormatAPITime(t.CreatedAt),
+		UpdatedAt:         FormatAPITime(t.UpdatedAt),
 	}
 	if t.LastRefresh != nil {
 		dto.LastRefresh = FormatAPITime(*t.LastRefresh)
@@ -100,7 +100,7 @@ func fromRetentionDTO(d retentionTaskDTO) *domain.CacheRetentionTask {
 		RefreshInterval:   d.RefreshInterval,
 		TimeWindowEnabled: d.TimeWindowEnabled,
 		TimeStart:         d.TimeStart,
-		TimeEnd:             d.TimeEnd,
+		TimeEnd:           d.TimeEnd,
 	}
 }
 
@@ -118,8 +118,6 @@ func retentionRunMessage(result cacheretention.RunNowResult, create bool) string
 		switch result.State {
 		case "queued_startup":
 			return "配置创建成功，启动退避结束后（约 " + strconv.Itoa(result.StartupRemaining) + " 秒）自动执行"
-		case "blocked_by_strm":
-			return "配置创建成功，同账号任务占用结束后自动执行"
 		case "running":
 			return "配置创建成功，已触发执行"
 		case "cache_disabled":

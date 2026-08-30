@@ -34,10 +34,6 @@ type apiKeyUpdateDTO struct {
 	Note        *string `json:"note"`
 }
 
-type rotateStrmKeyDTO struct {
-	ApplyToExistingStrm bool `json:"apply_to_existing_strm"`
-}
-
 func (h *Handler) createApiKey(w http.ResponseWriter, r *http.Request) {
 	if !ensureServiceReady(w, h.apiKeys != nil) {
 		return
@@ -125,19 +121,4 @@ func (h *Handler) deleteApiKey(w http.ResponseWriter, r *http.Request) {
 	writeOK(w, map[string]any{"id": id})
 }
 
-func (h *Handler) rotateStrmKey(w http.ResponseWriter, r *http.Request) {
-	if !ensureServiceReady(w, h.apiKeys != nil) {
-		return
-	}
-	var in rotateStrmKeyDTO
-	if err := decodeJSON(r, &in); err != nil {
-		writeErr(w, err)
-		return
-	}
-	data, err := h.apiKeys.RotateStrmKey(r.Context(), in.ApplyToExistingStrm)
-	if err != nil {
-		writeErr(w, err)
-		return
-	}
-	writeOK(w, data)
-}
+

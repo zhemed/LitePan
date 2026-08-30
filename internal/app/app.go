@@ -28,7 +28,6 @@ import (
 	"litepan/internal/playback"
 	"litepan/internal/settings"
 	"litepan/internal/store"
-	"litepan/internal/strm"
 	"litepan/internal/upload"
 )
 
@@ -52,7 +51,6 @@ type App struct {
 	uploads          *upload.Manager
 	offlineDownloads *offlinedownload.Service
 	playback         *playback.Service
-	strm             *strm.Service
 	mediaOrganize    *mediaorganize.Service
 	automation       *automation.Service
 	fuse             *fusemount.Service
@@ -135,7 +133,6 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		uploads:          svc.uploads,
 		offlineDownloads: svc.offlineDownloads,
 		playback:         svc.playback,
-		strm:             svc.strm,
 		mediaOrganize:    svc.mediaOrganize,
 		automation:       svc.automation,
 		fuse:             svc.fuse,
@@ -155,9 +152,6 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.sched != nil && a.settings != nil {
 		a.sched.InitActiveRefresh(ctx, a.settings.Bool(settings.KeyAuthActiveRefresh))
-	}
-	if a.strm != nil {
-		a.strm.Start(ctx)
 	}
 	if a.cacheRetention != nil {
 		a.cacheRetention.Start(ctx)

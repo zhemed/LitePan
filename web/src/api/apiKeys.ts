@@ -1,16 +1,5 @@
 import { http } from "./client";
 
-export interface StrmKeyInfo {
-  name: string;
-  key: string;
-  key_preview: string;
-  format: "new";
-  status: string;
-  system: boolean;
-  deletable: boolean;
-  disableable: boolean;
-}
-
 export interface ApiKeyRecord {
   id?: number;
   name: string;
@@ -28,7 +17,6 @@ export interface ApiKeyRecord {
 }
 
 export interface ApiKeyListResult {
-  strm_key: StrmKeyInfo;
   keys: ApiKeyRecord[];
   max_keys: number;
   key_count: number;
@@ -40,11 +28,6 @@ export interface ApiKeyInput {
   expires_days?: number | null;
   status: string;
   note?: string;
-}
-
-export interface RotateStrmKeyResult {
-  strm_key: StrmKeyInfo;
-  replace_result?: { total: number; matched: number; updated: number };
 }
 
 export function fetchApiKeys() {
@@ -65,10 +48,4 @@ export function toggleApiKey(id: number) {
 
 export function deleteApiKey(id: number) {
   return http.del<{ id: number }>(`/admin/api-keys/${id}`);
-}
-
-export function rotateStrmKey(applyToExistingStrm = true) {
-  return http.post<RotateStrmKeyResult>("/admin/api-keys/strm/rotate", {
-    apply_to_existing_strm: applyToExistingStrm,
-  });
 }

@@ -7,21 +7,9 @@ import (
 
 	"litepan/internal/domain"
 	"litepan/internal/settings"
-	"litepan/internal/strm"
 )
 
 const MaxNormalKeys = 10
-
-type StrmKeyView struct {
-	Name        string `json:"name"`
-	Key         string `json:"key"`
-	KeyPreview  string `json:"key_preview"`
-	Format      string `json:"format"`
-	Status      string `json:"status"`
-	System      bool   `json:"system"`
-	Deletable   bool   `json:"deletable"`
-	Disableable bool   `json:"disableable"`
-}
 
 type KeyView struct {
 	ID         int64  `json:"id"`
@@ -40,10 +28,9 @@ type KeyView struct {
 }
 
 type ListResult struct {
-	StrmKey  StrmKeyView `json:"strm_key"`
-	Keys     []KeyView   `json:"keys"`
-	MaxKeys  int         `json:"max_keys"`
-	KeyCount int         `json:"key_count"`
+	Keys     []KeyView `json:"keys"`
+	MaxKeys  int       `json:"max_keys"`
+	KeyCount int       `json:"key_count"`
 }
 
 type CreateInput struct {
@@ -65,16 +52,12 @@ type UpdateInput struct {
 type Service struct {
 	repo     domain.ApiKeyRepository
 	settings *settings.Service
-	strm     *strm.Service
-	strmDir  string
 	secret   []byte
 }
 
 type Options struct {
 	Repo     domain.ApiKeyRepository
 	Settings *settings.Service
-	Strm     *strm.Service
-	StrmDir  string
 	Secret   []byte
 }
 
@@ -82,8 +65,6 @@ func New(opts Options) *Service {
 	return &Service{
 		repo:     opts.Repo,
 		settings: opts.Settings,
-		strm:     opts.Strm,
-		strmDir:  opts.StrmDir,
 		secret:   opts.Secret,
 	}
 }
@@ -91,11 +72,6 @@ func New(opts Options) *Service {
 func (s *Service) List(ctx context.Context) (ListResult, error) {
 	var out ListResult
 	out.MaxKeys = MaxNormalKeys
-	strmKey, err := s.ensureStrmKey(ctx)
-	if err != nil {
-		return out, err
-	}
-	out.StrmKey = strmKey
 	rows, err := s.repo.List(ctx)
 	if err != nil {
 		return out, err
@@ -262,84 +238,6 @@ func (s *Service) ValidateTask(ctx context.Context, raw string) (*domain.ApiKey,
 		return nil, domain.Errorf(domain.CodePermissionDenied, "API Key 权限不足")
 	}
 	return row, nil
-}
-
-type RotateStrmResult struct {
-	StrmKey       StrmKeyView              `json:"strm_key"`
-	ReplaceResult *strm.ReplaceTokenResult `json:"replace_result,omitempty"`
-}
-
-func (s *Service) RotateStrmKey(ctx context.Context, applyToExisting bool) (RotateStrmResult, error) {
-	var out RotateStrmResult
-	if s.settings == nil {
-		return out, domain.Errf(domain.CodeInternal)
-	}
-	oldToken, err := s.readOrCreateStrmToken(ctx)
-	if err != nil {
-		return out, err
-	}
-	newToken, err := NewRawKey(PrefixStrm)
-	if err != nil {
-		return out, domain.Wrap(domain.CodeInternal, err)
-	}
-	if err := s.settings.Update(ctx, map[string]string{settings.KeyStrmToken: newToken}); err != nil {
-		return out, err
-	}
-	if applyToExisting && s.strmDir != "" {
-		rep, err := strm.ReplaceTokenInFiles(s.strmDir, oldToken, newToken, s.secret)
-		if err != nil {
-			return out, err
-		}
-		out.ReplaceResult = &rep
-	}
-	strmKey, err := s.buildStrmKeyView(newToken)
-	if err != nil {
-		return out, err
-	}
-	out.StrmKey = strmKey
-	return out, nil
-}
-
-func (s *Service) ensureStrmKey(ctx context.Context) (StrmKeyView, error) {
-	token, err := s.readOrCreateStrmToken(ctx)
-	if err != nil {
-		return StrmKeyView{}, err
-	}
-	return s.buildStrmKeyView(token)
-}
-
-func (s *Service) readOrCreateStrmToken(ctx context.Context) (string, error) {
-	if s.strm != nil {
-		return s.strm.EnsureToken(ctx)
-	}
-	if s.settings == nil {
-		return "", domain.Errf(domain.CodeInternal)
-	}
-	token := strings.TrimSpace(s.settings.String(settings.KeyStrmToken))
-	if token != "" {
-		return token, nil
-	}
-	raw, err := NewRawKey(PrefixStrm)
-	if err != nil {
-		return "", err
-	}
-	if err := s.settings.Update(ctx, map[string]string{settings.KeyStrmToken: raw}); err != nil {
-		return "", err
-	}
-	return raw, nil
-}
-
-func (s *Service) buildStrmKeyView(token string) (StrmKeyView, error) {
-	return StrmKeyView{
-		Name:        "STRM 媒体访问",
-		Key:         token,
-		KeyPreview:  StrmKeyPreview(token),
-		Format:      "new",
-		Status:      domain.ApiKeyStatusActive,
-		System:      true,
-		Deletable:   false,
-		Disableable: false,
-	}, nil
 }
 
 func toKeyView(row *domain.ApiKey, raw string) KeyView {

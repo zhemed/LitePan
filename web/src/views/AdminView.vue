@@ -61,12 +61,12 @@ const PAGE_TABS: Record<string, { defaultTab: string; tabs: Record<string, strin
     tabs: { security: "账号安全", homepage: "首页设置", service: "其他设置", "api-keys": "API 秘钥" },
   },
   tasks: {
-    defaultTab: "strm",
-    tabs: { strm: "STRM 任务", cache: "缓存任务", organize: "目录整理", automation: "自动联动" },
+    defaultTab: "cache",
+    tabs: { cache: "缓存任务", organize: "目录整理", automation: "自动联动" },
   },
   tools: {
-    defaultTab: "scrape",
-    tabs: { scrape: "STRM 刮削", enhanced: "增强工具", backup: "备份管理" },
+    defaultTab: "enhanced",
+    tabs: { enhanced: "增强工具", backup: "备份管理" },
   },
   share: { defaultTab: "webdav", tabs: { webdav: "WebDAV", fuse: "本地挂载" } },
 };
@@ -246,14 +246,13 @@ watch(
   ([qPage, qTab]) => {
     const pageKey = String(qPage ?? "").trim();
     const tabKey = String(qTab ?? "").trim();
-    // 旧书签：任务管理里的刮削 → 辅助工具；聚合已下线，落到刮削页
+    // 旧书签兼容：已下线的任务/工具 tab 统一回落到辅助工具的增强工具页
     if (pageKey === "tasks" && LEGACY_TASK_TOOL_TABS.has(tabKey)) {
-      const tab = tabKey === "aggregate" ? "scrape" : tabKey;
-      void router.replace({ query: { ...route.query, page: "tools", tab } });
+      void router.replace({ query: { ...route.query, page: "tools", tab: "enhanced" } });
       return;
     }
-    if (pageKey === "tools" && tabKey === "aggregate") {
-      void router.replace({ query: { ...route.query, page: "tools", tab: "scrape" } });
+    if (pageKey === "tools" && (tabKey === "aggregate" || tabKey === "scrape")) {
+      void router.replace({ query: { ...route.query, page: "tools", tab: "enhanced" } });
       return;
     }
     const target = normalize(qPage);

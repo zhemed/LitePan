@@ -36,7 +36,6 @@ type Service struct {
 	nextRun         map[int64]time.Time
 	pendingRun      map[int64]struct{}
 	liveStats       map[int64]scanStats
-	strmBusy        RunningAccountLister
 	organizeBusy    RunningAccountLister
 	startupReadyAt  time.Time
 	startupGate     <-chan struct{}
@@ -77,10 +76,6 @@ func NewService(opts Options) *Service {
 		pendingRun:      make(map[int64]struct{}),
 		liveStats:       make(map[int64]scanStats),
 	}
-}
-
-func (s *Service) SetStrmBusyChecker(checker RunningAccountLister) {
-	s.strmBusy = checker
 }
 
 func (s *Service) SetOrganizeBusyChecker(checker RunningAccountLister) {

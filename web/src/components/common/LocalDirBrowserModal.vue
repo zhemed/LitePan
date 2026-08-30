@@ -39,7 +39,7 @@ const error = ref("");
 const dirs = ref<LocalBrowseDir[]>([]);
 const currentPath = ref("");
 
-const quickPaths = ["/app/strm", "/app/data", "/app/mounts", "/app", "/mnt", "/media", "/"];
+const quickPaths = ["/app/data", "/app/mounts", "/app", "/mnt", "/media", "/"];
 
 const breadcrumb = computed<Crumb[]>(() => {
   const path = currentPath.value.trim() || "/";

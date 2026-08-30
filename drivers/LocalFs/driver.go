@@ -26,7 +26,7 @@ type Driver struct {
 var config = driver.Config{
 	Name:        "localfs",
 	DisplayName: "本机存储",
-	Description: "适合将 STRM 目录通过 WebDAV 暴露给爆米花等播放器",
+	Description: "将本地目录通过 WebDAV 暴露给播放器使用",
 	CardTags:    []string{"本地目录", "容器挂载"},
 	SortOrder:   100,
 	AuthLabel:   "本地",

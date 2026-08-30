@@ -23,7 +23,6 @@ export interface SystemConfig {
   compact_home_enabled?: boolean;
   admin_home_return_mode?: "sidebar" | "top_icon";
   header_effects_enabled?: boolean;
-  index_strm_auto_detect_enabled?: boolean;
   must_change_password: boolean;
   password_change_reason?: string;
   oauth_server_url?: string;
@@ -42,7 +41,6 @@ export interface UpdateCredentialsRequest {
   compact_home_enabled?: boolean;
   admin_home_return_mode?: "sidebar" | "top_icon";
   header_effects_enabled?: boolean;
-  index_strm_auto_detect_enabled?: boolean;
   oauth_server_url?: string;
   upload_task_concurrency?: number;
   log_retention_days?: number;

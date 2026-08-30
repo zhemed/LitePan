@@ -5,11 +5,9 @@ import {
   createApiKey,
   deleteApiKey,
   fetchApiKeys,
-  rotateStrmKey,
   toggleApiKey,
   updateApiKey,
   type ApiKeyRecord,
-  type StrmKeyInfo,
 } from "@/api/apiKeys";
 import AppButton from "@/components/base/AppButton.vue";
 import AppBadge from "@/components/base/AppBadge.vue";
@@ -52,16 +50,6 @@ const keys = ref<ApiKeyRecord[]>([]);
 const apiKeyList = ref<HTMLElement | null>(null);
 const { removeWithDust } = useDustRemoval();
 const maxKeys = ref(10);
-const strmKey = reactive<StrmKeyInfo>({
-  name: "STRM 媒体访问",
-  key: "",
-  key_preview: "",
-  format: "new",
-  status: "active",
-  system: true,
-  deletable: false,
-  disableable: false,
-});
 
 const form = reactive({
   name: "",
@@ -146,7 +134,6 @@ async function load() {
     const data = await fetchApiKeys();
     keys.value = data.keys ?? [];
     maxKeys.value = data.max_keys ?? 10;
-    Object.assign(strmKey, data.strm_key ?? {});
   } catch (e) {
     toast.error(getApiErrorMessage(e, "加载 API 秘钥失败"));
   } finally {
@@ -253,33 +240,6 @@ async function handleDelete(key: ApiKeyRecord) {
   }
 }
 
-async function handleRotateStrm() {
-  try {
-    const result = await showConfirm({
-      title: "更换 STRM 媒体访问 Key",
-      message: "更换后旧 Key 将无法继续用于播放鉴权。是否同时将新 Key 应用到已有 .strm 文件？",
-      icon: "question",
-      confirmText: "更换",
-      danger: false,
-      checkboxLabel: "将新 Key 应用到已有 strm 中",
-      checkboxDefault: true,
-    });
-    const apply = result.checked !== false;
-    const data = await rotateStrmKey(apply);
-    Object.assign(strmKey, data.strm_key);
-    const rep = data.replace_result;
-    if (rep) {
-      toast.success(`STRM Key 已更换，已更新 ${rep.updated}/${rep.matched} 个匹配文件`);
-    } else {
-      toast.success("STRM Key 已更换");
-    }
-  } catch (e) {
-    if (e instanceof Error && e.message === "Modal closed") return;
-    const msg = getApiErrorMessage(e, "");
-    if (msg) toast.error(msg);
-  }
-}
-
 async function copyText(text: string) {
   await copyTextToClipboard(text);
 }
@@ -292,8 +252,8 @@ defineExpose({ openCreate });
 <template>
   <SettingsCard title="秘钥列表" :accent="props.accent">
     <p class="api-keys__meta">
-      STRM 媒体访问 Key 为系统内置播放鉴权令牌；普通秘钥供后续自动联动 Webhook 等外部调用。
-      <span class="api-keys__meta-count">普通秘钥 {{ keyCount }}/{{ maxKeys }}</span>
+      秘钥供后续自动联动 Webhook 等外部调用使用。
+      <span class="api-keys__meta-count">秘钥 {{ keyCount }}/{{ maxKeys }}</span>
     </p>
 
     <AppStateBlock v-if="loading" message="加载秘钥中…" loading min-height="180px" />
@@ -311,35 +271,6 @@ defineExpose({ openCreate });
           </tr>
         </thead>
         <tbody ref="apiKeyList">
-          <tr class="api-keys__row">
-            <td>
-              <div class="api-keys__name">
-                <span class="api-keys__name-text">STRM 媒体访问</span>
-                <AppBadge tone="info">系统内置</AppBadge>
-              </div>
-            </td>
-            <td><code class="api-keys__token">{{ strmKey.key_preview || "—" }}</code></td>
-            <td><AppBadge tone="info">播放鉴权</AppBadge></td>
-            <td><AppBadge tone="success">启用</AppBadge></td>
-            <td class="api-keys__muted">永不过期</td>
-            <td>
-              <AdminRowActions>
-                <div class="api-keys__actions">
-                  <AdminTableActionBtn icon="copy" title="复制" @click="copyText(strmKey.key)" />
-                  <AdminTableActionBtn
-                    icon="rotate"
-                    title="更换 Key"
-                    :disabled="loading"
-                    @click="handleRotateStrm"
-                  />
-                </div>
-                <template #menu>
-                  <button type="button" class="admin-row-actions__item" @click="copyText(strmKey.key)">复制</button>
-                  <button type="button" class="admin-row-actions__item" :disabled="loading" @click="handleRotateStrm">更换 Key</button>
-                </template>
-              </AdminRowActions>
-            </td>
-          </tr>
           <tr v-for="key in keys" :key="key.id" class="api-keys__row" :data-dust-key="`api-key-${key.id}`">
             <td>
               <span class="api-keys__name-text">{{ key.name }}</span>

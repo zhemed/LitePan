@@ -39,10 +39,10 @@ func (s *Service) scheduleOnce(ctx context.Context) {
 		return
 	}
 
-	strmBusy := s.snapshotBusyAccounts()
+	busyAccounts := s.snapshotBusyAccounts()
 
 	s.mu.Lock()
-	pick := s.pickScheduledTaskLocked(ctx, tasks, now, strmBusy)
+	pick := s.pickScheduledTaskLocked(ctx, tasks, now, busyAccounts)
 	if pick == nil {
 		s.mu.Unlock()
 		return
@@ -86,14 +86,7 @@ func (s *Service) isAccountBusy(accountID int64) bool {
 }
 
 func (s *Service) snapshotBusyAccounts() map[int64]struct{} {
-	set := snapshotRunningAccountIDs(s.strmBusy)
-	for id := range snapshotRunningAccountIDs(s.organizeBusy) {
-		if set == nil {
-			set = make(map[int64]struct{})
-		}
-		set[id] = struct{}{}
-	}
-	return set
+	return snapshotRunningAccountIDs(s.organizeBusy)
 }
 
 func snapshotRunningAccountIDs(lister RunningAccountLister) map[int64]struct{} {

@@ -10,7 +10,6 @@ import FileTableHeader from "./FileTableHeader.vue";
 import FileGridSortMenu from "./FileGridSortMenu.vue";
 import FileContextMenu from "./FileContextMenu.vue";
 import SvgIcon from "@/components/icons/SvgIcon.vue";
-import type { ContextMenuItem } from "@/composables/useFileTableInline";
 
 const props = defineProps<{
   files: FileItem[];
@@ -50,7 +49,6 @@ const emit = defineEmits<{
   "update:selectedIds": [ids: string[]];
   "sort-by": [key: SortKey];
   "set-sort": [payload: { key: SortKey; order: SortOrder }];
-  "generate-current-directory-strm": [];
   "drag-file-start": [file: FileItem];
   "drag-file-end": [];
   "drag-enter-folder": [file: FileItem];
@@ -144,44 +142,8 @@ const visibleListFiles = computed(() =>
 const hasMoreListFiles = computed(
   () => props.view === "list" && visibleListFiles.value.length < props.files.length,
 );
-const headerContextMenu = ref({
-  open: false,
-  x: 0,
-  y: 0,
-});
-const headerContextMenuItems = computed<ContextMenuItem[]>(() =>
-  props.isAdmin ? [{ action: "generate-current-directory-strm", label: "生成当前目录 STRM" }] : [],
-);
-
 function fileKey(f: FileItem) {
   return f.id || f.name;
-}
-
-function closeDirectoryContextMenu() {
-  headerContextMenu.value.open = false;
-}
-
-function openDirectoryContextMenu(event: MouseEvent) {
-  if (!props.isAdmin) return;
-  const target = event.target as HTMLElement | null;
-  if (target?.closest(".file-row, .file-card, .inline-create-row")) return;
-  const items = headerContextMenuItems.value;
-  if (!items.length) return;
-  closeContextMenu();
-  const menuWidth = 188;
-  const menuHeight = items.length * 38 + 14;
-  headerContextMenu.value = {
-    open: true,
-    x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8)),
-    y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 8)),
-  };
-}
-
-function handleHeaderContextAction(action: string) {
-  closeDirectoryContextMenu();
-  if (action === "generate-current-directory-strm") {
-    emit("generate-current-directory-strm");
-  }
 }
 
 function expandVisibleListFiles() {
@@ -502,27 +464,17 @@ function handleWindowDragEnd() {
 
 onMounted(() => {
   void nextTick(updateListLoadMoreObserver);
-  document.addEventListener("keydown", handleHeaderMenuKeydown);
   window.addEventListener("dragover", handleWindowDragOver);
   window.addEventListener("drop", handleWindowDrop);
   window.addEventListener("dragend", handleWindowDragEnd, true);
-  window.addEventListener("resize", closeDirectoryContextMenu);
-  window.addEventListener("scroll", closeDirectoryContextMenu, true);
 });
 
 onUnmounted(() => {
   disconnectListLoadMoreObserver();
-  document.removeEventListener("keydown", handleHeaderMenuKeydown);
   window.removeEventListener("dragover", handleWindowDragOver);
   window.removeEventListener("drop", handleWindowDrop);
   window.removeEventListener("dragend", handleWindowDragEnd, true);
-  window.removeEventListener("resize", closeDirectoryContextMenu);
-  window.removeEventListener("scroll", closeDirectoryContextMenu, true);
 });
-
-function handleHeaderMenuKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape") closeDirectoryContextMenu();
-}
 </script>
 
 <template>
@@ -530,7 +482,6 @@ function handleHeaderMenuKeydown(event: KeyboardEvent) {
     class="file-list"
     :class="`view-${view}`"
     ref="fileListRef"
-    @contextmenu.prevent="openDirectoryContextMenu($event)"
   >
     <div
       v-if="view === 'list' && dragRowOutlineRect"
@@ -917,14 +868,6 @@ function handleHeaderMenuKeydown(event: KeyboardEvent) {
       :items="contextMenuItems"
       @action="handleContextAction"
       @close="closeContextMenu"
-    />
-    <FileContextMenu
-      :open="headerContextMenu.open"
-      :x="headerContextMenu.x"
-      :y="headerContextMenu.y"
-      :items="headerContextMenuItems"
-      @action="handleHeaderContextAction"
-      @close="closeDirectoryContextMenu"
     />
   </div>
 </template>

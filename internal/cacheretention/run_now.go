@@ -13,8 +13,6 @@ func (r RunNowResult) Message() string {
 	switch r.State {
 	case "already_running":
 		return "任务已在执行中"
-	case "blocked_by_strm":
-		return "同账号有其他任务正在占用（STRM 或媒体整理），已加入队列，占用结束后自动执行"
 	case "queued_account":
 		return "同账号的缓存任务正在执行，已加入队列，前一个任务完成后自动执行"
 	case "cache_disabled":

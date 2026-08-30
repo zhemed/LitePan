@@ -13,9 +13,6 @@ import (
 	"litepan/internal/apikey"
 	"litepan/internal/domain"
 	"litepan/internal/mediaorganize"
-	"litepan/internal/settings"
-	"litepan/internal/strm"
-	"litepan/internal/strmscrape"
 )
 
 func TestSubmitRunQueuesWhileStartupGateBlocked(t *testing.T) {
@@ -225,56 +222,6 @@ func TestRunAsyncQueuesInsteadOfRejectingWhenBusy(t *testing.T) {
 	}
 }
 
-func TestValidateRuleAcceptsStrmScrapeAction(t *testing.T) {
-	t.Parallel()
-
-	strmSvc := strm.NewService(strm.ServiceOptions{
-		Repo: newStrmTaskRepo(&domain.StrmTask{
-			ID:           10,
-			Name:         "电影 STRM",
-			AccountID:    1,
-			Path:         "/movies",
-			ScheduleMode: domain.StrmScheduleWindow,
-			Status:       domain.StrmStatusActive,
-		}),
-	})
-	service := New(Options{
-		Rules: newAutomationRuleRepo(),
-		Runs:  &automationRunRepo{},
-		Strm:  strmSvc,
-	})
-
-	result, err := service.ValidateRule(context.Background(), []RuleAction{
-		{ID: "scrape-1", Type: domain.AutomationActionStrmScrape, Params: map[string]any{"task_id": 10, "write_mode": "missing_only", "failure_policy": "all_failed"}},
-	})
-	if err != nil {
-		t.Fatalf("ValidateRule 返回错误: %v", err)
-	}
-	if !result.OK {
-		t.Fatalf("期望校验通过，实际 issues=%#v", result.Issues)
-	}
-
-	bad, err := service.ValidateRule(context.Background(), []RuleAction{
-		{ID: "scrape-2", Type: domain.AutomationActionStrmScrape, Params: map[string]any{"task_id": 10, "write_mode": "bad"}},
-	})
-	if err != nil {
-		t.Fatalf("ValidateRule 返回错误: %v", err)
-	}
-	if bad.OK {
-		t.Fatalf("期望写入策略无效时校验失败")
-	}
-
-	badPolicy, err := service.ValidateRule(context.Background(), []RuleAction{
-		{ID: "scrape-3", Type: domain.AutomationActionStrmScrape, Params: map[string]any{"task_id": 10, "failure_policy": "bad"}},
-	})
-	if err != nil {
-		t.Fatalf("ValidateRule 返回错误: %v", err)
-	}
-	if badPolicy.OK {
-		t.Fatalf("期望联动中断条件无效时校验失败")
-	}
-}
-
 func TestValidateRuleRequiresLibrarySelectionForEmbyLibraryMode(t *testing.T) {
 	t.Parallel()
 
@@ -290,37 +237,6 @@ func TestValidateRuleRequiresLibrarySelectionForEmbyLibraryMode(t *testing.T) {
 	}
 	if len(result.Issues) == 0 || !strings.Contains(result.Issues[0].Message, "请选择 Emby 媒体库") {
 		t.Fatalf("issues=%#v", result.Issues)
-	}
-}
-
-func TestStrmScrapeOutcome(t *testing.T) {
-	t.Parallel()
-	if got := normalizeStrmScrapeFailurePolicy(nil); got != strmScrapeFailurePolicyAllFailed {
-		t.Fatalf("旧规则缺少中断条件时应使用默认值，实际 %q", got)
-	}
-
-	tests := []struct {
-		name     string
-		progress strmscrape.Progress
-		policy   string
-		status   string
-		success  bool
-	}{
-		{name: "全部成功", progress: strmscrape.Progress{Done: 3}, policy: strmScrapeFailurePolicyAllFailed, status: "success", success: true},
-		{name: "默认策略局部失败继续", progress: strmscrape.Progress{Done: 3, Failed: 1}, policy: strmScrapeFailurePolicyAllFailed, status: "partial", success: true},
-		{name: "默认策略全部失败中断", progress: strmscrape.Progress{Done: 3, Failed: 3}, policy: strmScrapeFailurePolicyAllFailed, status: "failed", success: false},
-		{name: "跳过不算失败", progress: strmscrape.Progress{Done: 3, Skipped: 2, Failed: 1}, policy: strmScrapeFailurePolicyAllFailed, status: "partial", success: true},
-		{name: "任一失败即中断", progress: strmscrape.Progress{Done: 3, Failed: 1}, policy: strmScrapeFailurePolicyAnyFailed, status: "failed", success: false},
-		{name: "失败也继续", progress: strmscrape.Progress{Done: 3, Failed: 3}, policy: strmScrapeFailurePolicyNever, status: "partial", success: true},
-		{name: "系统错误始终中断", progress: strmscrape.Progress{Done: 3, Failed: 1, Error: "TMDB 配置错误"}, policy: strmScrapeFailurePolicyNever, status: "failed", success: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			status, success := strmScrapeOutcome(tt.progress, tt.policy)
-			if status != tt.status || success != tt.success {
-				t.Fatalf("结果 = (%q, %v)，期望 (%q, %v)", status, success, tt.status, tt.success)
-			}
-		})
 	}
 }
 
@@ -397,7 +313,7 @@ func TestEvaluateOrganizeAction(t *testing.T) {
 	}
 }
 
-func TestValidateRuleChecksEveryOrganizeStrmCombination(t *testing.T) {
+func TestValidateRuleChecksEveryOrganizeCombination(t *testing.T) {
 	t.Parallel()
 
 	organizeSvc := mediaorganize.NewService(mediaorganize.ServiceOptions{
@@ -416,27 +332,15 @@ func TestValidateRuleChecksEveryOrganizeStrmCombination(t *testing.T) {
 			},
 		),
 	})
-	strmSvc := strm.NewService(strm.ServiceOptions{
-		Repo: newStrmTaskRepo(&domain.StrmTask{
-			ID:           10,
-			Name:         "电影 STRM",
-			AccountID:    1,
-			Path:         "/movies",
-			ScheduleMode: domain.StrmScheduleWindow,
-			Status:       domain.StrmStatusActive,
-		}),
-	})
 	service := New(Options{
 		Rules:    newAutomationRuleRepo(),
 		Runs:     &automationRunRepo{},
 		Organize: organizeSvc,
-		Strm:     strmSvc,
 	})
 
 	result, err := service.ValidateRule(context.Background(), []RuleAction{
 		{ID: "org-1", Type: domain.AutomationActionOrganize, Params: map[string]any{"task_id": "org-1"}},
 		{ID: "org-2", Type: domain.AutomationActionOrganize, Params: map[string]any{"task_id": "org-2"}},
-		{ID: "strm-1", Type: domain.AutomationActionStrm, Params: map[string]any{"task_id": 10}},
 	})
 	if err != nil {
 		t.Fatalf("ValidateRule 返回错误: %v", err)
@@ -446,99 +350,6 @@ func TestValidateRuleChecksEveryOrganizeStrmCombination(t *testing.T) {
 	}
 	if len(result.Issues) == 0 || !strings.Contains(result.Issues[0].Message, "第 2 个整理动作") {
 		t.Fatalf("期望识别第二个整理动作不兼容，实际 issues=%#v", result.Issues)
-	}
-}
-
-func TestCreateRuleRollsBackStrmScheduleModeWhenRuleCreateFails(t *testing.T) {
-	t.Parallel()
-
-	rules := newAutomationRuleRepo()
-	rules.createErr = errors.New("db create failed")
-	strmRepo := newStrmTaskRepo(&domain.StrmTask{
-		ID:           10,
-		Name:         "电影 STRM",
-		AccountID:    1,
-		Path:         "/movies",
-		ScheduleMode: domain.StrmScheduleWindow,
-		Status:       domain.StrmStatusActive,
-	})
-	service := New(Options{
-		Rules: newAutomationRuleRepo(),
-		Runs:  &automationRunRepo{},
-		Strm:  newTestStrmService(t, strmRepo),
-	})
-	service.rules = rules
-
-	_, err := service.CreateRule(context.Background(), RuleInput{
-		Name:        "STRM 自动化",
-		TriggerType: domain.AutomationTriggerWebhook,
-		TriggerConfig: map[string]any{
-			"event": "library.updated",
-		},
-		Actions: []RuleAction{
-			{ID: "strm-1", Type: domain.AutomationActionStrm, Params: map[string]any{"task_id": 10}},
-		},
-		Status: domain.AutomationStatusRunning,
-	})
-	if err == nil {
-		t.Fatalf("期望创建规则失败")
-	}
-	task, _ := strmRepo.Get(context.Background(), 10)
-	if task.ScheduleMode != domain.StrmScheduleWindow {
-		t.Fatalf("规则创建失败后应回滚为原调度方式，实际为 %q", task.ScheduleMode)
-	}
-}
-
-func TestCreateRuleRollsBackEarlierStrmTasksWhenBatchBindFails(t *testing.T) {
-	t.Parallel()
-
-	strmRepo := newStrmTaskRepo(
-		&domain.StrmTask{
-			ID:           10,
-			Name:         "电影 STRM",
-			AccountID:    1,
-			Path:         "/movies",
-			ScheduleMode: domain.StrmScheduleWindow,
-			Status:       domain.StrmStatusActive,
-		},
-		&domain.StrmTask{
-			ID:           20,
-			Name:         "剧集 STRM",
-			AccountID:    1,
-			Path:         "/tv",
-			ScheduleMode: domain.StrmScheduleWindow,
-			Status:       domain.StrmStatusActive,
-		},
-	)
-	strmRepo.failManualUpdateFor[20] = errors.New("update failed")
-	service := New(Options{
-		Rules: newAutomationRuleRepo(),
-		Runs:  &automationRunRepo{},
-		Strm:  newTestStrmService(t, strmRepo),
-	})
-
-	_, err := service.CreateRule(context.Background(), RuleInput{
-		Name:        "批量 STRM 自动化",
-		TriggerType: domain.AutomationTriggerWebhook,
-		TriggerConfig: map[string]any{
-			"event": "library.updated",
-		},
-		Actions: []RuleAction{
-			{ID: "strm-1", Type: domain.AutomationActionStrm, Params: map[string]any{"task_id": 10}},
-			{ID: "strm-2", Type: domain.AutomationActionStrm, Params: map[string]any{"task_id": 20}},
-		},
-		Status: domain.AutomationStatusRunning,
-	})
-	if err == nil {
-		t.Fatalf("期望批量绑定失败")
-	}
-	task10, _ := strmRepo.Get(context.Background(), 10)
-	task20, _ := strmRepo.Get(context.Background(), 20)
-	if task10.ScheduleMode != domain.StrmScheduleWindow {
-		t.Fatalf("前一个 STRM 任务未回滚，实际为 %q", task10.ScheduleMode)
-	}
-	if task20.ScheduleMode != domain.StrmScheduleWindow {
-		t.Fatalf("失败任务的调度方式被错误修改，实际为 %q", task20.ScheduleMode)
 	}
 }
 
@@ -682,18 +493,6 @@ func (r *apiKeyRepo) Update(context.Context, *domain.ApiKey) error              
 func (r *apiKeyRepo) Delete(context.Context, int64) error                       { return nil }
 func (r *apiKeyRepo) TouchLastUsed(context.Context, int64, time.Time) error     { return nil }
 
-func newTestStrmService(t *testing.T, repo domain.StrmTaskRepository) *strm.Service {
-	t.Helper()
-	settingsSvc, err := settings.New(context.Background(), configRepoStub{})
-	if err != nil {
-		t.Fatalf("创建 settings service 失败: %v", err)
-	}
-	return strm.NewService(strm.ServiceOptions{
-		Repo:     repo,
-		Settings: settingsSvc,
-	})
-}
-
 type mediaOrganizeTaskRepo struct {
 	tasks map[string]*domain.MediaOrganizeTask
 }
@@ -724,61 +523,3 @@ func (r *mediaOrganizeTaskRepo) Get(_ context.Context, id string) (*domain.Media
 	copy := *task
 	return &copy, nil
 }
-
-type strmTaskRepo struct {
-	mu                  sync.Mutex
-	tasks               map[int64]*domain.StrmTask
-	failManualUpdateFor map[int64]error
-}
-
-func newStrmTaskRepo(tasks ...*domain.StrmTask) *strmTaskRepo {
-	repo := &strmTaskRepo{
-		tasks:               make(map[int64]*domain.StrmTask, len(tasks)),
-		failManualUpdateFor: make(map[int64]error),
-	}
-	for _, task := range tasks {
-		copy := *task
-		repo.tasks[task.ID] = &copy
-	}
-	return repo
-}
-
-func (r *strmTaskRepo) Create(context.Context, *domain.StrmTask) (int64, error) { return 0, nil }
-func (r *strmTaskRepo) Delete(context.Context, int64) error                     { return nil }
-func (r *strmTaskRepo) List(context.Context) ([]*domain.StrmTask, error)        { return nil, nil }
-func (r *strmTaskRepo) ListByAccount(context.Context, int64) ([]*domain.StrmTask, error) {
-	return nil, nil
-}
-func (r *strmTaskRepo) UpdateScan(context.Context, int64, domain.StrmScanPatch) error {
-	return nil
-}
-func (r *strmTaskRepo) Get(_ context.Context, id int64) (*domain.StrmTask, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	task, ok := r.tasks[id]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	copy := *task
-	return &copy, nil
-}
-func (r *strmTaskRepo) Update(_ context.Context, task *domain.StrmTask) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if err, ok := r.failManualUpdateFor[task.ID]; ok && task.ScheduleMode == domain.StrmScheduleManual {
-		return err
-	}
-	copy := *task
-	r.tasks[task.ID] = &copy
-	return nil
-}
-
-type configRepoStub struct{}
-
-func (configRepoStub) All(context.Context) (map[string]string, error) {
-	return map[string]string{}, nil
-}
-func (configRepoStub) Get(context.Context, string) (string, bool, error) {
-	return "", false, nil
-}
-func (configRepoStub) Set(context.Context, string, string) error { return nil }

@@ -24,7 +24,7 @@ const EXT_MAP: Record<string, FileKind> = {
   xls: "sheet", xlsx: "sheet", csv: "sheet", ods: "sheet",
   ppt: "slide", pptx: "slide",
   js: "code", jsx: "code", tsx: "code", go: "code", py: "code", java: "code", rs: "code", c: "code", cpp: "code", h: "code", hpp: "code", php: "code", rb: "code", swift: "code", kt: "code", sh: "code", sql: "code", json: "code", html: "code", css: "code", vue: "code",
-  txt: "text", rtf: "text", md: "text", markdown: "text", log: "text", strm: "text", nfo: "text", srt: "text", ass: "text", lrc: "text", xml: "text", yml: "text", yaml: "text", toml: "text", ini: "text", conf: "text", env: "text",
+  txt: "text", rtf: "text", md: "text", markdown: "text", log: "text", nfo: "text", srt: "text", ass: "text", lrc: "text", xml: "text", yml: "text", yaml: "text", toml: "text", ini: "text", conf: "text", env: "text",
 };
 
 export function fileKind(file: FileItem): FileKind {

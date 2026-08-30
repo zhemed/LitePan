@@ -95,8 +95,6 @@ func (s *Service) cleanupOne(ctx context.Context, item planItem) CleanupItemResu
 	result := CleanupItemResult{ID: item.ID, Name: item.Name}
 	var err error
 	switch item.Kind {
-	case kindStrmOrphan, kindStrmEmpty:
-		result, err = s.cleanupStrmPath(ctx, item)
 	case kindSystemFile:
 		result, err = s.cleanupSystemFile(item)
 	case kindScrapeIndex:
@@ -133,57 +131,10 @@ func (s *Service) cleanupOne(ctx context.Context, item planItem) CleanupItemResu
 	return result
 }
 
-func (s *Service) cleanupStrmPath(ctx context.Context, item planItem) (CleanupItemResult, error) {
-	result := CleanupItemResult{ID: item.ID, Name: item.Name}
-	target := filepath.Clean(item.TargetPath)
-	root := filepath.Clean(s.opts.StrmDir)
-	if target == root || !pathWithin(root, target) {
-		return result, fmt.Errorf("STRM 清理路径超出允许范围")
-	}
-	info, err := os.Lstat(target)
-	if os.IsNotExist(err) {
-		result.Status, result.Message = "skipped", "路径已不存在"
-		return result, nil
-	}
-	if err != nil {
-		return result, err
-	}
-	if info.Mode()&os.ModeSymlink != 0 {
-		result.Status, result.Message = "skipped", "符号链接不参与清理"
-		return result, nil
-	}
-	tasks, err := s.opts.StrmTasks.List(ctx)
-	if err != nil {
-		return result, err
-	}
-	for _, active := range s.activeStrmPaths(tasks) {
-		if pathsOverlap(target, active) {
-			result.Status, result.Message = "skipped", "扫描后路径已被 STRM 任务使用"
-			return result, nil
-		}
-	}
-	stats, err := inspectTree(target)
-	if err != nil {
-		return result, err
-	}
-	if item.Kind == kindStrmEmpty && stats.files > 0 && !treeContainsOnlySystemJunk(target) {
-		result.Status, result.Message = "skipped", "目录在扫描后新增了有效文件"
-		return result, nil
-	}
-	if err := os.RemoveAll(target); err != nil {
-		return result, err
-	}
-	result.Status = "cleaned"
-	result.FreedBytes = stats.bytes
-	result.Files = stats.files
-	result.Dirs = stats.dirs
-	return result, nil
-}
-
 func (s *Service) cleanupSystemFile(item planItem) (CleanupItemResult, error) {
 	result := CleanupItemResult{ID: item.ID, Name: item.Name}
 	path := filepath.Clean(item.TargetPath)
-	if !isSystemJunk(filepath.Base(path)) || (!pathWithin(s.opts.DataDir, path) && !pathWithin(s.opts.StrmDir, path)) {
+	if !isSystemJunk(filepath.Base(path)) || !pathWithin(s.opts.DataDir, path) {
 		return result, fmt.Errorf("系统杂项路径无效")
 	}
 	info, err := os.Lstat(path)
@@ -207,14 +158,8 @@ func (s *Service) cleanupSystemFile(item planItem) (CleanupItemResult, error) {
 
 func (s *Service) cleanupScrapeIndex(ctx context.Context, item planItem) (CleanupItemResult, error) {
 	result := CleanupItemResult{ID: item.ID, Name: item.Name}
-	if _, err := s.opts.StrmTasks.Get(ctx, item.TaskID); err == nil {
-		result.Status, result.Message = "skipped", "对应 STRM 任务已重新建立"
-		return result, nil
-	} else if appErr, ok := domain.AsAppError(err); !ok || appErr.Code != domain.CodeNotFound {
-		return result, err
-	}
 	base := filepath.Clean(item.TargetPath)
-	if !directChildOf(filepath.Join(s.opts.DataDir, "strmscrape"), base) {
+	if !directChildOf(filepath.Join(s.opts.DataDir, "scrape"), base) {
 		return result, fmt.Errorf("刮削索引路径无效")
 	}
 	for _, path := range []string{base, base + "-wal", base + "-shm"} {

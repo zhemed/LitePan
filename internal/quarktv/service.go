@@ -429,7 +429,7 @@ func (s *Service) ProxyClients() string {
 }
 
 // ResolveHook 是播放解析接管钩子；返回 handled=true 表示用 TV 直链替换原解析。
-// 仅接管“播放”场景（前台预览/STRM 等），WebDAV、FUSE 等字节级读取（playback=false）不接管。
+// 仅接管“播放”场景（前台预览等），WebDAV、FUSE 等字节级读取（playback=false）不接管。
 // 策略分流按 User-Agent 匹配例外客户端；智能变轨仅在选中 HLS 档位时回落；全部走 TV 不做兼容回落。
 func (s *Service) ResolveHook(ctx context.Context, accountID int64, driverType, fileID, ua string, playback bool) (*domain.DownloadInfo, bool, error) {
 	if !playback || driverType != driverQuark || !s.Enabled() || s.bindings == nil {

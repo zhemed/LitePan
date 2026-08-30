@@ -34,7 +34,6 @@ var neverRestoreConfigKeys = map[string]struct{}{
 	"admin_temp_password_last_reset_at": {},
 	"admin_session_generation":          {},
 	"log_error_ack_at":                  {},
-	"strm_token":                        {},
 }
 
 var adminCredentialKeys = []string{"admin_username", "admin_password"}

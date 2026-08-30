@@ -157,4 +157,3 @@ func (s *scanner) shouldRefresh(ctx context.Context, accountID int64, parentID s
 	}
 	return rem < threshold
 }
-

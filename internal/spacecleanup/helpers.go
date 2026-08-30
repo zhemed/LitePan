@@ -124,8 +124,6 @@ func sortItems(items []planItem) {
 
 func categoryOrder(category string) int {
 	switch category {
-	case CategoryStrm:
-		return 0
 	case CategoryTemp:
 		return 1
 	case CategoryLogs:

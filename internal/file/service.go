@@ -106,7 +106,7 @@ func (s *Service) listFromDriver(ctx context.Context, accountID int64, parentID 
 	return items, err
 }
 
-// ListAllFiles 走 STRM 清单模式：驱动支持 FullListLister 时一次拉取
+// ListAllFiles 清单模式：驱动支持 FullListLister 时一次拉取
 // parentID 下全部文件（含子孙目录）；未实现返回 CodeNotImplement。
 func (s *Service) ListAllFiles(ctx context.Context, accountID int64, parentID string) ([]driver.FullListEntry, error) {
 	if err := s.exec.Check(ctx, accountID); err != nil {

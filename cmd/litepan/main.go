@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -25,19 +24,12 @@ func main() {
 
 	listen := flag.String("listen", cfg.ListenAddr, "HTTP 监听地址")
 	dataDir := flag.String("data-dir", cfg.DataDir, "数据目录")
-	strmDir := flag.String("strm-dir", "", "STRM 输出根目录（默认在数据目录同级）")
 	flag.Parse()
 
 	cfg.ListenAddr = *listen
 	if *dataDir != cfg.DataDir {
 		cfg.DataDir = *dataDir
 		cfg.DBPath = filepath.Join(*dataDir, "litepan.db")
-		if strings.TrimSpace(os.Getenv("LITEPAN_STRM_DIR")) == "" {
-			cfg.StrmDir = config.StrmDirForData(*dataDir)
-		}
-	}
-	if strings.TrimSpace(*strmDir) != "" {
-		cfg.StrmDir = *strmDir
 	}
 
 	logs, err := logx.New(logx.Options{

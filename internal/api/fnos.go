@@ -65,8 +65,6 @@ func fnosSettingsTouched(changed map[string]string) bool {
 		settings.KeyFnosName,
 		settings.KeyFnosURL,
 		settings.KeyFnosProxyPort,
-		settings.KeyFnosStrmPathMaps,
-		settings.KeyFnosDirectSTRMClients,
 	} {
 		if _, ok := changed[key]; ok {
 			return true

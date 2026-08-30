@@ -266,9 +266,6 @@ function showRetentionRunToast(result?: RetentionRunResult) {
     case "already_running":
       toast.info("任务已在执行中");
       break;
-    case "blocked_by_strm":
-      toast.info("同账号有其他任务正在占用（STRM 或媒体整理），已加入队列，占用结束后自动执行");
-      break;
     case "cache_disabled":
       toast.warning("该账号目录缓存已关闭（TTL=0），缓存保持任务无法生效");
       break;
@@ -288,9 +285,6 @@ function showRetentionCreateToast(result?: RetentionRunResult) {
   switch (result?.state) {
     case "queued_startup":
       toast.success(`配置已创建，启动退避结束后（约 ${result.startup_remaining} 秒）自动执行`);
-      break;
-    case "blocked_by_strm":
-      toast.success("配置已创建，同账号任务占用结束后自动执行");
       break;
     case "running":
       toast.success("配置已创建，已触发执行");

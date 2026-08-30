@@ -5,7 +5,7 @@
         <div class="panel-head">
           <div>
             <div class="panel-title">自动联动</div>
-            <div class="panel-sub">示例：定时执行整理任务，质量达标后联动 STRM 和 Emby 刷库。</div>
+            <div class="panel-sub">示例：定时执行整理任务，质量达标后联动 Emby 刷库。</div>
           </div>
           <div class="panel-head-actions">
             <AppButton type="button" size="sm" variant="secondary" @click="openRuns">
@@ -203,7 +203,7 @@
                 <div class="node-ico add"><i class="fas fa-plus"></i></div>
                 <div class="node-body">
                   <div class="node-title ph">选择要执行的任务</div>
-                  <div class="node-sub">整理 / STRM / 延迟 / Emby 全局刷库</div>
+                  <div class="node-sub">整理 / 延迟 / Emby 全局刷库</div>
                 </div>
               </div>
             </div>
@@ -465,31 +465,6 @@
               <div class="field-tip">异常比例 =（失败数 + 异常跳过数）/ 需处理项目数；已整理、已是目标名等正常跳过不计入异常。</div>
             </div>
           </template>
-          <template v-else-if="configAction.type === 'strm'">
-            <div class="cfg-row">
-              <label>STRM任务</label>
-              <AppSelect v-model="configAction.params.task_id" :options="strmTaskOptions" placeholder="请选择STRM任务" @update:model-value="taskId => onStrmTaskChange(configAction, taskId)" />
-            </div>
-            <div class="cfg-row">
-              <label>执行方式</label>
-              <AppSelect v-model="configAction.params.run_mode" :options="getStrmRunModeOptions(configAction)" />
-            </div>
-          </template>
-          <template v-else-if="configAction.type === 'strm_scrape'">
-            <div class="cfg-row">
-              <label>STRM任务</label>
-              <AppSelect v-model="configAction.params.task_id" :options="strmTaskOptions" placeholder="请选择STRM任务" />
-            </div>
-            <div class="cfg-row">
-              <label>写入策略</label>
-              <AppSelect v-model="configAction.params.write_mode" :options="strmScrapeWriteModeOptions" />
-            </div>
-            <div class="cfg-row">
-              <label>联动中断条件</label>
-              <AppSelect v-model="configAction.params.failure_policy" :options="strmScrapeFailurePolicyOptions" />
-            </div>
-            <div class="field-tip">仅控制单个影片刮削失败时是否继续；配置错误、任务取消或服务异常仍会中断联动。</div>
-          </template>
           <template v-else-if="configAction.type === 'delay'">
             <div class="cfg-row">
               <label>等待秒数</label>
@@ -605,7 +580,7 @@ const expandedRunIds = ref(new Set())
 const runsDrawerVisible = ref(false)
 const runsLoading = ref(false)
 const accounts = ref([])
-const emptyOptions = () => ({ organize_tasks: [], strm_tasks: [], emby_configs: [] })
+const emptyOptions = () => ({ organize_tasks: [], emby_configs: [] })
 const options = ref(emptyOptions())
 const embyLibraries = ref([])
 const embyLibrariesLoading = ref(false)
@@ -677,33 +652,6 @@ const ACTION_DEFINITIONS = {
     nodeTitle: action => `整理「${findTaskLabel('organize', action.params.task_id)}」`,
     previewTitle: action => `整理任务[${findTaskLabel('organize', action.params.task_id)}]`
   },
-  strm: {
-    label: 'STRM任务',
-    optionLabel: '执行STRM任务',
-    icon: 'fas fa-film',
-    desc: '触发已有 STRM 任务，扫描范围遵循任务自身配置',
-    normalize: params => ({
-      task_id: params.task_id ? Number(params.task_id) : '',
-      run_mode: params.run_mode && params.run_mode !== 'auto' ? params.run_mode : 'full'
-    }),
-    canApply: action => Number(action.params.task_id || 0) > 0,
-    nodeTitle: action => `STRM「${findTaskLabel('strm', action.params.task_id)}」`,
-    previewTitle: action => `执行STRM任务[${findTaskLabel('strm', action.params.task_id)}]`
-  },
-  strm_scrape: {
-    label: '生成本地STRM元数据',
-    optionLabel: '生成本地STRM元数据',
-    icon: 'fas fa-images',
-    desc: '对该 STRM 任务执行本地元数据刮削',
-    normalize: params => ({
-      task_id: params.task_id ? Number(params.task_id) : '',
-      write_mode: params.write_mode === 'overwrite' ? 'overwrite' : 'missing_only',
-      failure_policy: ['any_failed', 'never'].includes(params.failure_policy) ? params.failure_policy : 'all_failed'
-    }),
-    canApply: action => Number(action.params.task_id || 0) > 0,
-    nodeTitle: action => `刮削「${findTaskLabel('strm', action.params.task_id)}」`,
-    previewTitle: action => `生成本地STRM元数据[${findTaskLabel('strm', action.params.task_id)}]`
-  },
   delay: {
     label: '延迟',
     optionLabel: '延迟等待',
@@ -755,22 +703,6 @@ const organizeTaskOptions = computed(() => options.value.organize_tasks.map(task
   value: String(task.id),
   label: task.name || task.id
 })))
-
-const strmTaskOptions = computed(() => options.value.strm_tasks.map(task => ({
-  value: Number(task.id),
-  label: `${task.name || task.id}${task.branch_check_enabled ? '（分支）' : ''}`
-})))
-
-const strmScrapeWriteModeOptions = [
-  { value: 'missing_only', label: '仅补缺（推荐）' },
-  { value: 'overwrite', label: '覆盖已有 nfo / 海报' }
-]
-
-const strmScrapeFailurePolicyOptions = [
-  { value: 'all_failed', label: '全部失败才中断（默认，推荐）' },
-  { value: 'any_failed', label: '任一失败即中断' },
-  { value: 'never', label: '失败也继续' }
-]
 
 const embyRefreshModeOptions = [
   { value: 'global', label: '全局媒体库扫描' },
@@ -1022,7 +954,6 @@ const openBuilder = async (rule = null) => {
     form.status = rule.status || 'running'
     form.actions = normalizeActions(rule.actions || [])
   }
-  form.actions.forEach(action => ensureStrmRunMode(action))
   normalizeActionConditions()
   scheduleValidation()
   viewMode.value = 'builder'
@@ -1097,7 +1028,6 @@ const cancelPicker = () => {
 const openConfig = (mode, actionIndex = -1) => {
   configMode.value = mode
   configActionIndex.value = actionIndex
-  if (actionIndex >= 0) ensureStrmRunMode(form.actions[actionIndex])
   if (mode === 'action') {
     const targetAction = pendingConfigAction.value || form.actions[actionIndex]
     if (targetAction?.type === 'emby_refresh') {
@@ -1310,7 +1240,6 @@ const applyConfig = () => {
     return
   }
   if (configMode.value === 'trigger') commitTrigger()
-  if (configAction.value) ensureStrmRunMode(configAction.value)
   if (configAction.value?.type === 'emby_refresh') normalizeEmbyRefreshAction(configAction.value)
   if (pendingConfigAction.value) {
     const action = pendingConfigAction.value
@@ -1351,37 +1280,6 @@ const confirmTimePicker = (payload) => {
 const cancelTimePicker = () => {
   timePickerVisible.value = false
   if (!configVisible.value) restoreTrigger()
-}
-
-const findStrmTask = (taskId) => (
-  options.value.strm_tasks.find(task => Number(task.id) === Number(taskId)) || null
-)
-
-const getStrmRunModeOptions = (action) => {
-  const modes = [
-    { value: 'full', label: '完整扫描' }
-  ]
-  const task = action ? findStrmTask(action.params.task_id) : null
-  if (task?.branch_check_enabled) {
-    modes.push({ value: 'branch', label: '分支执行' })
-  }
-  return modes
-}
-
-const ensureStrmRunMode = (action) => {
-  if (!action || action.type !== 'strm') return
-  const task = findStrmTask(action.params.task_id)
-  if (!action.params.run_mode || action.params.run_mode === 'auto') {
-    action.params.run_mode = 'full'
-  }
-  if (action.params.run_mode === 'branch' && !task?.branch_check_enabled) {
-    action.params.run_mode = 'full'
-  }
-}
-
-const onStrmTaskChange = (action, taskId) => {
-  action.params.task_id = Number(taskId)
-  ensureStrmRunMode(action)
 }
 
 const findEmbyLibraryName = (libraryId) => (
@@ -1652,9 +1550,6 @@ const findTaskLabel = (type, id) => {
   if (!id) return '未选择'
   if (type === 'organize') {
     return options.value.organize_tasks.find(task => String(task.id) === String(id))?.name || '整理任务'
-  }
-  if (type === 'strm') {
-    return options.value.strm_tasks.find(task => Number(task.id) === Number(id))?.name || 'STRM任务'
   }
   return ''
 }
@@ -2684,11 +2579,6 @@ defineExpose({
   color: var(--ok);
 }
 
-.node-ico.strm_scrape {
-  background: color-mix(in srgb, #0ea5e9 16%, var(--panel));
-  color: #0ea5e9;
-}
-
 .node-ico.delay {
   background: color-mix(in srgb, var(--warn) 16%, var(--panel));
   color: var(--warn);
@@ -3150,11 +3040,6 @@ defineExpose({
 .pick-ico.cache_clear {
   background: color-mix(in srgb, var(--ok) 16%, var(--panel));
   color: var(--ok);
-}
-
-.pick-ico.strm_scrape {
-  background: color-mix(in srgb, #0ea5e9 16%, var(--panel));
-  color: #0ea5e9;
 }
 
 .pick-ico.delay {

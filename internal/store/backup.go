@@ -94,8 +94,6 @@ func (db *DB) SanitizePortableBackup(ctx context.Context) error {
 		`DELETE FROM offline_download_tasks`,
 		`DELETE FROM notifications`,
 		`DELETE FROM automation_runs`,
-		`DELETE FROM strm_remote_dir_cache`,
-		`UPDATE strm_tasks SET scanned_count=0, generated_count=0, updated_count=0, removed_count=0, last_scan=NULL, last_scan_status='', error_message=''`,
 		`UPDATE media_organize_tasks SET status='idle', last_run_at=NULL, last_run_result=''`,
 		`UPDATE fuse_mounts SET state='unmounted', last_error=''`,
 		`UPDATE cache_retention_tasks SET file_count=0, last_refresh=NULL, last_refresh_status='', last_duration_ms=0, last_api_calls=0, last_skip_calls=0, last_scanned_dirs=0, error_message='', last_run_config_fp=''`,
@@ -119,7 +117,6 @@ func (db *DB) BackupCounts(ctx context.Context) (BackupCounts, error) {
 		return BackupCounts{}, fmt.Errorf("count backup accounts: %w", err)
 	}
 	tables := []string{
-		"strm_tasks",
 		"media_organize_tasks",
 		"fuse_mounts",
 		"cache_retention_tasks",

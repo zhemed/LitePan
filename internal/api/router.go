@@ -46,8 +46,6 @@ import (
 	"litepan/internal/settings"
 	"litepan/internal/share/dav"
 	"litepan/internal/spacecleanup"
-	"litepan/internal/strm"
-	"litepan/internal/strmscrape"
 	"litepan/internal/upload"
 )
 
@@ -69,12 +67,10 @@ type Deps struct {
 	Uploads           *upload.Manager
 	OfflineDownloads  *offlinedownload.Service
 	Playback          *playback.Service
-	Strm              *strm.Service
 	CacheRetention    *cacheretention.Service
 	MediaOrganize     *mediaorganize.Service
 	AIOrganize        *aiorganize.Service
 	ClassifyOrganize  *classifyorganize.Service
-	StrmScrape        *strmscrape.Service
 	Automation        *automation.Service
 	Fuse              *fusemount.Service
 	CrossTransfer     *crosstransfer.Service
@@ -91,7 +87,6 @@ type Deps struct {
 	SpaceCleanup      *spacecleanup.Service
 	CoverExtract      *coverextract.Service
 	DataDir           string
-	StrmDir           string
 	OnSettingsUpdated func(map[string]string)
 }
 
@@ -110,12 +105,10 @@ type Handler struct {
 	uploads           *upload.Manager
 	offlineDownloads  *offlinedownload.Service
 	playback          *playback.Service
-	strm              *strm.Service
 	cacheRetention    *cacheretention.Service
 	mediaOrganize     *mediaorganize.Service
 	aiOrganize        *aiorganize.Service
 	classifyOrganize  *classifyorganize.Service
-	strmScrape        *strmscrape.Service
 	automation        *automation.Service
 	fuse              *fusemount.Service
 	crossTransfer     *crosstransfer.Service
@@ -132,7 +125,6 @@ type Handler struct {
 	spaceCleanup      *spacecleanup.Service
 	coverExtract      *coverextract.Service
 	dataDir           string
-	strmDir           string
 	onSettingsUpdated func(map[string]string)
 
 	devMu       sync.Mutex
@@ -159,12 +151,10 @@ func NewRouter(d Deps) http.Handler {
 		uploads:           d.Uploads,
 		offlineDownloads:  d.OfflineDownloads,
 		playback:          d.Playback,
-		strm:              d.Strm,
 		cacheRetention:    d.CacheRetention,
 		mediaOrganize:     d.MediaOrganize,
 		aiOrganize:        d.AIOrganize,
 		classifyOrganize:  d.ClassifyOrganize,
-		strmScrape:        d.StrmScrape,
 		automation:        d.Automation,
 		fuse:              d.Fuse,
 		crossTransfer:     d.CrossTransfer,
@@ -181,7 +171,6 @@ func NewRouter(d Deps) http.Handler {
 		spaceCleanup:      d.SpaceCleanup,
 		coverExtract:      d.CoverExtract,
 		dataDir:           d.DataDir,
-		strmDir:           d.StrmDir,
 		onSettingsUpdated: d.OnSettingsUpdated,
 	}
 
@@ -198,10 +187,6 @@ func NewRouter(d Deps) http.Handler {
 		r.Post("/auth/login", h.authLogin)
 		r.Post("/auth/logout", h.authLogout)
 		r.Post("/auth/reset-password", h.authResetPassword)
-		r.Get("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}", h.strmPlay)
-		r.Head("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}", h.strmPlay)
-		r.Get("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}/s/{signature}", h.strmPlay)
-		r.Head("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}/s/{signature}", h.strmPlay)
 		r.Route("/public", func(r chi.Router) {
 			r.Use(h.requirePublicOrAdmin)
 			r.Get("/accounts", h.publicAccounts)
@@ -268,7 +253,6 @@ func NewRouter(d Deps) http.Handler {
 				r.Route("/api-keys", func(r chi.Router) {
 					r.Get("/", h.listApiKeys)
 					r.Post("/", h.createApiKey)
-					r.Post("/strm/rotate", h.rotateStrmKey)
 					r.Put("/{id}", h.updateApiKey)
 					r.Post("/{id}/toggle", h.toggleApiKey)
 					r.Delete("/{id}", h.deleteApiKey)
@@ -297,32 +281,6 @@ func NewRouter(d Deps) http.Handler {
 				r.Delete("/notifications/{id}", h.deleteNotification)
 				r.Get("/announcement", h.getAnnouncement)
 				r.Post("/announcement/read", h.markAnnouncementRead)
-				r.Route("/strm", func(r chi.Router) {
-					r.Get("/startup", h.strmStartupRemaining)
-					r.Get("/tasks", h.listStrmTasks)
-					r.Post("/tasks", h.createStrmTask)
-					r.Put("/tasks/{id}", h.updateStrmTask)
-					r.Delete("/tasks/{id}", h.deleteStrmTask)
-					r.Post("/tasks/{id}/toggle", h.toggleStrmTask)
-					r.Post("/tasks/{id}/run", h.runStrmTaskNow)
-					r.Post("/tasks/{id}/force-stop", h.forceStopStrmTask)
-					r.Get("/tasks/{id}/branches", h.listStrmBranches)
-					r.Post("/tasks/{id}/branches", h.createStrmBranch)
-					r.Put("/tasks/{id}/branches/{branch_id}", h.updateStrmBranch)
-					r.Delete("/tasks/{id}/branches/{branch_id}", h.deleteStrmBranch)
-					r.Get("/settings", h.getStrmSettings)
-					r.Put("/settings", h.updateStrmSettings)
-					r.Post("/replace-base-url", h.replaceStrmBaseURL)
-					r.Post("/tasks/precheck-account-repair", h.precheckStrmAccountRepair)
-					r.Post("/tasks/repair-account-references", h.repairStrmAccountReferences)
-					r.Post("/generate-current-directory", h.generateCurrentDirectoryStrm)
-					r.Post("/directory-status", h.checkStrmDirectoryStatus)
-				})
-				r.Route("/tools/115-strm", func(r chi.Router) {
-					r.Get("/status", h.get115StrmToolStatus)
-					r.Post("/enabled", h.set115StrmToolEnabled)
-					r.Post("/cache/clear", h.clear115StrmDirCache)
-				})
 				r.Route("/tools/local-upload", func(r chi.Router) {
 					r.Get("/config", h.getLocalUploadConfig)
 					r.Put("/config", h.updateLocalUploadConfig)
@@ -392,22 +350,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Post("/test-tmdb", h.testMediaOrganizeTMDB)
 					r.Get("/search-tmdb", h.searchMediaOrganizeTMDB)
 					r.Post("/tasks/{id}/bindings", h.setMediaOrganizeBinding)
-				})
-				r.Route("/strm-scrape", func(r chi.Router) {
-					r.Get("/settings", h.getStrmScrapeSettings)
-					r.Put("/settings", h.updateStrmScrapeSettings)
-					r.Get("/scope", h.getStrmScrapeScope)
-					r.Put("/scope", h.updateStrmScrapeScope)
-					r.Get("/scope/directories", h.listStrmScrapeScopeDirectories)
-					r.Post("/run", h.runStrmScrape)
-					r.Post("/stop", h.stopStrmScrape)
-					r.Get("/progress", h.getStrmScrapeProgress)
-					r.Get("/items", h.listStrmScrapeItems)
-					r.Post("/refresh-index", h.refreshStrmScrapeIndex)
-					r.Post("/rematch", h.rematchStrmScrapeItem)
-					r.Post("/rescrape", h.rescrapeStrmScrapeItem)
-					r.Post("/mark-normal", h.markStrmScrapeNormal)
-					r.Get("/poster", h.getStrmScrapePoster)
 				})
 				r.Route("/automation", func(r chi.Router) {
 					r.Get("/rules", h.listAutomationRules)

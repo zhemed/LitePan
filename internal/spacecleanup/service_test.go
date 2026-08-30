@@ -4,107 +4,13 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
-
-	"litepan/internal/domain"
 )
-
-type strmTaskRepoStub struct {
-	mu    sync.Mutex
-	tasks []*domain.StrmTask
-}
-
-func (r *strmTaskRepoStub) Create(context.Context, *domain.StrmTask) (int64, error) { return 0, nil }
-func (r *strmTaskRepoStub) Update(context.Context, *domain.StrmTask) error          { return nil }
-func (r *strmTaskRepoStub) Delete(context.Context, int64) error                     { return nil }
-func (r *strmTaskRepoStub) UpdateScan(context.Context, int64, domain.StrmScanPatch) error {
-	return nil
-}
-func (r *strmTaskRepoStub) ListByAccount(context.Context, int64) ([]*domain.StrmTask, error) {
-	return r.List(context.Background())
-}
-func (r *strmTaskRepoStub) Get(_ context.Context, id int64) (*domain.StrmTask, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for _, task := range r.tasks {
-		if task != nil && task.ID == id {
-			copy := *task
-			return &copy, nil
-		}
-	}
-	return nil, domain.Errorf(domain.CodeNotFound, "STRM 任务不存在")
-}
-func (r *strmTaskRepoStub) List(context.Context) ([]*domain.StrmTask, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	out := make([]*domain.StrmTask, 0, len(r.tasks))
-	for _, task := range r.tasks {
-		if task == nil {
-			continue
-		}
-		copy := *task
-		out = append(out, &copy)
-	}
-	return out, nil
-}
-func (r *strmTaskRepoStub) set(tasks ...*domain.StrmTask) {
-	r.mu.Lock()
-	r.tasks = tasks
-	r.mu.Unlock()
-}
-
-func TestScanProtectsActiveStrmAndClassifiesOrphans(t *testing.T) {
-	root := t.TempDir()
-	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
-	activeDir := filepath.Join(strmDir, "电影", "现有任务")
-	orphanDir := filepath.Join(strmDir, "电影", "旧任务")
-	emptyDir := filepath.Join(strmDir, "空分组")
-	pendingDir := filepath.Join(strmDir, "待刮削")
-	for _, dir := range []string{activeDir, orphanDir, emptyDir, pendingDir} {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	writeTestFile(t, filepath.Join(activeDir, "a.strm"), "active")
-	writeTestFile(t, filepath.Join(activeDir, ".DS_Store"), "junk")
-	writeTestFile(t, filepath.Join(orphanDir, "b.strm"), "orphan")
-	writeTestFile(t, filepath.Join(pendingDir, ".litepan-scrape-pending"), "pending")
-
-	repo := &strmTaskRepoStub{tasks: []*domain.StrmTask{{ID: 1, GroupDir: "电影", OutputFolder: "现有任务"}}}
-	service, err := New(Options{DataDir: dataDir, StrmDir: strmDir, StrmTasks: repo})
-	if err != nil {
-		t.Fatal(err)
-	}
-	report, err := service.Scan(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	items := reportItems(report)
-	if item, ok := findItemByPath(items, activeDir); ok {
-		t.Fatalf("现有任务目录不应成为清理项：%+v", item)
-	}
-	if item, ok := findItemByPath(items, filepath.Join(activeDir, ".DS_Store")); !ok || !item.DefaultSelected {
-		t.Fatalf("现有任务中的系统杂项应可安全清理：%+v", item)
-	}
-	if item, ok := findItemByPath(items, orphanDir); !ok || item.Risk != RiskReview || item.DefaultSelected {
-		t.Fatalf("未关联且含媒体内容的目录应要求确认：%+v", item)
-	}
-	if item, ok := findItemByPath(items, emptyDir); !ok || item.Risk != RiskSafe || !item.DefaultSelected {
-		t.Fatalf("空目录应默认选择：%+v", item)
-	}
-	if item, ok := findItemByPath(items, pendingDir); !ok || item.Risk != RiskReview || item.DefaultSelected {
-		t.Fatalf("刮削待处理标记不得被当成系统垃圾或空目录：%+v", item)
-	}
-}
 
 func TestScanProtectsActiveUploadTemp(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
 	tempDir := filepath.Join(dataDir, "upload_tasks")
 	if err := os.MkdirAll(tempDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -116,8 +22,6 @@ func TestScanProtectsActiveUploadTemp(t *testing.T) {
 
 	service, err := New(Options{
 		DataDir:           dataDir,
-		StrmDir:           strmDir,
-		StrmTasks:         &strmTaskRepoStub{},
 		UploadActivePaths: func() []string { return []string{active} },
 	})
 	if err != nil {
@@ -139,14 +43,13 @@ func TestScanProtectsActiveUploadTemp(t *testing.T) {
 func TestCleanupRemovesSelectedSafeTempOnly(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
 	tempDir := filepath.Join(dataDir, "upload_tasks")
 	selectedPath := filepath.Join(tempDir, "selected.tmp")
 	untouchedPath := filepath.Join(tempDir, "untouched.tmp")
 	writeTestFile(t, selectedPath, "selected")
 	writeTestFile(t, untouchedPath, "untouched")
 
-	service, err := New(Options{DataDir: dataDir, StrmDir: strmDir, StrmTasks: &strmTaskRepoStub{}})
+	service, err := New(Options{DataDir: dataDir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,14 +79,13 @@ func TestCleanupRemovesSelectedSafeTempOnly(t *testing.T) {
 func TestLogsKeepTodayAndCleanEarlierDays(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
 	logDir := filepath.Join(dataDir, "log")
 	today := time.Now().Local().Format("2006-01-02") + ".log"
 	yesterday := time.Now().Local().AddDate(0, 0, -1).Format("2006-01-02") + ".log"
 	writeTestFile(t, filepath.Join(logDir, today), "today")
 	writeTestFile(t, filepath.Join(logDir, yesterday), "yesterday")
 
-	service, err := New(Options{DataDir: dataDir, StrmDir: strmDir, StrmTasks: &strmTaskRepoStub{}})
+	service, err := New(Options{DataDir: dataDir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,49 +113,10 @@ func TestLogsKeepTodayAndCleanEarlierDays(t *testing.T) {
 	}
 }
 
-func TestCleanupRechecksStrmTaskBeforeDeleting(t *testing.T) {
-	root := t.TempDir()
-	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
-	target := filepath.Join(strmDir, "刚创建的任务")
-	if err := os.MkdirAll(target, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	writeTestFile(t, filepath.Join(target, "a.strm"), "content")
-
-	repo := &strmTaskRepoStub{}
-	service, err := New(Options{DataDir: dataDir, StrmDir: strmDir, StrmTasks: repo})
-	if err != nil {
-		t.Fatal(err)
-	}
-	report, err := service.Scan(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	item, ok := findItemByPath(reportItems(report), target)
-	if !ok {
-		t.Fatal("预期扫描到未关联 STRM 目录")
-	}
-
-	repo.set(&domain.StrmTask{ID: 2, OutputFolder: "刚创建的任务"})
-	cleaned, err := service.Cleanup(context.Background(), CleanupRequest{ScanID: report.ScanID, ItemIDs: []string{item.ID}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cleaned.SkippedItems != 1 || cleaned.CleanedItems != 0 {
-		t.Fatalf("任务在扫描后占用目录时应跳过删除：%+v", cleaned)
-	}
-	if _, err := os.Stat(target); err != nil {
-		t.Fatalf("已被任务使用的目录不应删除：%v", err)
-	}
-}
-
 func TestScanPlansAreBounded(t *testing.T) {
 	root := t.TempDir()
 	service, err := New(Options{
-		DataDir:   filepath.Join(root, "data"),
-		StrmDir:   filepath.Join(root, "strm"),
-		StrmTasks: &strmTaskRepoStub{},
+		DataDir: filepath.Join(root, "data"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -301,7 +164,6 @@ func writeTestFile(t *testing.T, path, content string) {
 func TestScanAndCleanCoverExtractTemps(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
 	coverDir := filepath.Join(dataDir, "coverextract")
 	toolsDir := filepath.Join(dataDir, "tools")
 	for _, dir := range []string{coverDir, toolsDir} {
@@ -309,7 +171,6 @@ func TestScanAndCleanCoverExtractTemps(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// 正式二进制与正在使用的文件
 	writeTestFile(t, filepath.Join(toolsDir, "ffmpeg"), "binary")
 	writeTestFile(t, filepath.Join(coverDir, "cover-fresh.jpg"), "fresh")
 	ignoredFiles := []string{
@@ -320,7 +181,6 @@ func TestScanAndCleanCoverExtractTemps(t *testing.T) {
 	for _, path := range ignoredFiles {
 		writeTestFile(t, path, "keep")
 	}
-	// 过期残留
 	staleJpg := filepath.Join(coverDir, "cover-stale.jpg")
 	staleGz := filepath.Join(toolsDir, "ffmpeg-abc.gz")
 	staleTmp := filepath.Join(toolsDir, "ffmpeg-abc.tmp")
@@ -334,8 +194,7 @@ func TestScanAndCleanCoverExtractTemps(t *testing.T) {
 		}
 	}
 
-	repo := &strmTaskRepoStub{}
-	service, err := New(Options{DataDir: dataDir, StrmDir: strmDir, StrmTasks: repo})
+	service, err := New(Options{DataDir: dataDir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -366,7 +225,6 @@ func TestScanAndCleanCoverExtractTemps(t *testing.T) {
 		}
 	}
 
-	// 只选中三个过期残留执行清理
 	var ids []string
 	for _, p := range []string{staleJpg, staleGz, staleTmp} {
 		item, _ := findItemByPath(items, p)
@@ -407,7 +265,7 @@ func TestCleanupCoverExtractTempRevalidatesExactFilename(t *testing.T) {
 	if err := os.Chtimes(path, old, old); err != nil {
 		t.Fatal(err)
 	}
-	service, err := New(Options{DataDir: dataDir, StrmDir: filepath.Join(root, "strm"), StrmTasks: &strmTaskRepoStub{}})
+	service, err := New(Options{DataDir: dataDir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -424,19 +282,13 @@ func TestCleanupCoverExtractTempRevalidatesExactFilename(t *testing.T) {
 	}
 }
 
-// TestScanCleanCoverExtractSession 验证视频海报生成内存会话可被列出与清理：
-// 有内容时列为"会重建"且默认不勾选；清理释放内存统计；空会话不列出。
 func TestScanCleanCoverExtractSession(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "data")
-	strmDir := filepath.Join(root, "strm")
-	repo := &strmTaskRepoStub{}
 	stats := func() (int, int, int64) { return 2, 5, 42 << 20 }
 	cleared := 0
 	service, err := New(Options{
 		DataDir:           dataDir,
-		StrmDir:           strmDir,
-		StrmTasks:         repo,
 		CoverExtractStats: func() (int, int, int64) { return stats() },
 		ClearCoverExtract: func() (int, int, int64) {
 			cleared++
@@ -471,11 +323,8 @@ func TestScanCleanCoverExtractSession(t *testing.T) {
 		t.Fatalf("应调用一次清理，实际 %d", cleared)
 	}
 
-	// 空会话不再列出
 	service2, err := New(Options{
 		DataDir:           dataDir,
-		StrmDir:           strmDir,
-		StrmTasks:         repo,
 		CoverExtractStats: func() (int, int, int64) { return 0, 0, 0 },
 		ClearCoverExtract: func() (int, int, int64) { return 0, 0, 0 },
 	})

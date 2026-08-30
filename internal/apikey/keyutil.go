@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	PrefixAPI  = "lpk_api_"
-	PrefixStrm = "lpk_strm_"
+	PrefixAPI = "lpk_api_"
 )
 
 func Hash(raw string) string {
@@ -30,15 +29,6 @@ func NewRawKey(prefix string) (string, error) {
 
 func KeyPreview(prefix, suffix string) string {
 	return fmt.Sprintf("%s••••••••••%s", prefix, suffix)
-}
-
-func StrmKeyPreview(token string) string {
-	token = strings.TrimSpace(token)
-	if token == "" {
-		return "-"
-	}
-	prefix, suffix := PrefixSuffix(token)
-	return KeyPreview(prefix, suffix)
 }
 
 func PrefixSuffix(raw string) (prefix, suffix string) {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"litepan/internal/config"
 	"litepan/internal/logx"
@@ -27,13 +26,6 @@ func prepareDataDirs(cfg config.Config) error {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("create db dir: %w", err)
 		}
-	}
-	strmDir := strings.TrimSpace(cfg.StrmDir)
-	if strmDir == "" {
-		strmDir = config.StrmDirForData(cfg.DataDir)
-	}
-	if err := os.MkdirAll(strmDir, 0o755); err != nil {
-		return fmt.Errorf("create strm dir: %w", err)
 	}
 	return nil
 }

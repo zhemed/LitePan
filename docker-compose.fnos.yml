@@ -6,7 +6,6 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - /vol1/1000/docker/litepango/data:/app/data
-      - /vol1/1000/docker/litepango/strm:/app/strm
       - /vol1/1000/docker/litepango/mounts:/app/mounts:shared
     devices:
       - /dev/fuse:/dev/fuse

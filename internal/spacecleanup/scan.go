@@ -9,96 +9,6 @@ import (
 	"time"
 )
 
-func (s *Service) scanStrm(ctx context.Context, activePaths []string) ([]planItem, error) {
-	root := filepath.Clean(s.opts.StrmDir)
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var out []planItem
-	var visit func(string, []os.DirEntry) error
-	visit = func(dir string, entries []os.DirEntry) error {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		for _, entry := range entries {
-			path := filepath.Clean(filepath.Join(dir, entry.Name()))
-			if entry.Type()&os.ModeSymlink != 0 {
-				continue
-			}
-			if !entry.IsDir() {
-				if isSystemJunk(entry.Name()) {
-					if info, statErr := entry.Info(); statErr == nil {
-						out = append(out, systemFileItem(path, info.Size()))
-					}
-					continue
-				}
-				if !pathCoveredByActive(path, activePaths) {
-					if info, statErr := entry.Info(); statErr == nil {
-						out = append(out, orphanStrmFileItem(path, info.Size()))
-					}
-				}
-				continue
-			}
-			if entry.Name() == "@聚合" && dir == root {
-				continue
-			}
-			if pathEqualsActive(path, activePaths) {
-				junk, scanErr := scanSystemJunkInTree(ctx, path)
-				if scanErr != nil {
-					return scanErr
-				}
-				out = append(out, junk...)
-				continue
-			}
-			if pathIsActivePrefix(path, activePaths) {
-				children, readErr := os.ReadDir(path)
-				if readErr != nil {
-					return readErr
-				}
-				if err := visit(path, children); err != nil {
-					return err
-				}
-				continue
-			}
-
-			stats, inspectErr := inspectTree(path)
-			if inspectErr != nil {
-				return inspectErr
-			}
-			kind, name, reason, risk, selected := kindStrmOrphan, "未关联 STRM 目录", "目录不属于任何现有 STRM 任务，请确认不是特意保留的内容", RiskReview, false
-			if stats.files == 0 || treeContainsOnlySystemJunk(path) {
-				kind, name, reason, risk, selected = kindStrmEmpty, "STRM 空目录", "目录没有有效文件，或仅包含操作系统自动生成的杂项文件", RiskSafe, true
-			}
-			out = append(out, planItem{
-				Item: Item{
-					ID:              itemID(kind, path),
-					Category:        CategoryStrm,
-					Name:            name,
-					Path:            path,
-					Reason:          reason,
-					SizeBytes:       stats.bytes,
-					FileCount:       stats.files,
-					DirCount:        stats.dirs,
-					DefaultSelected: selected,
-					Risk:            risk,
-				},
-				Kind:       kind,
-				TargetPath: path,
-				RootPath:   root,
-			})
-		}
-		return nil
-	}
-	if err := visit(root, entries); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func scanSystemJunkInTree(ctx context.Context, root string) ([]planItem, error) {
 	var out []planItem
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
@@ -125,7 +35,7 @@ func systemFileItem(path string, size int64) planItem {
 	return planItem{
 		Item: Item{
 			ID:              itemID(kindSystemFile, path),
-			Category:        CategoryStrm,
+			Category:        CategoryTemp,
 			Name:            "系统杂项文件",
 			Path:            path,
 			Reason:          "macOS、Windows 或 Linux 桌面环境自动生成",
@@ -135,24 +45,6 @@ func systemFileItem(path string, size int64) planItem {
 			Risk:            RiskSafe,
 		},
 		Kind:       kindSystemFile,
-		TargetPath: path,
-	}
-}
-
-func orphanStrmFileItem(path string, size int64) planItem {
-	return planItem{
-		Item: Item{
-			ID:              itemID(kindStrmOrphan, path),
-			Category:        CategoryStrm,
-			Name:            "未关联 STRM 文件",
-			Path:            path,
-			Reason:          "文件位于 STRM 根或分组目录中，但不属于任何现有任务",
-			SizeBytes:       size,
-			FileCount:       1,
-			DefaultSelected: false,
-			Risk:            RiskReview,
-		},
-		Kind:       kindStrmOrphan,
 		TargetPath: path,
 	}
 }

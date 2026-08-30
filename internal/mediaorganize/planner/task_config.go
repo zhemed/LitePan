@@ -12,21 +12,21 @@ func TaskConfigFromMap(cfg map[string]any) TaskConfig {
 		return TaskConfig{}
 	}
 	return TaskConfig{
-		TargetDirectoryID:    strings.TrimSpace(strMap(cfg, "target_directory_id")),
-		TargetRootID:         strings.TrimSpace(strMap(cfg, "target_root_id")),
-		ActionType:           strings.TrimSpace(strMap(cfg, "action_type")),
-		MediaType:            strings.TrimSpace(strMap(cfg, "media_type")),
-		RenameMarker:         strings.TrimSpace(strMap(cfg, "rename_marker")),
+		TargetDirectoryID:    strings.TrimSpace(mapString(cfg, "target_directory_id")),
+		TargetRootID:         strings.TrimSpace(mapString(cfg, "target_root_id")),
+		ActionType:           strings.TrimSpace(mapString(cfg, "action_type")),
+		MediaType:            strings.TrimSpace(mapString(cfg, "media_type")),
+		RenameMarker:         strings.TrimSpace(mapString(cfg, "rename_marker")),
 		UseTMDB:              rules.SettingBool(cfg["use_tmdb"], false),
 		OverwriteExisting:    rules.SettingBool(cfg["overwrite_existing"], false),
 		Recursive:            rules.SettingBool(cfg["recursive"], false),
-		SeasonFolderTemplate: strings.TrimSpace(strMap(cfg, "season_folder_template")),
-		FileExtensions:       strings.TrimSpace(strMap(cfg, "file_extensions")),
-		MetadataExtensions:   strings.TrimSpace(strMap(cfg, "metadata_extensions")),
+		SeasonFolderTemplate: strings.TrimSpace(mapString(cfg, "season_folder_template")),
+		FileExtensions:       strings.TrimSpace(mapString(cfg, "file_extensions")),
+		MetadataExtensions:   strings.TrimSpace(mapString(cfg, "metadata_extensions")),
 	}
 }
 
-func strMap(m map[string]any, key string) string {
+func mapString(m map[string]any, key string) string {
 	v, ok := m[key]
 	if !ok || v == nil {
 		return ""

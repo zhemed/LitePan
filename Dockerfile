@@ -41,18 +41,17 @@ RUN apt-get update \
 
 WORKDIR /app
 
-RUN mkdir -p /app/data/log /app/strm /app/mounts
+RUN mkdir -p /app/data/log /app/mounts
 
 COPY --from=build /out/litepan /app/litepan
 
 ENV LITEPAN_DATA_DIR=/app/data \
-    LITEPAN_STRM_DIR=/app/strm \
     LITEPAN_LISTEN=:5211 \
     LITEPAN_LOG_LEVEL=info \
     TZ=Asia/Shanghai
 
 EXPOSE 5211 42069/tcp 42069/udp
 
-VOLUME ["/app/data", "/app/strm", "/app/mounts"]
+VOLUME ["/app/data", "/app/mounts"]
 
 ENTRYPOINT ["/app/litepan"]

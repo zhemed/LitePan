@@ -72,7 +72,7 @@ type FullListEntry struct {
 }
 
 // FullListLister 可选：一次拉取 rootID 下全部文件（含所有子孙目录）。
-// STRM 增强扫描用它替代逐目录递归，减少接口请求量。
+// 增强扫描用它替代逐目录递归，减少接口请求量。
 type FullListLister interface {
 	ListAllFiles(ctx context.Context, rootID string) ([]FullListEntry, error)
 	// ResolveDirPath 返回目录的完整远端路径（以 / 分隔、不含末尾斜杠，根为 ""）。

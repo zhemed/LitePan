@@ -18,8 +18,6 @@ import { coverExtractApi } from "@/api/coverExtract";
 import type { Account, BrowserFavoriteItem, FileItem, FileNameAlignPreviewResult } from "@/api/types";
 import type { OfflineDownloadTask } from "@/types/offline-download";
 import { getApiErrorMessage } from "@/api/client";
-import { generateCurrentDirectoryStrm } from "@/api/strm";
-import { useStrmDirectoryPrompt } from "@/composables/useStrmDirectoryPrompt";
 import { useHomeFooterStatus } from "@/composables/useHomeFooterStatus";
 import { fileKind } from "@/utils/fileIcon";
 import { publicApi } from "@/api/public";
@@ -261,20 +259,6 @@ const transferConfirmText = computed(() =>
   fileActions.transfer.action === "move" ? "移动到此目录" : "复制到此目录",
 );
 
-const strmGenerating = ref(false);
-const strmAutoDetectEnabled = ref(true);
-
-const strmPrompt = useStrmDirectoryPrompt({
-  isAdmin,
-  accountId: currentAccountId,
-  files,
-  loading,
-  refreshing,
-  enabled: strmAutoDetectEnabled,
-  getDisplayPath: getCurrentDisplayPath,
-  getParentId: () => currentParentId.value,
-});
-
 function getCurrentDisplayPath(): string {
   const parts = getCurrentBreadcrumbNameParts();
   return parts.length ? `/${parts.join("/")}` : "/";
@@ -411,66 +395,6 @@ async function handleFavoriteDrop(item: BrowserFavoriteItem) {
   await fileActions.moveTargetsToParent(targets, item.id);
 }
 
-async function handleGenerateCurrentDirectoryStrm() {
-  if (!currentAccountId.value) {
-    toast.info("请先选择一个账号");
-    return;
-  }
-  if (strmGenerating.value) return;
-  strmGenerating.value = true;
-  try {
-    const result = await generateCurrentDirectoryStrm({
-      account_id: currentAccountId.value,
-      parent_id: currentParentId.value,
-      path: getCurrentDisplayPath(),
-      items: files.value.map((file) => ({
-        id: file.id,
-        name: file.name,
-        size: file.size,
-        is_dir: file.is_dir,
-      })),
-    });
-    if (
-      (result.media_count || 0) <= 0 &&
-      (result.deleted || 0) <= 0 &&
-      (result.metadata_created || 0) <= 0 &&
-      (result.metadata_uploaded || 0) <= 0 &&
-      (result.metadata_deleted || 0) <= 0
-    ) {
-      toast.info("当前目录没有需要同步的 STRM");
-      return;
-    }
-    const parts: string[] = [];
-    if ((result.created || 0) > 0) parts.push(`新增 ${result.created}`);
-    if ((result.updated || 0) > 0) parts.push(`更新 ${result.updated}`);
-    if ((result.deleted || 0) > 0) parts.push(`删除 ${result.deleted}`);
-    if (parts.length > 0) {
-      toast.success(`STRM 同步完成：${parts.join(" · ")}`);
-    } else if (
-      (result.metadata_created || 0) > 0 ||
-      (result.metadata_uploaded || 0) > 0 ||
-      (result.metadata_deleted || 0) > 0
-    ) {
-      toast.success("STRM 元数据同步完成");
-    } else {
-      toast.success("STRM 已是最新");
-    }
-  } catch (error) {
-    toast.error(getApiErrorMessage(error, "当前目录 STRM 生成失败"));
-  } finally {
-    strmGenerating.value = false;
-    await strmPrompt.refreshStatus();
-  }
-}
-
-function handleConfirmStrmPrompt() {
-  void handleGenerateCurrentDirectoryStrm();
-}
-
-function handleDismissStrmPrompt() {
-  strmPrompt.dismissPrompt();
-}
-
 function startCreateFolder() {
   if (!currentAccountId.value) {
     toast.info("请先选择一个账号");
@@ -575,11 +499,9 @@ async function loadPublicSystemConfig() {
     saveAccountSwitchMode(mode);
     compactHomeEnabled.value = cfg.compact_home_enabled ?? false;
     localStorage.setItem(COMPACT_HOME_STORAGE_KEY, compactHomeEnabled.value ? "1" : "0");
-    strmAutoDetectEnabled.value = cfg.index_strm_auto_detect_enabled ?? true;
   } catch {
     const mode = readSavedAccountSwitchMode();
     accountSwitchMode.value = mode;
-    strmAutoDetectEnabled.value = true;
   }
 }
 
@@ -893,7 +815,7 @@ watch(browseAccessMode, async (mode, prevMode) => {
 onMounted(async () => {
   // 守卫进入首页时已拉取过认证状态，有缓存则跳过，避免重复的 /auth/status 往返。
   if (!auth.loaded) await auth.load();
-  // 公共系统配置只影响账号切换 UI 与 STRM 提示，不在文件首屏关键路径上，后台并行拉取。
+  // 公共系统配置只影响账号切换 UI，不在文件首屏关键路径上，后台并行拉取。
   void loadPublicSystemConfig();
   await store.loadAccounts();
   if (accounts.value.length) {
@@ -1027,29 +949,6 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
           />
         </template>
       </FileToolbar>
-      <div v-if="strmPrompt.showPrompt.value && !strmGenerating" class="strm-prompt-bar">
-        <div class="strm-prompt-bar__main">
-          <span class="strm-prompt-bar__dot" aria-hidden="true" />
-          <span class="strm-prompt-bar__text">{{ strmPrompt.promptText.value }}</span>
-        </div>
-        <span class="strm-prompt-bar__actions">
-          <button
-            type="button"
-            class="strm-prompt-bar__action"
-            :disabled="strmGenerating"
-            @click="handleConfirmStrmPrompt"
-          >
-            生成
-          </button>
-          <button
-            type="button"
-            class="strm-prompt-bar__action strm-prompt-bar__action--muted"
-            @click="handleDismissStrmPrompt"
-          >
-            忽略
-          </button>
-        </span>
-      </div>
       <div
         class="browser__content"
         :class="{
@@ -1111,7 +1010,6 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
             @open="onOpen"
             @sort-by="sortBy"
             @set-sort="({ key, order }) => sortBy(key, order)"
-            @generate-current-directory-strm="handleGenerateCurrentDirectoryStrm"
             @drag-file-start="startDragMove"
             @drag-file-end="finishDragMove"
             @drag-enter-folder="handleFolderDragEnter"
@@ -1439,72 +1337,5 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
   .browser__favorites-panel.is-open {
     transform: translateY(0);
   }
-}
-
-.strm-prompt-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 20px;
-  border-bottom: 1px solid color-mix(in srgb, var(--brand) 22%, var(--border-soft));
-  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
-}
-
-.strm-prompt-bar__main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-}
-
-.strm-prompt-bar__dot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
-}
-
-.strm-prompt-bar__text {
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: color-mix(in srgb, var(--brand) 55%, var(--text));
-}
-
-.strm-prompt-bar__actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.strm-prompt-bar__action {
-  border: none;
-  background: transparent;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--brand);
-  cursor: pointer;
-}
-
-.strm-prompt-bar__action:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-}
-
-.strm-prompt-bar__action--muted {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.strm-prompt-bar__action:disabled {
-  opacity: 0.6;
-  cursor: wait;
 }
 </style>

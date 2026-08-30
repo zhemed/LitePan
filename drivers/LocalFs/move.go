@@ -236,7 +236,7 @@ func mapFSError(err error, action string) error {
 		return nil
 	}
 	if isBusy(err) {
-		return domain.Errorf(domain.CodeValidation, "%s失败：目录正被占用（可能被 STRM/FUSE/进程打开），请先停止相关任务后再试", action)
+		return domain.Errorf(domain.CodeValidation, "%s失败：目录正被占用（可能被文件进程打开），请先停止相关任务后再试", action)
 	}
 	return domain.Wrap(domain.CodeDriverError, err)
 }

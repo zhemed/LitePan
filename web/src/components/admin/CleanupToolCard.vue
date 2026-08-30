@@ -186,8 +186,6 @@ function toggleExpanded(key: string) {
 
 function categoryIcon(category: string) {
   switch (category) {
-    case "strm":
-      return "fa-film";
     case "temp":
       return "fa-broom";
     case "logs":
@@ -217,12 +215,6 @@ function displayReason(item: DisplayItem) {
   switch (item.name) {
     case "系统杂项文件":
       return "多个目录中由 macOS、Windows 或 Linux 自动生成的杂项文件";
-    case "失效刮削索引":
-      return "对应的 STRM 任务已经不存在";
-    case "未关联 STRM 目录":
-      return "这些目录不属于任何现有 STRM 任务，请确认不是特意保留的内容";
-    case "未关联 STRM 文件":
-      return "这些文件位于 STRM 目录中，但不属于任何现有任务";
     default:
       return item.reason;
   }
@@ -355,7 +347,7 @@ async function executeCleanup() {
       :stat-value="statValue"
       :stat-label="statLabel"
     >
-      扫描 STRM 残留、上传与下载临时文件、历史日志和缓存占用，按风险分级预览，勾选后安全清除。
+      扫描残留、上传与下载临时文件、历史日志和缓存占用，按风险分级预览，勾选后安全清除。
       <template #actions>
         <AppButton size="sm" variant="secondary" :disabled="scanning" @click="openTool">
           {{ scanning ? "扫描中…" : "开始扫描" }}

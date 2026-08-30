@@ -35,22 +35,6 @@ const (
 	KeyFnosName                    = "fnos_name"
 	KeyFnosURL                     = "fnos_url"
 	KeyFnosProxyPort               = "fnos_proxy_port"
-	KeyFnosStrmPathMaps            = "fnos_strm_path_maps"
-	KeyFnosDirectSTRMClients       = "fnos_direct_strm_clients"
-	KeyStrmToken                   = "strm_token"
-	KeyStrmBaseURL                 = "strm_base_url"
-	KeyStrmSignatureEnabled        = "strm_signature_enabled"
-	KeyStrmDefaultScanInterval     = "strm_default_scan_interval"
-	KeyStrmDefaultExtensions       = "strm_default_extensions"
-	KeyStrmISOFilenameEnabled      = "strm_iso_filename_enabled"
-	KeyStrmMinFileSizeMB           = "strm_min_file_size_mb"
-	KeyStrmConflictPolicy          = "strm_conflict_policy"
-	KeyStrmTaskConcurrency         = "strm_task_concurrency"
-	KeyStrmMetadataExtensions      = "strm_metadata_extensions"
-	KeyStrmMetadataMaxSizeMB       = "strm_metadata_max_size_mb"
-	KeyStrmMetadataParentEnabled   = "strm_metadata_parent_enabled"
-	KeyStrmMetadataSyncMode        = "strm_metadata_sync_mode"
-	KeyStrmTool115TreeEnabled      = "strm_tool_115_tree_enabled"
 	KeyLocalUploadEnabled          = "local_upload_enabled"
 	KeyLocalUploadMappings         = "local_upload_mappings"
 	KeyCoverExtractEnabled         = "cover_extract_enabled"
@@ -59,8 +43,6 @@ const (
 	KeyQuarkTVPlayMode             = "quark_tv_play_mode"
 	KeyQuarkTVClientListMode       = "quark_tv_client_list_mode"
 	KeyQuarkTVProxyClients         = "quark_tv_proxy_clients"
-	KeyStrmScrapeWriteMode         = "strm_scrape_write_mode"
-	KeyStrmScrapeScopes            = "strm_scrape_scopes"
 
 	KeyMOProxyEnabled          = "mo_proxy_enabled"
 	KeyMOProxyURL              = "mo_proxy_url"
@@ -181,28 +163,6 @@ func defaultSpecs() []Spec {
 		stringSpec(KeyFnosName, "fnos", "飞牛影视配置名称", "飞牛影视反代配置的名称，仅用于界面区分。", "飞牛影视"),
 		stringSpec(KeyFnosURL, "fnos", "飞牛影视地址", "飞牛影视服务地址，默认端口 8005，例如 http://192.168.1.10:8005。", ""),
 		stringSpec(KeyFnosProxyPort, "fnos", "反代端口", "可留空。填写并启用后，LitePan 会在该端口启动飞牛影视反代服务。", ""),
-		stringSpec(KeyFnosStrmPathMaps, "fnos", "飞牛 STRM 目录", "填写 Docker 中映射到 /app/strm 的左边路径。例：/vol1/.../LitePanGO:/app/strm → 填 /vol1/.../LitePanGO。两边相同可留空。", ""),
-		{Key: KeyFnosDirectSTRMClients, Type: TypeString, Default: "Infuse", Hidden: true},
-		stringSpec(KeyStrmToken, "strm", "STRM 播放令牌", "STRM 播放路径鉴权令牌，请在系统设置「API 秘钥」中管理。", ""),
-		stringSpec(KeyStrmBaseURL, "strm", "STRM 基础地址", "生成本地 .strm 时使用的站点基址（例如 https://example.com）。留空时使用当前服务监听地址。", ""),
-		boolSpec(KeyStrmSignatureEnabled, "strm", "启用 STRM 路径签名", "开启后 /api/strm/play 路径必须携带有效签名。", "false"),
-		intSpec(KeyStrmDefaultScanInterval, "strm", "STRM 默认扫描间隔", "新建任务未指定扫描间隔时使用。", "360", "分钟", 1, 1440),
-		stringSpec(KeyStrmDefaultExtensions, "strm", "默认同步文件类型", "STRM 任务未单独指定扩展名时使用，英文分号分隔。", "mp4;mkv;avi;mov;wmv;flv;ts;m2ts;mpg;mpeg;webm;m4v;iso;rmvb;mp3;flac;aac;wav;m4a"),
-		boolSpec(KeyStrmISOFilenameEnabled, "strm", "ISO 使用 .iso.strm 文件名", "开启后网盘 .iso 文件生成“文件名.iso.strm”，方便 Infuse 识别 ISO。关闭时保持现有“文件名.strm”命名。", "false"),
-		intSpec(KeyStrmMinFileSizeMB, "strm", "小文件过滤", "忽略小于该大小的媒体文件，0 表示不过滤。", "0", "MB", 0, 10240),
-		stringSpec(KeyStrmConflictPolicy, "strm", "同名冲突策略", "同目录同名不同后缀时保留哪一个：size_desc / size_asc / name_asc。", "size_desc"),
-		intSpec(KeyStrmTaskConcurrency, "strm", "STRM 任务并发", "同时运行的 STRM 扫描任务上限。", "3", "", 1, 10),
-		stringSpec(KeyStrmMetadataExtensions, "strm", "元数据扩展名", "任务开启同步元数据时使用的扩展名，英文分号分隔。", "srt;ass;ssa;sub;sup;idx;vtt;nfo;jpg;jpeg;png;webp;bmp;gif"),
-		intSpec(KeyStrmMetadataMaxSizeMB, "strm", "元数据大小上限", "同步元数据时忽略超过该大小的文件。", "10", "MB", 1, 1024),
-		boolSpec(KeyStrmMetadataParentEnabled, "strm", "父目录元数据同步", "子目录有影片时，也同步父目录下的海报、nfo 等元数据。", "true"),
-		boolSpec(KeyStrmTool115TreeEnabled, "strm", "115 网盘 STRM 增强（目录树清单模式）", "开启后 115Open 账号的 STRM 任务改用全量清单 + 增量对账方式执行，减少逐目录递归请求；配了分支的任务维持原逻辑。", "false"),
-		selectSpec(KeyStrmMetadataSyncMode, "strm", "元数据同步策略", "local_primary=保留本地并从云端补缺；cloud_primary=本地目录与云端保持一致；bidirectional=本地与云端互相补缺。", "local_primary", []Option{
-			{Value: "cloud_primary", Label: "网盘元数据为主"},
-			{Value: "local_primary", Label: "本地元数据补缺"},
-			{Value: "bidirectional", Label: "本地与云端互补"},
-		}),
-		stringSpec(KeyStrmScrapeWriteMode, "strm", "STRM 刮削写入策略", "missing_only=仅补缺；overwrite=覆盖已有 nfo/海报。", "missing_only"),
-		{Key: KeyStrmScrapeScopes, Type: TypeString, Default: "{}", Hidden: true},
 		boolSpec(KeyMOProxyEnabled, "media_organize", "启用代理", "TMDB 请求经代理出站。", "false"),
 		stringSpec(KeyMOProxyURL, "media_organize", "代理地址", "HTTP/HTTPS 代理地址，例如 http://127.0.0.1:7890。", ""),
 		stringSpec(KeyMOProxyUsername, "media_organize", "代理用户名", "代理认证用户名，无认证可留空。", ""),
@@ -342,7 +302,6 @@ func categories() []Category {
 		{ID: "system", Label: "系统设置"},
 		{ID: "account_display", Label: "网盘账号显示"},
 		{ID: "performance", Label: "性能设置"},
-		{ID: "strm", Label: "STRM 设置"},
 		{ID: "media_organize", Label: "媒体整理设置"},
 	}
 }

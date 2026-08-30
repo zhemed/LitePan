@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -15,7 +12,6 @@ import (
 	"github.com/google/uuid"
 
 	"litepan/internal/domain"
-	"litepan/internal/strm"
 )
 
 const (
@@ -38,7 +34,7 @@ type Service struct {
 }
 
 func New(opts Options) (*Service, error) {
-	if strings.TrimSpace(opts.DataDir) == "" || strings.TrimSpace(opts.StrmDir) == "" || opts.StrmTasks == nil {
+	if strings.TrimSpace(opts.DataDir) == "" {
 		return nil, fmt.Errorf("space cleanup dependencies are incomplete")
 	}
 	log := slog.Default()
@@ -55,22 +51,6 @@ func (s *Service) Scan(ctx context.Context) (Report, error) {
 	now := time.Now().UTC()
 	items := make([]planItem, 0, 32)
 
-	tasks, err := s.opts.StrmTasks.List(ctx)
-	if err != nil {
-		return Report{}, err
-	}
-	activePaths := s.activeStrmPaths(tasks)
-	strmItems, err := s.scanStrm(ctx, activePaths)
-	if err != nil {
-		return Report{}, domain.Wrap(domain.CodeInternal, err)
-	}
-	items = append(items, strmItems...)
-
-	scrapeItems, err := s.scanScrapeIndexes(tasks)
-	if err != nil {
-		return Report{}, domain.Wrap(domain.CodeInternal, err)
-	}
-	items = append(items, scrapeItems...)
 	items = append(items, s.scanUploadTemps()...)
 	items = append(items, s.scanOfflineTemps(ctx)...)
 	items = append(items, s.scanCoverExtractTemps()...)
@@ -148,7 +128,6 @@ func (s *Service) Scan(ctx context.Context) (Report, error) {
 
 func buildReport(scanID string, plan scanPlan) Report {
 	defs := []Group{
-		{Key: CategoryStrm, Label: "STRM 残留", Description: "未关联目录、空目录、系统杂项和失效刮削索引"},
 		{Key: CategoryTemp, Label: "临时文件", Description: "上传、离线下载及备份恢复遗留的本地临时数据"},
 		{Key: CategoryLogs, Label: "历史日志", Description: "保留今天，清理今天之前的按日日志"},
 		{Key: CategoryCache, Label: "缓存数据", Description: "元数据缓存和 FUSE 本地读缓存，清理后会按需重建"},
@@ -183,83 +162,6 @@ func buildReport(scanID string, plan scanPlan) Report {
 		report.TotalMemoryBytes += report.Groups[i].MemoryBytes
 	}
 	return report
-}
-
-func (s *Service) activeStrmPaths(tasks []*domain.StrmTask) []string {
-	root := filepath.Clean(s.opts.StrmDir)
-	out := make([]string, 0, len(tasks))
-	for _, task := range tasks {
-		if task == nil {
-			continue
-		}
-		rel := strm.TaskRelDir(task.GroupDir, task.OutputFolder)
-		if rel == "" {
-			continue
-		}
-		path := strm.TaskOutputDir(root, rel)
-		if path != "" && pathWithin(root, path) && filepath.Clean(path) != root {
-			out = append(out, filepath.Clean(path))
-		}
-	}
-	return out
-}
-
-func (s *Service) scanScrapeIndexes(tasks []*domain.StrmTask) ([]planItem, error) {
-	active := make(map[int64]struct{}, len(tasks))
-	for _, task := range tasks {
-		if task != nil {
-			active[task.ID] = struct{}{}
-		}
-	}
-	root := filepath.Join(s.opts.DataDir, "strmscrape")
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var out []planItem
-	for _, entry := range entries {
-		name := entry.Name()
-		if entry.IsDir() || !strings.HasSuffix(name, ".sqlite") {
-			continue
-		}
-		idText := strings.TrimSuffix(name, ".sqlite")
-		taskID, err := strconv.ParseInt(idText, 10, 64)
-		if err != nil || taskID <= 0 {
-			continue
-		}
-		if _, ok := active[taskID]; ok {
-			continue
-		}
-		base := filepath.Join(root, name)
-		var bytes, files int64
-		for _, path := range []string{base, base + "-wal", base + "-shm"} {
-			if info, statErr := os.Lstat(path); statErr == nil && info.Mode().IsRegular() {
-				bytes += info.Size()
-				files++
-			}
-		}
-		out = append(out, planItem{
-			Item: Item{
-				ID:              itemID(kindScrapeIndex, base),
-				Category:        CategoryStrm,
-				Name:            "失效刮削索引",
-				Path:            base,
-				Reason:          fmt.Sprintf("对应的 STRM 任务 %d 已不存在", taskID),
-				SizeBytes:       bytes,
-				FileCount:       files,
-				DefaultSelected: true,
-				Risk:            RiskSafe,
-			},
-			Kind:       kindScrapeIndex,
-			TargetPath: base,
-			RootPath:   root,
-			TaskID:     taskID,
-		})
-	}
-	return out, nil
 }
 
 // LatestReport 返回最近一次未过期的扫描报告；没有任何有效扫描时 ok=false。

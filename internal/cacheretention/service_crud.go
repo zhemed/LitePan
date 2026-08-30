@@ -155,7 +155,7 @@ func (s *Service) RunNow(ctx context.Context, id int64) RunNowResult {
 	}
 	if s.isAccountBusy(task.AccountID) {
 		s.queuePendingRun(id)
-		return RunNowResult{State: "blocked_by_strm", StartupRemaining: s.StartupRemaining()}
+		return RunNowResult{State: "blocked", StartupRemaining: s.StartupRemaining()}
 	}
 	if rem := s.StartupRemaining(); rem > 0 {
 		s.queuePendingRun(id)

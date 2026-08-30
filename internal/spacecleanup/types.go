@@ -5,13 +5,11 @@ import (
 	"time"
 
 	"litepan/internal/cache"
-	"litepan/internal/domain"
 	"litepan/internal/logx"
 	"litepan/internal/store"
 )
 
 const (
-	CategoryStrm     = "strm"
 	CategoryTemp     = "temp"
 	CategoryLogs     = "logs"
 	CategoryCache    = "cache"
@@ -19,8 +17,6 @@ const (
 )
 
 const (
-	kindStrmOrphan   = "strm_orphan"
-	kindStrmEmpty    = "strm_empty"
 	kindSystemFile   = "system_file"
 	kindScrapeIndex  = "scrape_index"
 	kindUploadTemp   = "upload_temp"
@@ -118,9 +114,7 @@ type FuseStats struct {
 
 type Options struct {
 	DataDir   string
-	StrmDir   string
 	DBPath    string
-	StrmTasks domain.StrmTaskRepository
 	Cache     *cache.Service
 	DB        *store.DB
 	Logs      *logx.Manager

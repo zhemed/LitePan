@@ -120,14 +120,12 @@ const homepageForm = reactive({
   compact_home_enabled: false,
   admin_home_return_mode: "top_icon" as "sidebar" | "top_icon",
   header_effects_enabled: true,
-  index_strm_auto_detect_enabled: true,
 });
 const homepageOriginal = reactive({
   index_account_switch_mode: "dropdown" as "dropdown" | "floating",
   compact_home_enabled: false,
   admin_home_return_mode: "top_icon" as "sidebar" | "top_icon",
   header_effects_enabled: true,
-  index_strm_auto_detect_enabled: true,
 });
 const apiKeySettingsRef = ref<InstanceType<typeof ApiKeySettings> | null>(null);
 const apiKeyToolbar = reactive({ loading: true, keyCount: 0, maxKeys: 10 });
@@ -173,7 +171,6 @@ const homepageDirty = computed(
     homepageForm.compact_home_enabled !== homepageOriginal.compact_home_enabled ||
     homepageForm.admin_home_return_mode !== homepageOriginal.admin_home_return_mode ||
     homepageForm.header_effects_enabled !== homepageOriginal.header_effects_enabled ||
-    homepageForm.index_strm_auto_detect_enabled !== homepageOriginal.index_strm_auto_detect_enabled ||
     skinDraft.value !== skinSaved.value,
 );
 
@@ -283,7 +280,6 @@ function applySystemConfig(config: {
   compact_home_enabled?: boolean;
   admin_home_return_mode?: string;
   header_effects_enabled?: boolean;
-  index_strm_auto_detect_enabled?: boolean;
 }) {
   securityForm.admin_username = config.admin_username || "admin";
   securityForm.session_timeout = String(config.session_timeout || 2);
@@ -301,8 +297,6 @@ function applySystemConfig(config: {
   homepageOriginal.admin_home_return_mode = homeReturn;
   homepageForm.header_effects_enabled = config.header_effects_enabled ?? true;
   homepageOriginal.header_effects_enabled = homepageForm.header_effects_enabled;
-  homepageForm.index_strm_auto_detect_enabled = config.index_strm_auto_detect_enabled ?? true;
-  homepageOriginal.index_strm_auto_detect_enabled = homepageForm.index_strm_auto_detect_enabled;
 }
 
 async function loadSystemConfig() {
@@ -396,7 +390,6 @@ async function saveHomepage() {
       compact_home_enabled: homepageForm.compact_home_enabled,
       admin_home_return_mode: homepageForm.admin_home_return_mode,
       header_effects_enabled: homepageForm.header_effects_enabled,
-      index_strm_auto_detect_enabled: homepageForm.index_strm_auto_detect_enabled,
     });
     localStorage.setItem("litepan:index:compact-home-enabled", homepageForm.compact_home_enabled ? "1" : "0");
     commitSkinDraft();
@@ -589,31 +582,6 @@ async function submit() {
         </SettingsRow>
       </SettingsCard>
 
-      <SettingsCard v-if="isHomepageTab" title="STRM" :accent="accentColor">
-        <SettingsRow
-          :show-changed-badge="true"
-          :changed="homepageForm.index_strm_auto_detect_enabled !== homepageOriginal.index_strm_auto_detect_enabled"
-        >
-          <template #info>
-            <div class="settings-row__label">
-              <span>自动检测 STRM 变化</span>
-              <SettingsHelpTooltip title="自动检测 STRM 变化说明">
-                <p>开启后，管理员进入已配置 STRM 任务的目录时，会自动检测本地未生成的 STRM 与元数据，并在文件列表上方提示是否立即生成。</p>
-                <p>关闭后，进入目录不再发起检测请求，可节省开销；如需同步，请依赖 STRM 定时任务或在 STRM 管理页手动触发扫描。</p>
-              </SettingsHelpTooltip>
-            </div>
-          </template>
-          <template #control>
-            <SettingsBoolSegment
-              v-model="homepageForm.index_strm_auto_detect_enabled"
-              label="自动检测 STRM 变化"
-              off-label="关闭"
-              on-label="打开"
-            />
-          </template>
-        </SettingsRow>
-      </SettingsCard>
-
       <SettingsCard v-if="isHomepageTab" title="界面显示" :accent="accentColor">
         <SettingsRow
           :show-changed-badge="true"
@@ -761,7 +729,7 @@ async function submit() {
                   <div class="settings-help__section">推荐开启</div>
                   <div class="settings-help__item">
                     <span class="settings-help__dot settings-help__dot--on" />
-                    <span>NAS / Docker / 服务器 24 小时常驻：token 始终健康，缓存、STRM、反代等后台任务更稳定</span>
+                    <span>NAS / Docker / 服务器 24 小时常驻：token 始终健康，缓存、反代等后台任务更稳定</span>
                   </div>
                   <div class="settings-help__section">推荐关闭</div>
                   <div class="settings-help__item">

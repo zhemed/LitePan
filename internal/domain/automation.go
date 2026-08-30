@@ -20,8 +20,6 @@ const (
 	AutomationTriggerOfflineDownload = "offline_download"
 
 	AutomationActionOrganize    = "organize"
-	AutomationActionStrm        = "strm"
-	AutomationActionStrmScrape  = "strm_scrape"
 	AutomationActionCacheClear  = "cache_clear"
 	AutomationActionDelay       = "delay"
 	AutomationActionEmbyRefresh = "emby_refresh"

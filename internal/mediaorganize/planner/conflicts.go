@@ -89,13 +89,13 @@ func (p *Planner) detectSameWorkDirConflicts() {
 			continue
 		}
 		p.sortMergeCandidates(conflicts, func(a *moplan.PlanAction) string {
-			return strMeta(aMetadata(a, "source_dir_id"), a.SourceID)
+			return metaString(aMetadata(a, "source_dir_id"), a.SourceID)
 		})
 		winning := conflicts[0]
 		winningRef := "ref:" + winning.ID
-		winningSourceID := strMeta(aMetadata(winning, "source_dir_id"), winning.SourceID)
+		winningSourceID := metaString(aMetadata(winning, "source_dir_id"), winning.SourceID)
 		for _, losing := range conflicts[1:] {
-			losingSourceID := strMeta(aMetadata(losing, "source_dir_id"), losing.SourceID)
+			losingSourceID := metaString(aMetadata(losing, "source_dir_id"), losing.SourceID)
 			losing.Status = "skipped"
 			losing.Error = fmt.Sprintf("已并入「%s」", winning.TargetName)
 			if losingSourceID == "" || losingSourceID == winningSourceID {
@@ -285,7 +285,7 @@ func aMetadata(a *moplan.PlanAction, key string) any {
 	return a.Metadata[key]
 }
 
-func strMeta(v any, fallback string) string {
+func metaString(v any, fallback string) string {
 	if s := strings.TrimSpace(fmt.Sprint(v)); s != "" && s != "<nil>" {
 		return s
 	}
@@ -304,7 +304,7 @@ func (p *Planner) tryWholeDirMoveOptimization() {
 		if isWork, _ := a.Metadata["is_work_dir"].(bool); !isWork {
 			continue
 		}
-		sdid := strMeta(aMetadata(a, "source_dir_id"), "")
+		sdid := metaString(aMetadata(a, "source_dir_id"), "")
 		if sdid == "" || sdid == p.parentID {
 			continue
 		}

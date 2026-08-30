@@ -25,7 +25,7 @@ type localBrowseResult struct {
 }
 
 // browseDefaultPath 返回本地目录浏览器默认落点：
-// STRM 输出目录、数据目录、FUSE 挂载根优先，再回退到常见挂载位置。
+// 数据目录、FUSE 挂载根优先，再回退到常见挂载位置。
 func (h *Handler) browseDefaultPath() string {
 	seen := map[string]struct{}{}
 	var candidates []string
@@ -40,7 +40,6 @@ func (h *Handler) browseDefaultPath() string {
 		seen[p] = struct{}{}
 		candidates = append(candidates, p)
 	}
-	add(h.strmDir)
 	add(h.dataDir)
 	add(fusemount.MountRoot)
 	for _, p := range []string{"/data", "/mnt", "/media", "/"} {

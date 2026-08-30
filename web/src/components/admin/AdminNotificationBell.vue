@@ -8,14 +8,8 @@ import {
   fetchNotifications,
   fetchUnreadCount,
   isCacheScopeWarnNotification,
-  isStrmScanWarnNotification,
-  isStrmScrapeWarnNotification,
   markAllNotificationsRead,
   markNotificationRead,
-  parseStrmScanFailures,
-  parseStrmScrapeFailures,
-  strmScanFailureKindLabel,
-  strmScrapeFailureStageLabel,
   type NotificationItem,
 } from "@/api/notifications";
 import { confirm } from "@/composables/useConfirm";
@@ -56,36 +50,6 @@ interface NotificationFailureRow {
 }
 
 const detailFailures = computed(() => {
-  const item = detailItem.value;
-  if (!item) {
-    return { enabled: false, summary: "", items: [] as NotificationFailureRow[] };
-  }
-  if (isStrmScanWarnNotification(item)) {
-    const parsed = parseStrmScanFailures(item.message);
-    return {
-      enabled: true,
-      summary: parsed.summary,
-      items: parsed.items.map((row) => ({
-        label: strmScanFailureKindLabel(row.kind),
-        name: "",
-        path: row.path,
-        reason: row.reason,
-      })),
-    };
-  }
-  if (isStrmScrapeWarnNotification(item)) {
-    const parsed = parseStrmScrapeFailures(item.message);
-    return {
-      enabled: true,
-      summary: parsed.summary,
-      items: parsed.items.map((row) => ({
-        label: strmScrapeFailureStageLabel(row.stage),
-        name: row.name,
-        path: row.path,
-        reason: row.reason,
-      })),
-    };
-  }
   return { enabled: false, summary: "", items: [] as NotificationFailureRow[] };
 });
 
@@ -246,12 +210,6 @@ async function handleDismissScopeWarn() {
 }
 
 function notifyListMessage(item: NotificationItem): string {
-  if (isStrmScanWarnNotification(item)) {
-    return parseStrmScanFailures(item.message).summary || item.message;
-  }
-  if (isStrmScrapeWarnNotification(item)) {
-    return parseStrmScrapeFailures(item.message).summary || item.message;
-  }
   return item.message;
 }
 
@@ -273,7 +231,6 @@ onUnmounted(() => {
   document.removeEventListener("click", handleDocumentClick);
 });
 </script>
-
 <template>
   <div class="notify-wrap">
     <button

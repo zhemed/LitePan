@@ -3,7 +3,7 @@ import { http } from "./client";
 export type AutomationTriggerType = "daily" | "interval" | "webhook" | "offline_download";
 export type AutomationStatus = "running" | "paused";
 export type AutomationCondition = "always" | "prev_success" | "prev_failed";
-export type AutomationActionType = "cache_clear" | "organize" | "strm" | "strm_scrape" | "delay" | "emby_refresh";
+export type AutomationActionType = "cache_clear" | "organize" | "delay" | "emby_refresh";
 
 export type EmbyRefreshMode = "global" | "library";
 
@@ -69,7 +69,6 @@ export interface AutomationOptionItem {
 }
 
 export interface AutomationOptions {
-  strm_tasks: AutomationOptionItem[];
   organize_tasks: AutomationOptionItem[];
   emby_configs: Array<{
     id: string;

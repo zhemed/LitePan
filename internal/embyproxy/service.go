@@ -11,8 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,34 +23,16 @@ import (
 	"litepan/internal/playback"
 	"litepan/internal/proxybase"
 	"litepan/internal/settings"
-	"litepan/internal/strm"
 	"litepan/pkg/jsonvalue"
-	"litepan/pkg/strutil"
 )
 
 const (
-	maskedSecret              = "******"
-	embyMediaSourceCacheTTL   = time.Hour
-	embyMediaSourceCacheLimit = 512
-)
-
-type cachedMediaSource struct {
-	itemID   string
-	playURL  string
-	lastUsed time.Time
-}
-
-var (
-	videoStreamPathRE    = regexp.MustCompile(`(?i)^(?:/?emby)?/?Videos/([^/]+)/(stream|original)(?:\.\w+)?$`)
-	playbackInfoPathRE   = regexp.MustCompile(`(?i)^(?:/?emby)?/?Items/([^/]+)/PlaybackInfo$`)
-	baseHTMLPlayerPathRE = regexp.MustCompile(`(?i)^(?:/?emby)?/?web/modules/htmlvideoplayer/basehtmlplayer\.js$`)
-	htmlCrossOriginRE    = regexp.MustCompile(`mediaSource\.IsRemote\s*&&\s*(?:"DirectPlay"\s*===\s*playMethod|playMethod\s*===\s*"DirectPlay")\s*\?\s*null\s*:\s*"anonymous"`)
+	maskedSecret = "******"
 )
 
 type Service struct {
 	settings *settings.Service
 	playback *playback.Service
-	strm     *strm.Service
 	log      *slog.Logger
 	client   *http.Client
 
@@ -60,9 +40,6 @@ type Service struct {
 
 	mu       sync.Mutex
 	runtimes map[string]*runtime
-
-	mediaSourceMu    sync.Mutex
-	mediaSourceCache map[string]*cachedMediaSource
 }
 
 type runtime struct {
@@ -74,38 +51,34 @@ type runtime struct {
 type Options struct {
 	Settings *settings.Service
 	Playback *playback.Service
-	Strm     *strm.Service
 	Log      *slog.Logger
 }
 
 type Config struct {
-	ID                string `json:"id"`
-	Name              string `json:"name"`
-	EmbyURL           string `json:"emby_url"`
-	APIKey            string `json:"api_key"`
-	Port              string `json:"proxy_port"`
-	DirectSTRMClients string `json:"direct_strm_clients"`
-	ProxyURL          string `json:"proxy_url"`
-	Running           bool   `json:"running"`
-	LastError         string `json:"last_error,omitempty"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	EmbyURL   string `json:"emby_url"`
+	APIKey    string `json:"api_key"`
+	Port      string `json:"proxy_port"`
+	ProxyURL  string `json:"proxy_url"`
+	Running   bool   `json:"running"`
+	LastError string `json:"last_error,omitempty"`
 }
 
 type storedConfig struct {
-	ID                string `json:"id"`
-	Name              string `json:"name"`
-	EmbyURL           string `json:"emby_url"`
-	APIKey            string `json:"api_key"`
-	Port              string `json:"proxy_port"`
-	DirectSTRMClients string `json:"direct_strm_clients,omitempty"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	EmbyURL string `json:"emby_url"`
+	APIKey  string `json:"api_key"`
+	Port    string `json:"proxy_port"`
 }
 
 type UpdateRequest struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	EmbyURL           string                   `json:"emby_url"`
-	APIKey            string                   `json:"api_key"`
-	Port              jsonvalue.FlexibleString `json:"proxy_port"`
-	DirectSTRMClients string                   `json:"direct_strm_clients"`
+	ID      string                   `json:"id"`
+	Name    string                   `json:"name"`
+	EmbyURL string                   `json:"emby_url"`
+	APIKey  string                   `json:"api_key"`
+	Port    jsonvalue.FlexibleString `json:"proxy_port"`
 }
 
 type State struct {
@@ -144,13 +117,11 @@ func New(opts Options) *Service {
 		return http.ErrUseLastResponse
 	}
 	return &Service{
-		settings:         opts.Settings,
-		playback:         opts.Playback,
-		strm:             opts.Strm,
-		log:              log,
-		client:           client,
-		runtimes:         map[string]*runtime{},
-		mediaSourceCache: map[string]*cachedMediaSource{},
+		settings: opts.Settings,
+		playback: opts.Playback,
+		log:      log,
+		client:   client,
+		runtimes: map[string]*runtime{},
 		servePlayback: func(w http.ResponseWriter, r *http.Request, req playback.Request, intent playback.Intent) error {
 			if opts.Playback == nil {
 				return domain.Errf(domain.CodeNotImplement)
@@ -264,7 +235,6 @@ func storedConfigs(configs []Config) []storedConfig {
 	for _, cfg := range configs {
 		out = append(out, storedConfig{
 			ID: cfg.ID, Name: cfg.Name, EmbyURL: cfg.EmbyURL, APIKey: cfg.APIKey, Port: cfg.Port,
-			DirectSTRMClients: cfg.DirectSTRMClients,
 		})
 	}
 	return out
@@ -546,12 +516,11 @@ func ConfigFromUpdate(in UpdateRequest) (Config, error) {
 		return Config{}, err
 	}
 	return Config{
-		ID:                strings.TrimSpace(in.ID),
-		Name:              name,
-		EmbyURL:           embyURL,
-		APIKey:            strings.TrimSpace(in.APIKey),
-		Port:              port,
-		DirectSTRMClients: proxybase.NormalizeClientKeywords(in.DirectSTRMClients),
+		ID:      strings.TrimSpace(in.ID),
+		Name:    name,
+		EmbyURL: embyURL,
+		APIKey:  strings.TrimSpace(in.APIKey),
+		Port:    port,
 	}, nil
 }
 
@@ -680,7 +649,6 @@ func (s *Service) configsFromSettings() []Config {
 		configs[i].EmbyURL = strings.TrimRight(strings.TrimSpace(configs[i].EmbyURL), "/")
 		configs[i].APIKey = strings.TrimSpace(configs[i].APIKey)
 		configs[i].Port = strings.TrimSpace(configs[i].Port)
-		configs[i].DirectSTRMClients = proxybase.NormalizeClientKeywords(configs[i].DirectSTRMClients)
 	}
 	return configs
 }
@@ -725,381 +693,12 @@ func (s *Service) handleConfig(configID string, w http.ResponseWriter, r *http.R
 }
 
 func (s *Service) handleWithConfig(cfg Config, w http.ResponseWriter, r *http.Request) {
-	if proxybase.StrmPlayPathRE.MatchString(r.URL.EscapedPath()) {
-		s.serveSTRM(w, r)
-		return
-	}
 	if !s.enabled() || cfg.EmbyURL == "" || cfg.APIKey == "" {
 		http.Error(w, "Emby proxy is not enabled", http.StatusNotFound)
 		return
 	}
 	fullPath := strings.TrimPrefix(r.URL.Path, "/")
-	if videoStreamPathRE.MatchString(fullPath) {
-		s.redirectSTRMStream(w, r, cfg, fullPath)
-		return
-	}
-	if playbackInfoPathRE.MatchString(fullPath) && (r.Method == http.MethodGet || r.Method == http.MethodPost) {
-		s.modifyPlaybackInfo(w, r, cfg, fullPath)
-		return
-	}
-	if baseHTMLPlayerPathRE.MatchString(fullPath) && r.Method == http.MethodGet {
-		s.modifyBaseHTMLPlayer(w, r, cfg, fullPath)
-		return
-	}
 	s.proxyRequest(w, r, cfg, fullPath)
-}
-
-func (s *Service) serveSTRM(w http.ResponseWriter, r *http.Request) {
-	if s.strm == nil || s.playback == nil {
-		http.Error(w, "STRM playback is unavailable", http.StatusNotImplemented)
-		return
-	}
-	m := proxybase.StrmPlayPathRE.FindStringSubmatch(r.URL.EscapedPath())
-	if len(m) < 5 {
-		http.NotFound(w, r)
-		return
-	}
-	accountID, err := strconv.ParseInt(m[1], 10, 64)
-	if err != nil || accountID <= 0 {
-		http.Error(w, "invalid account id", http.StatusBadRequest)
-		return
-	}
-	fileID, err := strm.DecodeFileKey(m[2])
-	if err != nil {
-		http.Error(w, "invalid file key", http.StatusBadRequest)
-		return
-	}
-	ok, err := s.strm.MatchToken(r.Context(), m[3])
-	if err != nil || !ok {
-		http.Error(w, "permission denied", http.StatusForbidden)
-		return
-	}
-	signature := ""
-	if len(m) > 5 {
-		signature = m[5]
-	}
-	if s.strm.SignatureEnabled() {
-		if signature == "" {
-			http.Error(w, "permission denied", http.StatusForbidden)
-			return
-		}
-		unsignedPath := strings.TrimSuffix(r.URL.EscapedPath(), "/s/"+signature)
-		if !s.strm.VerifySignature(unsignedPath, signature) {
-			http.Error(w, "permission denied", http.StatusForbidden)
-			return
-		}
-	}
-	name, _ := url.PathUnescape(m[4])
-	if err := s.playbackServe(w, r, playback.Request{AccountID: accountID, FileID: fileID}, playback.Intent{FileName: name}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (s *Service) playbackServe(w http.ResponseWriter, r *http.Request, req playback.Request, intent playback.Intent) error {
-	if s.servePlayback == nil {
-		return domain.Errf(domain.CodeNotImplement)
-	}
-	return s.servePlayback(w, r, req, intent)
-}
-
-func (s *Service) serveLitePanPlayback(w http.ResponseWriter, r *http.Request, litepanURL string) bool {
-	accountID, fileID, ok := proxybase.ParseLitePanSTRMURL(litepanURL)
-	if !ok {
-		return false
-	}
-	if err := s.playbackServe(w, r, playback.Request{AccountID: accountID, FileID: fileID}, playback.Intent{}); err != nil {
-		if isExpectedClientDisconnect(r.Context(), err) {
-			s.log.Debug("Emby 反代播放请求已取消", "account_id", accountID, "file_id", fileID, "error", err)
-			return true
-		}
-		s.log.Warn("Emby 反代解析 LitePan STRM 失败", "account_id", accountID, "file_id", fileID, "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return true
-	}
-	return true
-}
-
-// isExpectedClientDisconnect 识别播放器探测、跳转 Range 或重建播放链路时主动取消的旧请求。
-// 这类错误不代表解析或上游故障，不应记为 Warn，也不再尝试补写 500 响应。
-func isExpectedClientDisconnect(ctx context.Context, err error) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) || errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) {
-		return true
-	}
-	msg := strings.ToLower(err.Error())
-	for _, marker := range []string{"broken pipe", "connection reset by peer", "use of closed network connection"} {
-		if strings.Contains(msg, marker) {
-			return true
-		}
-	}
-	return false
-}
-
-func embyMediaSourceCacheKey(cfg Config, mediaSourceID string) string {
-	serverKey := strings.TrimSpace(cfg.ID)
-	if serverKey == "" {
-		serverKey = strings.TrimRight(strings.TrimSpace(cfg.EmbyURL), "/")
-	}
-	return serverKey + "\x00" + stripMediaSourcePrefix(strings.TrimSpace(mediaSourceID))
-}
-
-func (s *Service) rememberMediaSource(cfg Config, itemID, mediaSourceID, playURL string) {
-	if strings.TrimSpace(mediaSourceID) == "" || !isLitePanSTRMURL(playURL) {
-		return
-	}
-	now := time.Now()
-	key := embyMediaSourceCacheKey(cfg, mediaSourceID)
-	s.mediaSourceMu.Lock()
-	defer s.mediaSourceMu.Unlock()
-	for cacheKey, cached := range s.mediaSourceCache {
-		if cached == nil || !cached.lastUsed.Add(embyMediaSourceCacheTTL).After(now) {
-			delete(s.mediaSourceCache, cacheKey)
-		}
-	}
-	if len(s.mediaSourceCache) >= embyMediaSourceCacheLimit {
-		var oldestKey string
-		var oldest time.Time
-		for cacheKey, cached := range s.mediaSourceCache {
-			if cached != nil && (oldestKey == "" || cached.lastUsed.Before(oldest)) {
-				oldestKey = cacheKey
-				oldest = cached.lastUsed
-			}
-		}
-		if oldestKey != "" {
-			delete(s.mediaSourceCache, oldestKey)
-		}
-	}
-	s.mediaSourceCache[key] = &cachedMediaSource{
-		itemID:   strings.TrimSpace(itemID),
-		playURL:  strings.TrimSpace(playURL),
-		lastUsed: now,
-	}
-}
-
-func (s *Service) lookupMediaSource(cfg Config, itemID, mediaSourceID string) string {
-	if strings.TrimSpace(mediaSourceID) == "" {
-		return ""
-	}
-	now := time.Now()
-	key := embyMediaSourceCacheKey(cfg, mediaSourceID)
-	s.mediaSourceMu.Lock()
-	defer s.mediaSourceMu.Unlock()
-	cached := s.mediaSourceCache[key]
-	if cached == nil {
-		return ""
-	}
-	if !cached.lastUsed.Add(embyMediaSourceCacheTTL).After(now) {
-		delete(s.mediaSourceCache, key)
-		return ""
-	}
-	if cached.itemID != "" && strings.TrimSpace(itemID) != "" && cached.itemID != strings.TrimSpace(itemID) {
-		return ""
-	}
-	cached.lastUsed = now
-	return cached.playURL
-}
-
-func (s *Service) redirectSTRMStream(w http.ResponseWriter, r *http.Request, cfg Config, fullPath string) {
-	client := proxybase.EmbyClientName(r)
-	if r.Method == http.MethodHead {
-		s.proxyRequest(w, r, cfg, fullPath)
-		return
-	}
-	mediaSourceID := queryValue(r, "mediasourceid")
-	itemID := ""
-	if m := videoStreamPathRE.FindStringSubmatch(fullPath); len(m) > 1 {
-		itemID = m[1]
-	}
-	s.log.Debug("Emby 反代播放请求来源",
-		"client", client,
-		"user_agent", r.UserAgent(),
-		"item_id", itemID,
-		"media_source_id", mediaSourceID,
-		"path", proxybase.LitePanPath(fullPath),
-	)
-	if mediaSourceID == "" {
-		s.log.Debug("Emby 反代播放未携带媒体源，透传上游", "item_id", itemID)
-		s.proxyRequest(w, r, cfg, fullPath)
-		return
-	}
-	if cachedURL := s.lookupMediaSource(cfg, itemID, mediaSourceID); cachedURL != "" {
-		accountID, fileID, parsed := proxybase.ParseLitePanSTRMURL(cachedURL)
-		s.log.Debug("Emby 反代命中 PlaybackInfo 版本缓存",
-			"item_id", itemID,
-			"requested_media_source_id", mediaSourceID,
-			"account_id", accountID,
-			"file_id", fileID,
-			"litepan_url_parsed", parsed,
-		)
-		if proxybase.MatchesClientKeywords(r, cfg.DirectSTRMClients) {
-			proxybase.ServeSTRMDescriptor(w, r, cachedURL)
-			return
-		}
-		if s.serveLitePanPlayback(w, r, cachedURL) {
-			return
-		}
-	}
-	item := s.fetchEmbyItem(r.Context(), cfg, itemID)
-	if item == nil {
-		item = s.fetchEmbyItem(r.Context(), cfg, stripMediaSourcePrefix(mediaSourceID))
-	}
-	if item == nil {
-		s.proxyRequest(w, r, cfg, fullPath)
-		return
-	}
-	target := stripMediaSourcePrefix(mediaSourceID)
-	for _, mediaSource := range mediaSources(item) {
-		current := stripMediaSourcePrefix(stringValue(mediaSource, "Id", "ID"))
-		if current != "" && current != target {
-			continue
-		}
-		if redirectURL := s.extractLitePanSTRM(mediaSource, r, cfg); redirectURL != "" {
-			accountID, fileID, parsed := proxybase.ParseLitePanSTRMURL(redirectURL)
-			s.log.Debug("Emby 反代命中多版本媒体源",
-				"item_id", itemID,
-				"requested_media_source_id", mediaSourceID,
-				"matched_media_source_id", stringValue(mediaSource, "Id", "ID"),
-				"account_id", accountID,
-				"file_id", fileID,
-				"litepan_url_parsed", parsed,
-			)
-			if proxybase.MatchesClientKeywords(r, cfg.DirectSTRMClients) {
-				proxybase.ServeSTRMDescriptor(w, r, redirectURL)
-				return
-			}
-			if s.serveLitePanPlayback(w, r, redirectURL) {
-				return
-			}
-		}
-	}
-	itemPath := normalizeMediaURL(stringValue(item, "Path"), r, cfg)
-	if isLitePanSTRMURL(itemPath) {
-		accountID, fileID, parsed := proxybase.ParseLitePanSTRMURL(itemPath)
-		s.log.Debug("Emby 反代多版本未命中，回退影片公共路径",
-			"item_id", itemID,
-			"requested_media_source_id", mediaSourceID,
-			"account_id", accountID,
-			"file_id", fileID,
-			"litepan_url_parsed", parsed,
-		)
-		if proxybase.MatchesClientKeywords(r, cfg.DirectSTRMClients) {
-			proxybase.ServeSTRMDescriptor(w, r, itemPath)
-			return
-		}
-		if s.serveLitePanPlayback(w, r, itemPath) {
-			return
-		}
-	}
-	s.proxyRequest(w, r, cfg, fullPath)
-}
-
-func (s *Service) modifyPlaybackInfo(w http.ResponseWriter, r *http.Request, cfg Config, fullPath string) {
-	resp, body, err := s.requestUpstream(r, cfg, fullPath, true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		writeUpstreamBody(w, resp, body)
-		return
-	}
-	var payload map[string]any
-	if err := json.Unmarshal(body, &payload); err != nil {
-		writeUpstreamBody(w, resp, body)
-		return
-	}
-	itemID := ""
-	if m := playbackInfoPathRE.FindStringSubmatch(fullPath); len(m) > 1 {
-		itemID = m[1]
-	}
-	item := s.fetchEmbyItem(r.Context(), cfg, itemID)
-	changed := false
-	for _, mediaSource := range mediaSources(payload) {
-		mediaSourceID := stringValue(mediaSource, "Id", "ID")
-		itemMediaSource := findMediaSourceByID(item, mediaSourceID)
-		litepanURL := s.extractLitePanSTRM(mediaSource, r, cfg)
-		resolvedFrom := "playback_info"
-		if litepanURL == "" && itemMediaSource != nil {
-			litepanURL = s.extractLitePanSTRM(itemMediaSource, r, cfg)
-			resolvedFrom = "item_media_source"
-		}
-		itemPath := normalizeMediaURL(stringValue(item, "Path"), r, cfg)
-		if litepanURL == "" && isLitePanSTRMURL(itemPath) {
-			litepanURL = itemPath
-			resolvedFrom = "item_path_fallback"
-		}
-		if litepanURL == "" {
-			s.log.Debug("Emby 反代 PlaybackInfo 未找到 LitePan STRM",
-				"item_id", itemID,
-				"media_source_id", mediaSourceID,
-			)
-			continue
-		}
-		accountID, fileID, parsed := proxybase.ParseLitePanSTRMURL(litepanURL)
-		s.log.Debug("Emby 反代 PlaybackInfo 版本映射",
-			"item_id", itemID,
-			"media_source_id", mediaSourceID,
-			"resolved_from", resolvedFrom,
-			"account_id", accountID,
-			"file_id", fileID,
-			"litepan_url_parsed", parsed,
-		)
-		s.rememberMediaSource(cfg, itemID, mediaSourceID, litepanURL)
-		directPath := proxiedVideoPath(r, cfg, strutil.FirstNonEmpty(itemID, stripMediaSourcePrefix(mediaSourceID)), mediaSourceID)
-		mediaSource["SupportsDirectPlay"] = true
-		mediaSource["SupportsDirectStream"] = true
-		mediaSource["SupportsTranscoding"] = false
-		mediaSource["Protocol"] = "Http"
-		mediaSource["DirectStreamUrl"] = directPath
-		delete(mediaSource, "TranscodingUrl")
-		delete(mediaSource, "TranscodingSubProtocol")
-		delete(mediaSource, "TranscodingContainer")
-		delete(mediaSource, "TranscodingLiveStartIndex")
-		delete(mediaSource, "TrancodeLiveStartIndex")
-		if info := s.inferLitePanMediaInfo(r.Context(), litepanURL, r.UserAgent()); info != nil {
-			for k, v := range info {
-				mediaSource[k] = v
-			}
-		}
-		changed = true
-	}
-	if !changed {
-		writeUpstreamBody(w, resp, body)
-		return
-	}
-	out, _ := json.Marshal(payload)
-	headers := responseHeaders(resp.Header)
-	headers.Set("Content-Type", "application/json; charset=utf-8")
-	headers.Set("Content-Length", strconv.Itoa(len(out)))
-	headers.Del("Content-Encoding")
-	writeHeaders(w, headers)
-	w.WriteHeader(resp.StatusCode)
-	_, _ = w.Write(out)
-}
-
-func (s *Service) modifyBaseHTMLPlayer(w http.ResponseWriter, r *http.Request, cfg Config, fullPath string) {
-	resp, body, err := s.requestUpstream(r, cfg, fullPath, true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
-	defer resp.Body.Close()
-	crossOriginGuard := []byte(";try{(function(){var s=Element.prototype.setAttribute;Element.prototype.setAttribute=function(n,v){if(this&&this.tagName&&/^(VIDEO|AUDIO)$/i.test(this.tagName)&&String(n).toLowerCase()==='crossorigin')return;return s.call(this,n,v)};try{Object.defineProperty(HTMLMediaElement.prototype,'crossOrigin',{get:function(){return null},set:function(){return null},configurable:true})}catch(e){}})()}catch(e){};")
-	body = bytes.ReplaceAll(body, []byte(`mediaSource.IsRemote&&"DirectPlay"===playMethod?null:"anonymous"`), []byte("null"))
-	body = htmlCrossOriginRE.ReplaceAll(body, []byte("null"))
-	if !bytes.Contains(body, []byte("HTMLMediaElement.prototype,'crossOrigin'")) {
-		body = append(crossOriginGuard, body...)
-	}
-	headers := responseHeaders(resp.Header)
-	headers.Set("Content-Length", strconv.Itoa(len(body)))
-	headers.Set("Cache-Control", "no-store")
-	headers.Del("Content-Encoding")
-	writeHeaders(w, headers)
-	w.WriteHeader(resp.StatusCode)
-	_, _ = w.Write(body)
 }
 
 func (s *Service) proxyRequest(w http.ResponseWriter, r *http.Request, cfg Config, fullPath string) {
@@ -1140,115 +739,6 @@ func (s *Service) proxyRequest(w http.ResponseWriter, r *http.Request, cfg Confi
 	_, _ = io.CopyBuffer(w, resp.Body, make([]byte, 128*1024))
 }
 
-func (s *Service) requestUpstream(r *http.Request, cfg Config, fullPath string, identity bool) (*http.Response, []byte, error) {
-	target, err := targetURL(cfg, fullPath, r.URL.RawQuery)
-	if err != nil {
-		return nil, nil, err
-	}
-	var body io.Reader
-	if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
-		buf, _ := io.ReadAll(r.Body)
-		body = bytes.NewReader(buf)
-	}
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, target, body)
-	if err != nil {
-		return nil, nil, err
-	}
-	copyRequestHeaders(req.Header, r.Header, identity)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		resp.Body.Close()
-		return nil, nil, err
-	}
-	resp.Body = io.NopCloser(bytes.NewReader(data))
-	return resp, data, nil
-}
-
-func (s *Service) fetchEmbyItem(ctx context.Context, cfg Config, itemID string) map[string]any {
-	itemID = stripMediaSourcePrefix(itemID)
-	if itemID == "" {
-		return nil
-	}
-	params := url.Values{
-		"Ids":       {itemID},
-		"Limit":     {"1"},
-		"Fields":    {"Path,MediaSources"},
-		"Recursive": {"true"},
-		"api_key":   {cfg.APIKey},
-	}
-	base := strings.TrimRight(cfg.EmbyURL, "/")
-	candidates := []string{base + "/emby/Items", base + "/Items"}
-	if strings.HasSuffix(strings.ToLower(base), "/emby") {
-		candidates = []string{base + "/Items"}
-	}
-	for _, endpoint := range candidates {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+params.Encode(), nil)
-		if err != nil {
-			continue
-		}
-		resp, err := s.client.Do(req)
-		if err != nil {
-			continue
-		}
-		var payload struct {
-			Items []map[string]any `json:"Items"`
-		}
-		err = json.NewDecoder(resp.Body).Decode(&payload)
-		resp.Body.Close()
-		if err == nil && resp.StatusCode < 400 && len(payload.Items) > 0 {
-			return payload.Items[0]
-		}
-	}
-	return nil
-}
-
-func (s *Service) extractLitePanSTRM(mediaSource map[string]any, r *http.Request, cfg Config) string {
-	for _, key := range []string{"Path", "DirectStreamUrl", "DirectStreamURL", "TranscodingUrl"} {
-		value := normalizeMediaURL(stringValue(mediaSource, key), r, cfg)
-		if isLitePanSTRMURL(value) {
-			return value
-		}
-	}
-	return ""
-}
-
-func (s *Service) inferLitePanMediaInfo(ctx context.Context, litepanURL, ua string) map[string]any {
-	if s.playback == nil {
-		return nil
-	}
-	accountID, fileID, ok := proxybase.ParseLitePanSTRMURL(litepanURL)
-	if !ok {
-		return nil
-	}
-	res, err := s.playback.Resolve(ctx, accountID, fileID, ua, false, true)
-	if err != nil {
-		return nil
-	}
-	out := map[string]any{}
-	name := strings.TrimSpace(res.File.Name)
-	if name == "" {
-		name = strings.TrimSpace(res.Link.FileName)
-	}
-	if name != "" {
-		out["Name"] = name
-		if ext := strings.TrimPrefix(strings.ToLower(path.Ext(name)), "."); ext != "" {
-			out["Container"] = ext
-		}
-	}
-	size := res.File.Size
-	if size <= 0 {
-		size = res.Link.Size
-	}
-	if size > 0 {
-		out["Size"] = size
-	}
-	return out
-}
-
 func targetURL(cfg Config, fullPath, rawQuery string) (string, error) {
 	baseStr := strings.TrimRight(strings.TrimSpace(cfg.EmbyURL), "/")
 	path := strings.TrimPrefix(strings.TrimSpace(fullPath), "/")
@@ -1283,18 +773,6 @@ func normalizeEmbyURL(raw string, required bool) (string, error) {
 	return v, nil
 }
 
-func proxiedVideoPath(r *http.Request, cfg Config, itemID, mediaSourceID string) string {
-	q := r.URL.Query()
-	q.Set("MediaSourceId", mediaSourceID)
-	if q.Get("static") == "" {
-		q.Set("static", "true")
-	}
-	if q.Get("api_key") == "" {
-		q.Set("api_key", cfg.APIKey)
-	}
-	return "/Videos/" + itemID + "/stream?" + q.Encode()
-}
-
 func anyString(v any) string {
 	switch got := v.(type) {
 	case string:
@@ -1309,24 +787,6 @@ func anyString(v any) string {
 		}
 		return fmt.Sprintf("%v", v)
 	}
-}
-
-func normalizeMediaURL(candidate string, r *http.Request, cfg Config) string {
-	value := proxybase.CleanWrappedURL(candidate)
-	if value == "" {
-		return ""
-	}
-	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
-		return value
-	}
-	if strings.HasPrefix(value, "/") {
-		return strings.TrimRight(proxybase.PublicBase(r, cfg.Port), "/") + value
-	}
-	return value
-}
-
-func isLitePanSTRMURL(value string) bool {
-	return strings.HasPrefix(strings.ToLower(proxybase.LitePanPath(value)), "/api/strm/play/")
 }
 
 func responseHeaders(src http.Header) http.Header {
@@ -1364,72 +824,12 @@ func writeHeaders(w http.ResponseWriter, headers http.Header) {
 	}
 }
 
-func writeUpstreamBody(w http.ResponseWriter, resp *http.Response, body []byte) {
-	writeHeaders(w, responseHeaders(resp.Header))
-	w.WriteHeader(resp.StatusCode)
-	_, _ = w.Write(body)
-}
-
 func rewriteLocation(location string, cfg Config, r *http.Request) string {
 	embyURL := strings.TrimRight(cfg.EmbyURL, "/")
 	if strings.HasPrefix(location, embyURL) {
 		return strings.TrimRight(proxybase.PublicBase(r, cfg.Port), "/") + strings.TrimPrefix(location, embyURL)
 	}
 	return location
-}
-
-func queryValue(r *http.Request, key string) string {
-	target := strings.ToLower(key)
-	for k, values := range r.URL.Query() {
-		if strings.ToLower(k) == target && len(values) > 0 {
-			return values[0]
-		}
-	}
-	return ""
-}
-
-func stripMediaSourcePrefix(value string) string {
-	return strings.TrimPrefix(value, "mediasource_")
-}
-
-func stringValue(m map[string]any, keys ...string) string {
-	if m == nil {
-		return ""
-	}
-	for _, key := range keys {
-		if v, ok := m[key]; ok {
-			return strings.TrimSpace(fmt.Sprint(v))
-		}
-	}
-	return ""
-}
-
-func mediaSources(m map[string]any) []map[string]any {
-	if m == nil {
-		return nil
-	}
-	raw, ok := m["MediaSources"].([]any)
-	if !ok {
-		return nil
-	}
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		if ms, ok := item.(map[string]any); ok {
-			out = append(out, ms)
-		}
-	}
-	return out
-}
-
-func findMediaSourceByID(item map[string]any, mediaSourceID string) map[string]any {
-	target := stripMediaSourcePrefix(mediaSourceID)
-	for _, mediaSource := range mediaSources(item) {
-		current := stripMediaSourcePrefix(stringValue(mediaSource, "Id", "ID"))
-		if current == "" || current == target {
-			return mediaSource
-		}
-	}
-	return nil
 }
 
 func maskSecret(value string) string {
@@ -1460,6 +860,24 @@ func isStoredSecretInput(input, stored string) bool {
 		return true
 	}
 	return input == maskSecret(stored)
+}
+
+// isExpectedClientDisconnect 识别播放器探测、跳转 Range 或重建播放链路时主动取消的旧请求。
+// 这类错误不代表解析或上游故障，不应记为 Warn，也不再尝试补写 500 响应。
+func isExpectedClientDisconnect(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) || errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	for _, marker := range []string{"broken pipe", "connection reset by peer", "use of closed network connection"} {
+		if strings.Contains(msg, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func embyTestHTTPError(status int) *domain.AppError {

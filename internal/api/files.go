@@ -30,16 +30,12 @@ func (h *Handler) listFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parent := r.URL.Query().Get("parent_id")
-	path := r.URL.Query().Get("path")
 	forceRefresh := r.URL.Query().Get("force_refresh") == "true"
 
 	items, err := h.files.List(r.Context(), accID, parent, forceRefresh)
 	if err != nil {
 		writeErr(w, err)
 		return
-	}
-	if h.strm != nil && path != "" && parent != "" {
-		h.strm.ReconcileDirCache(r.Context(), accID, parent, path, items)
 	}
 	dtos := make([]fileDTO, 0, len(items))
 	for _, it := range items {

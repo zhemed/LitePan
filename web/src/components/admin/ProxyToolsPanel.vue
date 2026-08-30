@@ -35,7 +35,6 @@ const embyDraft = reactive<Record<string, string>>({
   emby_url: "",
   api_key: "",
   proxy_port: "",
-  direct_strm_clients: "",
 });
 
 const embyRunning = computed(() => embyConfigs.value.filter((item) => item.running).length);
@@ -77,13 +76,6 @@ const embyFields: ProxyField[] = [
     helpTitle: "反代端口说明",
     helpBody: "反代用的端口，随便选一个没被占用的数字就行。<br>留空则不启动反代。",
   },
-  {
-    key: "direct_strm_clients",
-    label: "STRM 直读客户端",
-    placeholder: "默认留空",
-    helpTitle: "STRM 直读客户端说明",
-    helpBody: "一般无需填写。播放器无法通过反代播放 STRM 时，可让它自己读取 STRM 中的地址。<br>填写客户端关键字，多个用分号隔开，例如 <code>XXXPlay;YYYPlayer</code>；未匹配的播放器仍由 LitePan 代取地址。<br>外网播放时，请确保 STRM 的 URL 基础地址可从外网访问。",
-  },
 ];
 
 function openEmby() {
@@ -98,7 +90,6 @@ function openEmby() {
       emby_url: "",
       api_key: "",
       proxy_port: "",
-      direct_strm_clients: "",
     });
   }
 }
@@ -109,7 +100,6 @@ function loadEmbyDraft(config: EmbyConfig) {
     emby_url: config.emby_url,
     api_key: config.api_key,
     proxy_port: String(config.proxy_port || ""),
-    direct_strm_clients: config.direct_strm_clients || "",
   });
 }
 
@@ -127,7 +117,6 @@ function addEmby() {
     emby_url: "",
     api_key: "",
     proxy_port: "",
-    direct_strm_clients: "",
   });
 }
 
@@ -138,7 +127,6 @@ function updatesFromConfigs(configs: EmbyConfig[]): EmbyConfigUpdate[] {
     emby_url: item.emby_url,
     api_key: item.api_key,
     proxy_port: String(item.proxy_port || ""),
-    direct_strm_clients: item.direct_strm_clients || "",
   }));
 }
 
@@ -169,7 +157,6 @@ async function saveEmby() {
     emby_url: embyDraft.emby_url,
     api_key: embyDraft.api_key,
     proxy_port: embyDraft.proxy_port,
-    direct_strm_clients: embyDraft.direct_strm_clients,
   };
   const editing = embyConfigs.value.find((item) => item.id === embySelectedID.value);
   if (editing) {
@@ -199,7 +186,6 @@ async function testEmby() {
       emby_url: embyDraft.emby_url,
       api_key: embyDraft.api_key,
       proxy_port: embyDraft.proxy_port,
-      direct_strm_clients: embyDraft.direct_strm_clients,
     });
     toast.success("Emby 连接成功");
   } catch (error) {
@@ -244,7 +230,6 @@ async function deleteEmby() {
       emby_url: "",
       api_key: "",
       proxy_port: "",
-      direct_strm_clients: "",
     });
   }
 }
@@ -273,9 +258,7 @@ const fnosLastError = ref("");
 const fnosForm = reactive<Record<string, string>>({
   name: "飞牛影视",
   fnos_url: "",
-  strm_path_maps: "",
   proxy_port: "",
-  direct_strm_clients: "Infuse",
 });
 
 function applyFnos(config: {
@@ -283,8 +266,6 @@ function applyFnos(config: {
   name?: string;
   fnos_url?: string;
   proxy_port?: string;
-  strm_path_maps?: string;
-  direct_strm_clients?: string;
   proxy_url?: string;
   running?: boolean;
   last_error?: string;
@@ -296,9 +277,7 @@ function applyFnos(config: {
   Object.assign(fnosForm, {
     name: config.name || "飞牛影视",
     fnos_url: config.fnos_url || "",
-    strm_path_maps: config.strm_path_maps || "",
     proxy_port: config.proxy_port || "",
-    direct_strm_clients: config.direct_strm_clients || "",
   });
 }
 
@@ -323,26 +302,12 @@ const fnosFields: ProxyField[] = [
     helpBody: "你的飞牛影视地址，端口一般是 8005（不是 NAS 管理页的 5666）。<br>给 LitePan 连飞牛用的，播放器里不要填这个。",
   },
   {
-    key: "strm_path_maps",
-    label: "飞牛 STRM 目录",
-    placeholder: "/vol1/1000/Strm/LitePanGO",
-    helpTitle: "飞牛 STRM 目录说明",
-    helpBody: "把 Docker 里映射到 <code>/app/strm</code> 的左边路径填到这里。<br>例：<code>/vol1/1000/Strm/LitePanGO:/app/strm</code> → 填 <code>/vol1/1000/Strm/LitePanGO</code>。<br>两边路径相同则可留空。",
-  },
-  {
     key: "proxy_port",
     label: "反代端口",
     inputmode: "numeric",
     placeholder: "例如 18997",
     helpTitle: "反代端口说明",
     helpBody: "反代用的端口，随便选一个没被占用的数字就行，别和 Emby 反代用同一个。<br>留空则不启动反代。",
-  },
-  {
-    key: "direct_strm_clients",
-    label: "STRM 直读客户端",
-    placeholder: "Infuse;XXXPlay",
-    helpTitle: "STRM 直读客户端说明",
-    helpBody: "部分播放器（如 Infuse）不支持由 LitePan 代取下载地址，需要自己读取 STRM 中的地址。<br>填写这些播放器的客户端关键字，多个用分号隔开，例如 <code>Infuse;XXXPlay</code>；未匹配的播放器仍由 LitePan 代取地址。<br>外网播放时，请确保 STRM 的 URL 基础地址可从外网访问。",
   },
 ];
 
@@ -354,8 +319,6 @@ async function saveFnos() {
       name: fnosForm.name,
       fnos_url: fnosForm.fnos_url,
       proxy_port: fnosForm.proxy_port,
-      strm_path_maps: fnosForm.strm_path_maps,
-      direct_strm_clients: fnosForm.direct_strm_clients,
     });
     applyFnos(saved);
     toast.success("飞牛影视反代配置已保存");
@@ -375,8 +338,6 @@ async function testFnos() {
       name: fnosForm.name,
       fnos_url: fnosForm.fnos_url,
       proxy_port: fnosForm.proxy_port,
-      strm_path_maps: fnosForm.strm_path_maps,
-      direct_strm_clients: fnosForm.direct_strm_clients,
     });
     toast.success("飞牛影视连接成功");
   } catch (error) {
@@ -395,8 +356,6 @@ async function setFnosEnabled(enabled: boolean) {
       name: fnosForm.name,
       fnos_url: fnosForm.fnos_url,
       proxy_port: fnosForm.proxy_port,
-      strm_path_maps: fnosForm.strm_path_maps,
-      direct_strm_clients: fnosForm.direct_strm_clients,
     });
     applyFnos(saved);
     toast.success(enabled ? "飞牛影视反代已启用" : "飞牛影视反代已停用");
@@ -447,10 +406,10 @@ onMounted(async () => {
       <span class="tool-card__bar" :class="embyEnabled ? 'is-enabled' : 'is-disabled'" />
       <div class="tool-card__head">
         <img class="tool-card__logo" src="/logos/emby.png" alt="Emby" />
-        <div class="tool-card__meta"><h3 class="tool-card__name">Emby 反代</h3><p class="tool-card__driver">STRM 直连 · 多 Emby 服务</p></div>
+        <div class="tool-card__meta"><h3 class="tool-card__name">Emby 反代</h3><p class="tool-card__driver">多 Emby 服务</p></div>
         <button class="check-toggle" type="button" :class="{ on: embyEnabled }" :disabled="embySaving" title="启用 / 停用" @click="setEmbyEnabled(!embyEnabled)"><svg viewBox="0 0 16 16"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
       </div>
-      <p class="tool-card__desc">将 Emby 的 STRM 播放请求转换为网盘 302 直链，避免媒体流量经过 Emby 服务器中转。</p>
+      <p class="tool-card__desc">将 Emby 的播放请求转换为网盘 302 直链，避免媒体流量经过 Emby 服务器中转。</p>
       <div class="tool-card__row"><div class="tool-card__stat"><span class="tool-card__num">{{ embyConfigs.length }}</span><span class="tool-card__label">个配置 · {{ embyRunning }} 个运行</span></div><AppButton size="sm" variant="secondary" @click="openEmby">配置反代</AppButton></div>
     </article>
 
@@ -458,10 +417,10 @@ onMounted(async () => {
       <span class="tool-card__bar" :class="fnosEnabled ? 'is-enabled' : 'is-disabled'" />
       <div class="tool-card__head">
         <img class="tool-card__logo" src="/logos/fnmovie.png" alt="飞牛影视" />
-        <div class="tool-card__meta"><h3 class="tool-card__name">飞牛影视反代</h3><p class="tool-card__driver">STRM 直连 · 飞牛路径转换</p></div>
+        <div class="tool-card__meta"><h3 class="tool-card__name">飞牛影视反代</h3><p class="tool-card__driver">飞牛路径转换</p></div>
         <button class="check-toggle" type="button" :class="{ on: fnosEnabled }" :disabled="fnosSaving" title="启用 / 停用" @click="setFnosEnabled(!fnosEnabled)"><svg viewBox="0 0 16 16"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
       </div>
-      <p class="tool-card__desc">解决Vidhub、Senplayer、爆米花等第三方播放器添加飞牛影视源后，无法播放STRM的问题。</p>
+      <p class="tool-card__desc">解决Vidhub、Senplayer、爆米花等第三方播放器添加飞牛影视源后，无法播放的问题。</p>
       <div class="tool-card__row"><div class="tool-card__stat"><span class="tool-card__num">{{ fnosRunning ? '运行中' : fnosEnabled ? '待监听' : '未启用' }}</span></div><AppButton size="sm" variant="secondary" @click="fnosOpen = true">配置反代</AppButton></div>
     </article>
 
@@ -471,7 +430,7 @@ onMounted(async () => {
       title="Emby 反代配置"
       caption="EMBY 配置"
       icon="🎬"
-      subtitle="STRM 直连 · 多 Emby 服务"
+      subtitle="多 Emby 服务"
       :items="embyItems"
       :selected-id="embySelectedID"
       :fields="embyFields"
@@ -501,7 +460,7 @@ onMounted(async () => {
       title="飞牛影视反代配置"
       caption="飞牛影视配置"
       icon="📺"
-      subtitle="STRM 直连 · 飞牛路径转换"
+      subtitle="飞牛路径转换"
       :items="fnosItems"
       selected-id="fnos"
       :fields="fnosFields"

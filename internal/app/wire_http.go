@@ -31,8 +31,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 	apiKeySvc := apikey.New(apikey.Options{
 		Repo:     st.store.ApiKeys,
 		Settings: st.settings,
-		Strm:     svc.strm,
-		StrmDir:  cfg.StrmDir,
 		Secret:   core.secret,
 	})
 	if svc.automation != nil {
@@ -62,13 +60,11 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		return nil, err
 	}
 	spaceCleanupSvc, err := spacecleanup.New(spacecleanup.Options{
-		DataDir:   cfg.DataDir,
-		StrmDir:   cfg.StrmDir,
-		DBPath:    cfg.DBPath,
-		StrmTasks: st.store.StrmTasks,
-		Cache:     core.cache,
-		DB:        st.db,
-		Logs:      logs,
+		DataDir: cfg.DataDir,
+		DBPath:  cfg.DBPath,
+		Cache:   core.cache,
+		DB:      st.db,
+		Logs:    logs,
 		LogRetentionDays: func() int {
 			return st.settings.Int(settings.KeyLogRetentionDays)
 		},
@@ -141,12 +137,10 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Uploads:           svc.uploads,
 		OfflineDownloads:  svc.offlineDownloads,
 		Playback:          svc.playback,
-		Strm:              svc.strm,
 		CacheRetention:    svc.cacheRetention,
 		MediaOrganize:     svc.mediaOrganize,
 		AIOrganize:        svc.aiOrganize,
 		ClassifyOrganize:  svc.classifyOrganize,
-		StrmScrape:        svc.strmScrape,
 		Automation:        svc.automation,
 		Fuse:              svc.fuse,
 		CrossTransfer:     svc.crossTransfer,
@@ -163,7 +157,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		SpaceCleanup:      spaceCleanupSvc,
 		CoverExtract:      coverExtractSvc,
 		DataDir:           cfg.DataDir,
-		StrmDir:           cfg.StrmDir,
 		OnSettingsUpdated: cacheSettingsHook(core.cache, st.settings, cfg.DataDir),
 	})
 

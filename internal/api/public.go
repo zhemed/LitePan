@@ -32,9 +32,8 @@ func (h *Handler) publicCacheHitRate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) publicSystemConfig(w http.ResponseWriter, r *http.Request) {
 	_ = r
 	writeOK(w, map[string]any{
-		"index_account_switch_mode":      h.adminAuth.IndexAccountSwitchMode(r.Context()),
-		"compact_home_enabled":           h.adminAuth.CompactHomeEnabled(r.Context()),
-		"header_effects_enabled":         h.adminAuth.HeaderEffectsEnabled(r.Context()),
-		"index_strm_auto_detect_enabled": h.adminAuth.IndexStrmAutoDetectEnabled(r.Context()),
+		"index_account_switch_mode": h.adminAuth.IndexAccountSwitchMode(r.Context()),
+		"compact_home_enabled":      h.adminAuth.CompactHomeEnabled(r.Context()),
+		"header_effects_enabled":    h.adminAuth.HeaderEffectsEnabled(r.Context()),
 	})
 }

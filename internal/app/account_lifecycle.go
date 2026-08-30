@@ -12,15 +12,12 @@ import (
 	"litepan/internal/mediaorganize"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/quarktv"
-	"litepan/internal/strm"
 	"litepan/internal/upload"
 )
 
 type accountLifecycle struct {
 	fuse      *fusemount.Service
 	readCache *fusereadcache.Service
-	strm      *strm.Coordinator
-	strmSvc   *strm.Service
 	retention *cacheretention.Coordinator
 	media     *mediaorganize.Service
 	favorites *favorites.Service
@@ -33,9 +30,6 @@ func (a accountLifecycle) OnAccountDisabled(ctx context.Context, accountID int64
 	if accountID <= 0 {
 		return
 	}
-	if a.strm != nil {
-		_, _ = a.strm.PauseByAccount(ctx, accountID, domain.PauseReasonAccountDisabled, "关联的账号已禁用")
-	}
 	if a.retention != nil {
 		_, _ = a.retention.PauseByAccount(ctx, accountID, domain.PauseReasonAccountDisabled, "关联的账号已禁用")
 	}
@@ -44,9 +38,6 @@ func (a accountLifecycle) OnAccountDisabled(ctx context.Context, accountID int64
 func (a accountLifecycle) OnAccountEnabled(ctx context.Context, accountID int64) {
 	if accountID <= 0 {
 		return
-	}
-	if a.strm != nil {
-		_, _ = a.strm.ResumeByAccount(ctx, accountID)
 	}
 	if a.retention != nil {
 		_, _ = a.retention.ResumeByAccount(ctx, accountID)
@@ -65,16 +56,6 @@ func (a accountLifecycle) OnAccountDeleted(ctx context.Context, accountID int64)
 	if a.readCache != nil {
 		if err := a.readCache.InvalidateAccount(ctx, accountID); err != nil {
 			return fmt.Errorf("清理 FUSE 读缓存失败: %w", err)
-		}
-	}
-	if a.strm != nil {
-		if _, err := a.strm.RemoveTasksByAccount(ctx, accountID); err != nil {
-			return fmt.Errorf("清理 STRM 任务失败: %w", err)
-		}
-	}
-	if a.strmSvc != nil {
-		if _, err := a.strmSvc.ClearDirCache(ctx, accountID); err != nil {
-			return fmt.Errorf("清理 STRM 路径映射表失败: %w", err)
 		}
 	}
 	if a.retention != nil {

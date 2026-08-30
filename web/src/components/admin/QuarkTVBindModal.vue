@@ -130,7 +130,7 @@ async function poll() {
       binding.value = true;
       phase.value = "success";
       clearTimers();
-      toast.success("绑定成功，STRM 播放请求将改走夸克 TV 直链");
+      toast.success("绑定成功，播放请求将改走夸克 TV 直链");
       emit("bound");
       return;
     }

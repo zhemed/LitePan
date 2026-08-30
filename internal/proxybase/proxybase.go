@@ -1,23 +1,17 @@
 // Package proxybase 提供 Emby / 飞牛影视反代共用的只读辅助：
-// STRM play URL 解析、URL/端口规范化、hop-by-hop 头集合与超时常量。
+// URL/端口规范化、hop-by-hop 头集合与超时常量。
 package proxybase
 
 import (
-	"bytes"
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"litepan/internal/domain"
-	"litepan/internal/strm"
 )
-
-// StrmPlayPathRE 匹配 LitePan STRM play URL（与 internal/strm 播放链接格式一致）。
-var StrmPlayPathRE = regexp.MustCompile(`(?i)^/api/strm/play/(\d+)/([^/]+)/t/([^/]+)/n/([^/?#\s]+)(?:/s/([^/?#\s]+))?$`)
 
 // HopByHopHeaderNames 是反向代理转发时需剥离的 hop-by-hop 头。
 var HopByHopHeaderNames = map[string]struct{}{
@@ -28,25 +22,7 @@ var HopByHopHeaderNames = map[string]struct{}{
 // TestRequestTimeout 是反代连通性测试的上游请求超时。
 const TestRequestTimeout = 20 * time.Second
 
-// ParseLitePanSTRMURL 从 STRM play URL 解析账号 ID 与网盘 file_id。
-func ParseLitePanSTRMURL(value string) (int64, string, bool) {
-	path := LitePanPath(value)
-	m := StrmPlayPathRE.FindStringSubmatch(path)
-	if len(m) < 3 {
-		return 0, "", false
-	}
-	accountID, err := strconv.ParseInt(m[1], 10, 64)
-	if err != nil || accountID <= 0 {
-		return 0, "", false
-	}
-	fileID, err := strm.DecodeFileKey(m[2])
-	if err != nil || fileID == "" {
-		return 0, "", false
-	}
-	return accountID, fileID, true
-}
-
-// LitePanPath 从 STRM 播放地址中提取路径部分（去掉 host 与 query）。
+// LitePanPath 从播放地址中提取路径部分（去掉 host 与 query）。
 func LitePanPath(value string) string {
 	text := CleanWrappedURL(value)
 	if text == "" {
@@ -173,14 +149,6 @@ func MatchesClientText(value string, candidates ...string) bool {
 		}
 	}
 	return false
-}
-
-// ServeSTRMDescriptor 把原 STRM 地址作为单行文本交给播放终端。
-func ServeSTRMDescriptor(w http.ResponseWriter, r *http.Request, playURL string) {
-	data := []byte(strings.TrimSpace(playURL) + "\n")
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	http.ServeContent(w, r, "media.strm", time.Time{}, bytes.NewReader(data))
 }
 
 func splitClientKeywords(value string) []string {

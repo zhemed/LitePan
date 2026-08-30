@@ -45,25 +45,13 @@
   </tr>
   <tr>
     <td width="50%" valign="top" align="center">
-      <h3>STRM 直连播放</h3>
-      <p align="left">生成 <code>.strm</code>，对接 Emby / Jellyfin。</p>
-      <img src="docs/pictures/feature-strm.png" alt="STRM 直连播放" height="220">
-    </td>
-    <td width="50%" valign="top" align="center">
-      <h3>STRM 刮削</h3>
-      <p align="left">写 nfo / 海报，海报墙可追更。</p>
-      <img src="docs/pictures/feature-strm-scrape.png" alt="STRM 刮削" height="220">
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
       <h3>目录整理</h3>
       <p align="left">TMDB 识别，预览后再归档。</p>
       <img src="docs/pictures/feature-organize.png" alt="目录整理" height="220">
     </td>
     <td width="50%" valign="top" align="center">
       <h3>自动联动</h3>
-      <p align="left">整理、STRM、刮削、刷库串起来。</p>
+      <p align="left">整理与刷库串起来。</p>
       <img src="docs/pictures/feature-automation.png" alt="自动联动" height="220">
     </td>
   </tr>
@@ -94,7 +82,6 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - ./data:/app/data
-      - ./strm:/app/strm
       - ./mounts:/app/mounts:shared
 
       # 可选：将 FUSE 读缓存单独映射，建议放到更快的磁盘

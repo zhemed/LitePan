@@ -245,7 +245,7 @@ async function onBound() {
     try {
       await quarkTVApi.setEnabled(true);
       qtvStatus.value.enabled = true;
-      toast.success("已启用夸克 STRM 接管");
+      toast.success("已启用夸克接管");
     } catch (e) {
       toast.error(getApiErrorMessage(e, "绑定成功但启用失败，请手动开启"));
     } finally {
@@ -311,10 +311,10 @@ async function saveSettings() {
 </script>
 
 <template>
-  <div v-show="matches('夸克 STRM 接管')">
+  <div v-show="matches('夸克接管')">
     <CloudToolCard
       :enabled="qtvStatus.enabled"
-      name="夸克 STRM 接管"
+      name="夸克接管"
       driver="夸克网盘 · TV 版 302 直链"
       logo-src="/logos/quark.png"
       logo-alt="夸克"
@@ -327,7 +327,7 @@ async function saveSettings() {
           class="check-toggle"
           type="button"
           :class="{ on: qtvStatus.enabled }"
-          :aria-label="qtvStatus.enabled ? '停用夸克 STRM 接管' : '启用夸克 STRM 接管'"
+          :aria-label="qtvStatus.enabled ? '停用夸克接管' : '启用夸克接管'"
           :disabled="qtvSaving || !qtvStatus.available"
           title="启用 / 停用"
           @click="toggleEnabled"
@@ -344,7 +344,7 @@ async function saveSettings() {
           </svg>
         </button>
       </template>
-      让夸克 STRM 改走 TV 版 302 直链；转码画质和字幕受影响且部分第三方播放器不兼容。
+      让夸克改走 TV 版 302 直链；转码画质和字幕受影响且部分第三方播放器不兼容。
       <template #actions>
         <AppButton size="sm" variant="secondary" :disabled="qtvSaving" @click="openWorkspace">
           账号绑定
@@ -355,7 +355,7 @@ async function saveSettings() {
     <ProxyWorkspace
       v-model="qtvForm"
       :open="qtvWorkspaceOpen"
-      title="夸克 STRM 接管 · 账号绑定"
+      title="夸克接管 · 账号绑定"
       caption="已绑定账号"
       icon="☁️"
       :subtitle="selectedBinding ? `TV 账号：${selectedBinding.tv_nickname || '未知'} · 会员：${displayMembership(selectedBinding)}` : ''"

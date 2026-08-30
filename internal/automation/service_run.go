@@ -10,13 +10,6 @@ import (
 
 	"litepan/internal/domain"
 	"litepan/internal/embyproxy"
-	"litepan/internal/strmscrape"
-)
-
-const (
-	strmScrapeFailurePolicyAllFailed = "all_failed"
-	strmScrapeFailurePolicyAnyFailed = "any_failed"
-	strmScrapeFailurePolicyNever     = "never"
 )
 
 func (s *Service) RunAsync(ctx context.Context, id int64, triggerSource string) (map[string]any, error) {
@@ -122,10 +115,6 @@ func (s *Service) executeAction(ctx context.Context, action RuleAction) map[stri
 		return s.runDelay(ctx, action.Params)
 	case domain.AutomationActionOrganize:
 		return s.runOrganize(ctx, action.Params)
-	case domain.AutomationActionStrm:
-		return s.runStrm(ctx, action.Params)
-	case domain.AutomationActionStrmScrape:
-		return s.runStrmScrape(ctx, action.Params)
 	case domain.AutomationActionEmbyRefresh:
 		return s.runEmbyRefresh(ctx, action.Params)
 	default:
@@ -139,7 +128,7 @@ func (s *Service) runCacheClear(ctx context.Context, params map[string]any) map[
 	}
 	targets := s.collectCacheClearTargets(ctx, params["_following_actions"])
 	if len(targets) == 0 {
-		return map[string]any{"status": "failed", "success": false, "message": "刷新目录后面需要有整理任务或 STRM 任务"}
+		return map[string]any{"status": "failed", "success": false, "message": "刷新目录后面需要有整理任务"}
 	}
 	cleaned := make([]map[string]any, 0, len(targets))
 	for _, target := range targets {
@@ -202,19 +191,6 @@ func (s *Service) collectCacheClearTargets(ctx context.Context, raw any) []cache
 			if strings.TrimSpace(anyString(cfg["action_type"])) == "move" {
 				addTarget(accountID, anyString(cfg["target_root_id"]), anyString(cfg["target_root"]))
 			}
-		case domain.AutomationActionStrm:
-			if s.strm == nil {
-				continue
-			}
-			taskID := int64(anyInt(action.Params["task_id"]))
-			if taskID <= 0 {
-				continue
-			}
-			task, err := s.strm.GetTask(ctx, taskID)
-			if err != nil {
-				continue
-			}
-			addTarget(task.AccountID, task.ParentID, task.Path)
 		}
 	}
 	return targets
@@ -329,140 +305,6 @@ func evaluateOrganizeAction(summary, params map[string]any, runCompleted bool) o
 		normalSkipped:   normalSkipped,
 		riskTotal:       riskTotal,
 	}
-}
-
-func (s *Service) runStrm(ctx context.Context, params map[string]any) map[string]any {
-	taskID := int64(anyInt(params["task_id"]))
-	if taskID <= 0 {
-		return map[string]any{"status": "failed", "success": false, "message": "未选择 STRM 任务"}
-	}
-	if _, err := s.strm.GetTask(ctx, taskID); err != nil {
-		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-	}
-	startedAt := time.Now()
-	runMode := strings.TrimSpace(anyString(params["run_mode"]))
-	if runMode == "" {
-		runMode = domain.StrmRunModeAuto
-	}
-	if _, err := s.strm.RunTaskNow(ctx, taskID, runMode); err != nil {
-		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-	}
-	for s.strm.IsTaskRunning(taskID) {
-		select {
-		case <-ctx.Done():
-			return map[string]any{"status": "failed", "success": false, "message": "STRM 任务等待被取消"}
-		case <-time.After(2 * time.Second):
-		}
-	}
-	updated, err := s.strm.GetTask(ctx, taskID)
-	if err != nil {
-		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-	}
-	success := !updated.LastScan.IsZero() && !updated.LastScan.Before(startedAt.Add(-time.Second)) && updated.LastScanStatus != "failed"
-	message := "STRM 任务执行完成"
-	if !success {
-		if msg := strings.TrimSpace(updated.ErrorMessage); msg != "" {
-			message = msg
-		} else {
-			message = "STRM 任务执行失败"
-		}
-	}
-	return map[string]any{
-		"status":  ternaryStatus(success),
-		"success": success,
-		"message": message,
-		"data": map[string]any{
-			"task_id":          updated.ID,
-			"name":             updated.Name,
-			"last_scan_status": updated.LastScanStatus,
-		},
-	}
-}
-
-func (s *Service) runStrmScrape(ctx context.Context, params map[string]any) map[string]any {
-	if s.strmScrape == nil {
-		return map[string]any{"status": "failed", "success": false, "message": "STRM 刮削服务未就绪"}
-	}
-	taskID := int64(anyInt(params["task_id"]))
-	if taskID <= 0 {
-		return map[string]any{"status": "failed", "success": false, "message": "未选择 STRM 任务"}
-	}
-	task, err := s.strm.GetTask(ctx, taskID)
-	if err != nil {
-		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-	}
-	req := strmscrape.RunRequest{
-		StrmTaskID: taskID,
-		WriteMode:  strings.TrimSpace(anyString(params["write_mode"])),
-	}
-	if err := s.strmScrape.RunAsync(ctx, req); err != nil {
-		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-	}
-	for {
-		progress := s.strmScrape.GetProgress()
-		if !progress.Running {
-			policy := normalizeStrmScrapeFailurePolicy(params["failure_policy"])
-			status, success := strmScrapeOutcome(progress, policy)
-			message := strings.TrimSpace(progress.Message)
-			if message == "" {
-				if strings.TrimSpace(progress.Error) == "" {
-					message = "本地 STRM 元数据生成完成"
-				} else {
-					message = "本地 STRM 元数据生成失败"
-				}
-			}
-			if errMsg := strings.TrimSpace(progress.Error); errMsg != "" {
-				message = errMsg
-			} else if status == "partial" {
-				message = fmt.Sprintf("%s（按设置继续联动）", message)
-			}
-			return map[string]any{
-				"status":  status,
-				"success": success,
-				"message": message,
-				"data": map[string]any{
-					"task_id":        task.ID,
-					"name":           task.Name,
-					"total":          progress.Total,
-					"done":           progress.Done,
-					"skipped":        progress.Skipped,
-					"failed":         progress.Failed,
-					"failure_policy": policy,
-				},
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return map[string]any{"status": "failed", "success": false, "message": "本地 STRM 元数据生成等待被取消"}
-		case <-time.After(2 * time.Second):
-		}
-	}
-}
-
-func normalizeStrmScrapeFailurePolicy(value any) string {
-	switch strings.TrimSpace(anyString(value)) {
-	case strmScrapeFailurePolicyAnyFailed:
-		return strmScrapeFailurePolicyAnyFailed
-	case strmScrapeFailurePolicyNever:
-		return strmScrapeFailurePolicyNever
-	default:
-		return strmScrapeFailurePolicyAllFailed
-	}
-}
-
-func strmScrapeOutcome(progress strmscrape.Progress, policy string) (string, bool) {
-	if strings.TrimSpace(progress.Error) != "" {
-		return "failed", false
-	}
-	if progress.Failed <= 0 {
-		return "success", true
-	}
-	allFailed := progress.Done-progress.Failed <= 0
-	if policy == strmScrapeFailurePolicyAnyFailed ||
-		(policy == strmScrapeFailurePolicyAllFailed && allFailed) {
-		return "failed", false
-	}
-	return "partial", true
 }
 
 func (s *Service) runEmbyRefresh(ctx context.Context, params map[string]any) map[string]any {
@@ -616,10 +458,6 @@ func actionDisplayName(action RuleAction) string {
 		return "等待"
 	case domain.AutomationActionOrganize:
 		return "目录整理"
-	case domain.AutomationActionStrm:
-		return "STRM 任务"
-	case domain.AutomationActionStrmScrape:
-		return "生成本地 STRM 元数据"
 	case domain.AutomationActionCacheClear:
 		return "刷新目录"
 	case domain.AutomationActionEmbyRefresh:

@@ -11,20 +11,16 @@ import (
 	"litepan/internal/embyproxy"
 	filesvc "litepan/internal/file"
 	"litepan/internal/mediaorganize"
-	"litepan/internal/strm"
-	"litepan/internal/strmscrape"
 )
 
 type Service struct {
-	rules      domain.AutomationRuleRepository
-	runs       domain.AutomationRunRepository
-	apiKeys    *apikey.Service
-	strm       *strm.Service
-	strmScrape *strmscrape.Service
-	organize   *mediaorganize.Service
-	emby       *embyproxy.Service
-	files      *filesvc.Service
-	log        *slog.Logger
+	rules    domain.AutomationRuleRepository
+	runs     domain.AutomationRunRepository
+	apiKeys  *apikey.Service
+	organize *mediaorganize.Service
+	emby     *embyproxy.Service
+	files    *filesvc.Service
+	log      *slog.Logger
 
 	mu            sync.Mutex
 	started       bool
@@ -38,15 +34,13 @@ type Service struct {
 }
 
 type Options struct {
-	Rules      domain.AutomationRuleRepository
-	Runs       domain.AutomationRunRepository
-	ApiKeys    *apikey.Service
-	Strm       *strm.Service
-	StrmScrape *strmscrape.Service
-	Organize   *mediaorganize.Service
-	Emby       *embyproxy.Service
-	Files      *filesvc.Service
-	Log        *slog.Logger
+	Rules    domain.AutomationRuleRepository
+	Runs     domain.AutomationRunRepository
+	ApiKeys  *apikey.Service
+	Organize *mediaorganize.Service
+	Emby     *embyproxy.Service
+	Files    *filesvc.Service
+	Log      *slog.Logger
 }
 
 type RuleAction struct {
@@ -134,8 +128,6 @@ func New(opts Options) *Service {
 		rules:        opts.Rules,
 		runs:         opts.Runs,
 		apiKeys:      opts.ApiKeys,
-		strm:         opts.Strm,
-		strmScrape:   opts.StrmScrape,
 		organize:     opts.Organize,
 		emby:         opts.Emby,
 		files:        opts.Files,
@@ -176,38 +168,6 @@ func (s *Service) ListRules(ctx context.Context) ([]RuleView, error) {
 	return out, nil
 }
 
-func (s *Service) ManagedStrmTaskIDs(ctx context.Context) (map[int64]struct{}, error) {
-	rows, err := s.rules.List(ctx, true)
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[int64]struct{})
-	for _, row := range rows {
-		for _, action := range decodeActions(row.Actions) {
-			if action.Type != domain.AutomationActionStrm {
-				continue
-			}
-			taskID := int64(anyInt(action.Params["task_id"]))
-			if taskID > 0 {
-				out[taskID] = struct{}{}
-			}
-		}
-	}
-	return out, nil
-}
-
-func (s *Service) IsStrmTaskManaged(ctx context.Context, taskID int64) (bool, error) {
-	if taskID <= 0 {
-		return false, nil
-	}
-	managed, err := s.ManagedStrmTaskIDs(ctx)
-	if err != nil {
-		return false, err
-	}
-	_, ok := managed[taskID]
-	return ok, nil
-}
-
 func (s *Service) GetRule(ctx context.Context, id int64) (RuleView, error) {
 	row, err := s.rules.Get(ctx, id)
 	if err != nil {
@@ -218,10 +178,6 @@ func (s *Service) GetRule(ctx context.Context, id int64) (RuleView, error) {
 
 func (s *Service) CreateRule(ctx context.Context, in RuleInput) (RuleView, error) {
 	norm, err := s.normalizeInput(ctx, in)
-	if err != nil {
-		return RuleView{}, err
-	}
-	rollbackStrm, err := s.bindStrmTasksManual(ctx, norm.Actions)
 	if err != nil {
 		return RuleView{}, err
 	}
@@ -240,9 +196,6 @@ func (s *Service) CreateRule(ctx context.Context, in RuleInput) (RuleView, error
 	}
 	id, err := s.rules.Create(ctx, row)
 	if err != nil {
-		if rollbackErr := rollbackStrm(ctx); rollbackErr != nil {
-			s.log.Warn("automation rollback strm schedule failed", "err", rollbackErr)
-		}
 		return RuleView{}, err
 	}
 	return s.GetRule(ctx, id)
@@ -257,10 +210,6 @@ func (s *Service) UpdateRule(ctx context.Context, id int64, in RuleInput) (RuleV
 	if err != nil {
 		return RuleView{}, err
 	}
-	rollbackStrm, err := s.bindStrmTasksManual(ctx, norm.Actions)
-	if err != nil {
-		return RuleView{}, err
-	}
 	existing.Name = norm.Name
 	existing.TriggerType = norm.TriggerType
 	existing.TriggerConfig = mustJSON(norm.TriggerConfig)
@@ -271,9 +220,6 @@ func (s *Service) UpdateRule(ctx context.Context, id int64, in RuleInput) (RuleV
 		existing.NextRunAt = time.Time{}
 	}
 	if err := s.rules.Update(ctx, existing); err != nil {
-		if rollbackErr := rollbackStrm(ctx); rollbackErr != nil {
-			s.log.Warn("automation rollback strm schedule failed", "rule_id", id, "err", rollbackErr)
-		}
 		return RuleView{}, err
 	}
 	return s.GetRule(ctx, id)
@@ -331,24 +277,9 @@ func (s *Service) ClearRuns(ctx context.Context) (int, error) {
 }
 
 func (s *Service) ListOptions(ctx context.Context) (map[string]any, error) {
-	strmTasks, err := s.strm.ListTasks(ctx)
-	if err != nil {
-		return nil, err
-	}
 	organizeTasks, err := s.organize.ListTasks(ctx)
 	if err != nil {
 		return nil, err
-	}
-	strmData := make([]map[string]any, 0, len(strmTasks))
-	for _, task := range strmTasks {
-		strmData = append(strmData, map[string]any{
-			"id":                   task.ID,
-			"name":                 task.Name,
-			"account_id":           task.AccountID,
-			"path":                 task.Path,
-			"schedule_mode":        task.ScheduleMode,
-			"branch_check_enabled": task.BranchCheckEnabled,
-		})
 	}
 	organizeData := make([]map[string]any, 0, len(organizeTasks))
 	for _, task := range organizeTasks {
@@ -369,7 +300,6 @@ func (s *Service) ListOptions(ctx context.Context) (map[string]any, error) {
 		}
 	}
 	return map[string]any{
-		"strm_tasks":     strmData,
 		"organize_tasks": organizeData,
 		"emby_configs":   embyConfigs,
 	}, nil

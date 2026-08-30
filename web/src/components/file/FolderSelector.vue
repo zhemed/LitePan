@@ -29,7 +29,7 @@ const props = withDefaults(
   defineProps<{
     // 网盘浏览必填；提供 loader 时可为 0（仅用于 resolve 回传）。
     accountId?: number;
-    // 自定义目录加载（如 STRM 任务本地目录）；提供后不再走 filesApi。
+    // 自定义目录加载；提供后不再走 filesApi。
     loader?: FolderLoader;
     title?: string;
     confirmText?: string;
