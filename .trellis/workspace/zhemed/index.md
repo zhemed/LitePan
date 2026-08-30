@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 41
+- **Total Sessions**: 42
 - **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1520 | Active |
+| `journal-1.md` | ~1552 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 42 | 2026-08-31 | Review remove nested LitePan-own | `ae853bc` | `main` |
 | 41 | 2026-08-31 | Investigate LitePan-own actual usage | `9fbd968` | `main` |
 | 40 | 2026-08-31 | Fuse LitePan-own 5 fixes 0.0.3 | `4d8e868` | `main` |
 | 39 | 2026-08-31 | Review LitePan-own extraction and fusion | `e017c33` | `main` |
