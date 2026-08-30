@@ -102,10 +102,13 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	offlineDownloadSvc.SetUploads(uploadSvc)
 	fuseSvc.SetUploads(uploadSvc)
 	automationSvc := automation.New(automation.Options{
-		Rules: st.store.AutomationRules,
-		Runs:  st.store.AutomationRuns,
-		Files: fileSvc,
-		Log:   logs.For(logx.ModuleSystem),
+		Rules:    st.store.AutomationRules,
+		Runs:     st.store.AutomationRuns,
+		Files:    fileSvc,
+		Settings: st.settings,
+		DataDir:  cfg.DataDir,
+		Uploads:  uploadSvc,
+		Log:      logs.For(logx.ModuleSystem),
 	})
 	automationSvc.SetStartupGate(startupGate)
 	automationSvc.Register(core.bus)

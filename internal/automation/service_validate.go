@@ -9,7 +9,52 @@ import (
 )
 
 func (s *Service) ValidateRule(ctx context.Context, actions []RuleAction) (ValidationResult, error) {
-	return ValidationResult{OK: true, Issues: nil}, nil
+	issues := make([]ValidationIssue, 0)
+	for index, action := range actions {
+		switch action.Type {
+		case domain.AutomationActionDelay:
+		case domain.AutomationActionLocalUpload:
+			accountID := int64(anyInt(action.Params["account_id"]))
+			if accountID <= 0 {
+				issues = append(issues, ValidationIssue{Level: "error", Message: "未选择目标网盘账号", ActionIndex: index, ActionType: action.Type})
+				continue
+			}
+			var mappings []string
+			if raw, ok := action.Params["mappings"]; ok {
+				if arr, ok := raw.([]any); ok {
+					for _, v := range arr {
+						if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+							mappings = append(mappings, strings.TrimSpace(s))
+						}
+					}
+				} else if str, ok := raw.(string); ok && strings.TrimSpace(str) != "" {
+					mappings = append(mappings, strings.TrimSpace(str))
+				}
+			}
+			if len(mappings) == 0 {
+				if m := strings.TrimSpace(anyString(action.Params["mapping"])); m != "" {
+					mappings = append(mappings, m)
+				}
+			}
+			if len(mappings) == 0 {
+				issues = append(issues, ValidationIssue{Level: "error", Message: "未选择本地映射目录", ActionIndex: index, ActionType: action.Type})
+				continue
+			}
+			targetID := strings.TrimSpace(anyString(action.Params["target_parent_id"]))
+			if targetID == "" {
+				targetID = strings.TrimSpace(anyString(action.Params["target_path"]))
+			}
+			if targetID == "" {
+				targetID = strings.TrimSpace(anyString(action.Params["target_display_path"]))
+			}
+			if targetID == "" {
+				issues = append(issues, ValidationIssue{Level: "error", Message: "未选择网盘目标目录", ActionIndex: index, ActionType: action.Type})
+			}
+		default:
+			issues = append(issues, ValidationIssue{Level: "error", Message: "动作类型不支持", ActionIndex: index, ActionType: action.Type})
+		}
+	}
+	return ValidationResult{OK: len(issues) == 0, Issues: issues}, nil
 }
 
 func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, error) {
@@ -71,7 +116,7 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 		}
 		in.Actions[i].Type = strings.TrimSpace(in.Actions[i].Type)
 		switch in.Actions[i].Type {
-		case domain.AutomationActionDelay:
+		case domain.AutomationActionDelay, domain.AutomationActionLocalUpload:
 		default:
 			return in, domain.Errorf(domain.CodeValidation, "存在不支持的动作")
 		}

@@ -9,13 +9,18 @@ import (
 	"litepan/internal/apikey"
 	"litepan/internal/domain"
 	filesvc "litepan/internal/file"
+	"litepan/internal/settings"
+	"litepan/internal/upload"
 )
 
 type Service struct {
-	rules   domain.AutomationRuleRepository
-	runs    domain.AutomationRunRepository
-	apiKeys *apikey.Service
-	files   *filesvc.Service
+	rules    domain.AutomationRuleRepository
+	runs     domain.AutomationRunRepository
+	apiKeys  *apikey.Service
+	files    *filesvc.Service
+	settings *settings.Service
+	dataDir  string
+	uploads  *upload.Manager
 	log      *slog.Logger
 
 	mu            sync.Mutex
@@ -30,10 +35,13 @@ type Service struct {
 }
 
 type Options struct {
-	Rules   domain.AutomationRuleRepository
-	Runs    domain.AutomationRunRepository
-	ApiKeys *apikey.Service
-	Files   *filesvc.Service
+	Rules    domain.AutomationRuleRepository
+	Runs     domain.AutomationRunRepository
+	ApiKeys  *apikey.Service
+	Files    *filesvc.Service
+	Settings *settings.Service
+	DataDir  string
+	Uploads  *upload.Manager
 	Log      *slog.Logger
 }
 
@@ -117,6 +125,9 @@ func New(opts Options) *Service {
 		runs:         opts.Runs,
 		apiKeys:      opts.ApiKeys,
 		files:        opts.Files,
+		settings:     opts.Settings,
+		dataDir:      opts.DataDir,
+		uploads:      opts.Uploads,
 		log:          log,
 		runningStep:  make(map[int64]map[string]any),
 		pendingCount: make(map[int64]int),

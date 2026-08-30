@@ -3,7 +3,7 @@ import { http } from "./client";
 export type AutomationTriggerType = "daily" | "interval" | "webhook" | "offline_download";
 export type AutomationStatus = "running" | "paused";
 export type AutomationCondition = "always" | "prev_success" | "prev_failed";
-export type AutomationActionType = "delay";
+export type AutomationActionType = "delay" | "local_upload";
 
 export interface AutomationAction {
   id: string;

@@ -471,6 +471,30 @@
               <input v-model.number="configAction.params.seconds" type="number" class="ctrl" min="1" max="86400">
             </div>
           </template>
+          <template v-else-if="configAction.type === 'local_upload'">
+            <div class="cfg-row">
+              <label>目标网盘</label>
+              <AppSelect v-model="configAction.params.account_id" :options="localUploadAccountOptions" placeholder="请选择网盘账号" />
+            </div>
+            <div class="cfg-row">
+              <label>本地映射（多选）</label>
+              <AppSelect v-model="configAction.params.mappings" :options="localMappingOptions" placeholder="请选择映射目录" multiple />
+              <div class="field-tip">可多选；来自 工具箱 → 本地上传</div>
+            </div>
+            <div class="cfg-row">
+              <label>网盘目标目录ID</label>
+              <input v-model.trim="configAction.params.target_parent_id" class="ctrl" type="text" placeholder="根目录填 / ，或填网盘文件夹ID">
+              <div class="field-tip">可在网盘文件浏览里复制目标文件夹ID，根目录填 /</div>
+            </div>
+            <div class="cfg-row">
+              <label>冲突策略</label>
+              <AppSelect v-model="configAction.params.conflict_policy" :options="localUploadConflictOptions" />
+            </div>
+            <div class="cfg-row">
+              <label>子路径（可选）</label>
+              <input v-model.trim="configAction.params.source_path" class="ctrl" type="text" placeholder="留空表示整个映射，填子目录如 sub/dir">
+            </div>
+          </template>
           <template v-else-if="configAction.type === 'emby_refresh'">
             <div class="cfg-row">
               <label>Emby配置</label>
@@ -662,6 +686,43 @@ const ACTION_DEFINITIONS = {
     nodeTitle: action => `延迟 ${Number(action.params.seconds || 60)} 秒`,
     previewTitle: action => `延迟${formatDelay(action.params.seconds)}`
   },
+  local_upload: {
+    label: '本地上传',
+    optionLabel: '本地上传',
+    icon: 'fas fa-upload',
+    desc: '将服务器映射目录的文件自动上传到指定网盘目录',
+    normalize: params => {
+      const raw = params.mappings ?? params.mapping ?? []
+      const arr = Array.isArray(raw) ? raw : (raw ? [String(raw)] : [])
+      const mappings = arr.map(v => String(v).trim()).filter(Boolean)
+      return {
+        account_id: Number(params.account_id || 0),
+        mappings,
+        mapping: mappings[0] || '',
+        target_parent_id: String(params.target_parent_id || params.target_path || ''),
+        target_display_path: String(params.target_display_path || ''),
+        conflict_policy: ['skip', 'rename', 'overwrite'].includes(params.conflict_policy) ? params.conflict_policy : 'overwrite',
+        source_path: String(params.source_path || params.path || '')
+      }
+    },
+    canApply: action => {
+      const a = action.params
+      const mappings = Array.isArray(a.mappings) ? a.mappings : (a.mapping ? [a.mapping] : [])
+      return Number(a.account_id || 0) > 0 && mappings.filter(v => String(v).trim()).length > 0 && Boolean(String(a.target_parent_id || a.target_path || '').trim())
+    },
+    nodeTitle: action => {
+      const a = action.params
+      const mappings = Array.isArray(a.mappings) ? a.mappings : (a.mapping ? [a.mapping] : [])
+      const label = mappings.length ? mappings.join('、') : String(a.mapping || '')
+      return `上传「${label}」→ ${String(a.target_display_path || a.target_parent_id || '/')}`
+    },
+    previewTitle: action => {
+      const a = action.params
+      const mappings = Array.isArray(a.mappings) ? a.mappings : (a.mapping ? [a.mapping] : [])
+      const label = mappings.length ? mappings.join('、') : String(a.mapping || '')
+      return `本地上传[${label}]`
+    }
+  },
   emby_refresh: {
     label: 'Emby刷库',
     optionLabel: 'Emby全局刷库',
@@ -718,6 +779,25 @@ const embyLibraryOptions = computed(() => embyLibraries.value.map(item => ({
   value: item.id,
   label: item.name
 })))
+
+const localUploadAccountOptions = computed(() => accounts.value.map(acc => ({
+  value: acc.id,
+  label: acc.name
+})))
+const localMappingOptions = ref([])
+const fetchLocalMappings = async () => {
+  try {
+    const res = await fetch('/api/admin/tools/local-upload/config', { credentials: 'include' }).then(r => r.json())
+    const data = res?.data || res
+    const mappings = data?.mappings || []
+    localMappingOptions.value = mappings.map(m => ({ value: m.name, label: m.name }))
+  } catch {}
+}
+const localUploadConflictOptions = [
+  { value: 'overwrite', label: '覆盖（默认）' },
+  { value: 'skip', label: '跳过' },
+  { value: 'rename', label: '重命名' }
+]
 
 const linkedActionItems = computed(() => (
   form.actions
@@ -1030,6 +1110,9 @@ const openConfig = (mode, actionIndex = -1) => {
   configActionIndex.value = actionIndex
   if (mode === 'action') {
     const targetAction = pendingConfigAction.value || form.actions[actionIndex]
+    if (targetAction?.type === 'local_upload') {
+      void fetchLocalMappings()
+    }
     if (targetAction?.type === 'emby_refresh') {
       normalizeEmbyRefreshAction(targetAction)
       void ensureEmbyLibrariesLoaded()
@@ -2584,6 +2667,11 @@ defineExpose({
   color: var(--warn);
 }
 
+.node-ico.local_upload {
+  background: color-mix(in srgb, #0ea5e9 16%, var(--panel));
+  color: #0ea5e9;
+}
+
 .node-ico.emby_refresh {
   background: color-mix(in srgb, #8b5cf6 18%, var(--panel));
   color: #8b5cf6;
@@ -3045,6 +3133,11 @@ defineExpose({
 .pick-ico.delay {
   background: color-mix(in srgb, var(--warn) 16%, var(--panel));
   color: var(--warn);
+}
+
+.pick-ico.local_upload {
+  background: color-mix(in srgb, #0ea5e9 16%, var(--panel));
+  color: #0ea5e9;
 }
 
 .pick-ico.emby_refresh {

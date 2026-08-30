@@ -21,6 +21,7 @@ const (
 
 	AutomationActionDelay       = "delay"
 	AutomationActionEmbyRefresh = "emby_refresh"
+	AutomationActionLocalUpload = "local_upload"
 
 	AutomationConditionAlways      = "always"
 	AutomationConditionPrevSuccess = "prev_success"
