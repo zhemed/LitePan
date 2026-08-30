@@ -271,3 +271,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec/backend/backend + spec/web/frontend 需 trellis-update-spec 去除 cache/organize 描述；data 中旧 cache_retention_tasks/media_organize_tasks 表保留兼容，旧 .trellis 任务已归档
+
+
+## Session 8: Fix coverextract nil panic (Trellis retro)
+<!-- trellis-session: v=2 fp=7c5b7154c4f56958 -->
+
+**Date**: 2026-08-30
+**Task**: Fix coverextract nil panic (Trellis retro)
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+追认 2f1b620 的 coverextract 热修复为 Trellis 任务，Image 500 已恢复
+
+### Main Changes
+
+- 恢复 wire_http.go 18 行：coverextract.New + CoverExtractStats/ClearCoverExtract + router CoverExtract
+- 保持 1bcfac8 的 cacheretention/mediaorganize 删除不变，仅补齐误删的装配
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f1b620` | fix(coverextract): restore wiring after cache/organize removal (nil panic) |
+| `e2e3e03` | chore(task): archive 08-30-fix-coverextract-nil |
+
+### Testing
+
+- [OK] go vet 0, go build 39M, docker build 125MB, cover-extract/files 200 [], runtime 200 ready:false, logs panic 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续任何 1 行改动必先 task.py create
