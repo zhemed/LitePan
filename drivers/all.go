@@ -3,14 +3,6 @@ package drivers
 
 import (
 	_ "litepan/drivers/115_Open"
-	_ "litepan/drivers/123_Open"
-	_ "litepan/drivers/139Cloud"
 	_ "litepan/drivers/189Cloud"
-	_ "litepan/drivers/Baidu_Open"
-	_ "litepan/drivers/Guangya"
 	_ "litepan/drivers/LocalFs"
-	_ "litepan/drivers/OneDrive"
-	_ "litepan/drivers/OpenList"
-	_ "litepan/drivers/Quark"
-	_ "litepan/drivers/WebDAV"
 )
