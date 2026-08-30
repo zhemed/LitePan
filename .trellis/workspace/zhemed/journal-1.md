@@ -721,3 +721,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 后续改密必先建 Trellis 任务
+
+
+## Session 20: Clone LitePan-own into workspace
+<!-- trellis-session: v=2 fp=c76ef092255cae3f -->
+
+**Date**: 2026-08-30
+**Task**: Clone LitePan-own into workspace
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+在 /root/LitePan 内创建单独目录 LitePan-own 并拉取 zhemed/LitePan-own
+
+### Main Changes
+
+- mkdir -p /root/LitePan/LitePan-own + git clone https://github.com/zhemed/LitePan-own.git
+- .gitignore 追加 LitePan-own/ 以隔离嵌套仓库
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c48667e` | chore: ignore nested LitePan-own clone |
+| `cf1b7b6` | chore(task): archive 08-30-clone-litepan-own |
+
+### Testing
+
+- [OK] ls /root/LitePan/LitePan-own/README.md 存在, git -C ... remote -v 指向 zhemed/LitePan-own, git -C /root/LitePan status 无 LitePan-own 误报
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 可对比 /root/LitePan-own（sibling）与 /root/LitePan/LitePan-own（nested）
