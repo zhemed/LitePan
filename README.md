@@ -20,6 +20,38 @@
 
 > 私有部署版，基于 `Ponphil/LitePan` 精简：**仅 3 驱动**，无 `STRM` 等。
 
+## 快速开始
+
+```bash
+docker pull ghcr.io/zhemed/litepan:v0.5.2-Beta
+```
+
+```yaml
+services:
+  litepan:
+    image: ghcr.io/zhemed/litepan:v0.5.2-Beta
+    container_name: litepan
+    restart: always
+    network_mode: host
+    pid: "host"
+    privileged: true
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      # LitePan 核心数据
+      - /vol1/1000/docker/litepan/data:/app/data
+      - /vol1/1000/docker/litepan/mounts:/app/mounts:shared
+      # 映本地目录（不含 docker）
+      - /vol1/1000/我的文件:/vol1/1000/我的文件:ro
+    devices:
+      - /dev/fuse:/dev/fuse
+```
+
+```bash
+git clone https://github.com/zhemed/LitePan.git && cd LitePan && docker compose up -d
+# http://IP:5211  admin / admin
+```
+
 ## 支持网盘
 
 | 驱动 | 认证 |
