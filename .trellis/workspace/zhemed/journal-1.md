@@ -1127,3 +1127,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 他人可 curl -fsSL http://LitePan-IP:5211/install-docker.sh | bash
+
+
+## Session 31: Correct install-docker hosting to repo and update README
+<!-- trellis-session: v=2 fp=143727a15268d694 -->
+
+**Date**: 2026-08-30
+**Task**: Correct install-docker hosting to repo and update README
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将修复版 install-docker.sh 提交到仓库根并更新README
+
+### Main Changes
+
+- cp /tmp/install-docker-fixed.sh ./install-docker.sh 89 行
+- README.md 新增一键安装 Docker 小节，URL 改为 zhemed/LitePan/main
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a0fe719` | feat: add install-docker.sh for zhemed/LitePan and update README |
+| `e9dc128` | chore(task): archive 08-30-correct-install-docker-hosting |
+
+### Testing
+
+- [OK] ls install-docker.sh 89 行, grep raw.githubusercontent 1, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 他人可 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash
