@@ -104,7 +104,7 @@ docker run -d --name litepan -p 5211:5211 -p 42069:42069 -p 42069:42069/udp \
   litepan-go:three-drivers
 ```
 
-打开 `http://你的IP:5211`，**默认管理员 `admin / 123456`**（`2026-08-30` 已落库，非 `admin/admin`）。需 `FUSE` 时确保宿主机具备 `/dev/fuse` 权限。
+打开 `http://你的IP:5211`，**默认管理员 `admin / admin`**（`2026-08-30` 已落库）。需 `FUSE` 时确保宿主机具备 `/dev/fuse` 权限。
 
 > [!WARNING]
 > **不要用 `ponphil/litepan:latest` 部署本仓库。** `latest` 仍是 Python 旧版镜像。上游 Go 版见 `Ponphil/LitePan`，旧版归档见 `LitePan-old`。
