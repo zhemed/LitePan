@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 35
+- **Total Sessions**: 36
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1314 | Active |
+| `journal-1.md` | ~1351 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 36 | 2026-08-30 | Bump version to 0.0.1 stable | `452b0c9`, `125cb75` | `main` |
 | 35 | 2026-08-30 | Remove announcement feature completely | `2d1412a`, `786020e` | `main` |
 | 34 | 2026-08-30 | Adapt install-docker to all systems | `32d1a19`, `a59cbd1` | `main` |
 | 33 | 2026-08-30 | Fix install-docker gpg missing | `d54f5e1`, `f925cc1` | `main` |

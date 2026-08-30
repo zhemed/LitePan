@@ -1312,3 +1312,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 非 LitePan-own 提交
+
+
+## Session 36: Bump version to 0.0.1 stable
+<!-- trellis-session: v=2 fp=c664d49bd2ae7fc5 -->
+
+**Date**: 2026-08-30
+**Task**: Bump version to 0.0.1 stable
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将现版定为0.0.1稳定版
+
+### Main Changes
+
+- README v0.5.2-Beta → v0.0.1, ghcr 0.0.1 latest
+- docker build/push 0.0.1, git tag v0.0.1, gh release
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `452b0c9` | chore: bump version to 0.0.1 stable |
+| `125cb75` | chore(task): archive 08-30-bump-version-0-0-1 |
+
+### Testing
+
+- [OK] grep v0.0.1 2, docker pull 0.0.1, git tag v0.0.1
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续 0.0.2 递增
