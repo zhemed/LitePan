@@ -37,6 +37,10 @@ const visible = computed(()=> store.items.filter(i=> !i.hidden));
 
 ---
 
+## 已移除（2026-08-30 精简）
+
+- 增强工具 7 卡片已删，`CloudToolsPanel` 仅渲染 `LocalUploadToolCard`，`FileBrowser` 的 `coverExtract` 透传已移除。
+
 ## Props / Emits
 
 - Props are **readonly data down**, emits are **events up**. No `v-model` mutation of props.

@@ -75,6 +75,10 @@ GOWORK=off go build ./...              # build-nofuse
 
 ---
 
+## 已移除门禁示例（2026-08-30 精简）
+
+- `grep -r "embyproxy|quarktv|spacecleanup|coverextract" --include="*.go" | wc -l ==0`（增强工具已删，仅 `local_upload` 保留）。
+
 ## Import Guard Cheat Sheet
 
 | From → To | Allowed? | Why |

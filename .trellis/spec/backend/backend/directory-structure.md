@@ -38,6 +38,10 @@ Reference: `internal/app/app.go` wires 30+ services via `Deps` structs; `drivers
 
 ---
 
+## 已移除（2026-08-30 精简后 현황）
+
+- `internal/strm`、`strmscrape`、`cacheretention`、`mediaorganize/classifyorganize/aiorganize`、`share/dav`、`embyproxy/fnosproxy/quarktv/spacecleanup/coverextract` 已 `rm -rf`，`internal/cache` 核心与 `mediaorganize/rules` 保留。镜像 `128M → 119M`，`CloudToolsPanel` 仅 `LocalUpload`。
+
 ## Module Ownership
 
 | Path | Owns | Must NOT import |

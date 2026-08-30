@@ -54,7 +54,7 @@ func (h *Handler) ListAccounts(w http.ResponseWriter, r *http.Request) {
 - All routes wired in `internal/api/router.go: NewRouter`.
 - Public: `GET /auth/status`, `POST /auth/login`, `GET /` (SPA), `GET /api/public/*`.
 - Admin: grouped under `r.Route("/admin", func(r chi.Router){ r.Use(h.adminOnly) ... })` — see `internal/api/admin_middleware.go`.
-- WebDAV: `internal/share/dav` registers `PROPFIND/GET/PUT` when `LITEPAN_WEBDAV_ENABLED`.
+- WebDAV: `internal/share/dav` 已移除（`2026-08-30 remove-share`）。`GET /internal/cover-source/{token}`（cover-extract）与 `Route("/tools/quarktv/cleanup/cover-extract")`、`Route("/emby")`、`/fnos` 均已移除，仅保留 `Route("/tools/local-upload", 4 handler)`。
 
 Example registration:
 
@@ -78,7 +78,7 @@ Reference: `internal/api/accounts.go:6205`, `admin_middleware.go:1187`.
 
 ## Service Injection via Deps
 
-- `internal/api/router.go: type Deps struct{ Logs *logx.Manager, AccountSvc *account.Service, Files *file.Service, ... OnSettingsUpdated func(map[string]string) }`
+- `internal/api/router.go: type Deps struct{ Logs *logx.Manager, AccountSvc *account.Service, Files *file.Service, ... OnSettingsUpdated func(map[string]string) }` **(2026-08-30 精简后，仅保留 LocalUpload，`EmbyProxy/FnosProxy/QuarkTV/SpaceCleanup/CoverExtract` 已移除，`Route("/tools/*")` 仅 `local-upload`)**
 - `internal/app/wire_http.go` builds `Deps` from `store.New(db)` + all services.
 - Adding new dependency: extend `Deps`, add field to `Handler`, wire in `app/wire_http.go`, update `api/router_test.go` if needed.
 
