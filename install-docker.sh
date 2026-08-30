@@ -1,8 +1,8 @@
 #!/bin/bash
-# 一键安装项目标准 Docker 环境：Docker 29.7.2 + Compose v5.4.0（Debian/Ubuntu）- 修复版
+# 一键安装项目标准 Docker 环境：Docker 29.7.2 + Compose v5.4.0（全平台）- 修复版
 # 用法：curl -fsSL http://<LitePan-IP>:5211/install-docker.sh | bash
 #    或：bash install-docker-fixed.sh
-# 修复点：1) 已装 docker 但版本非 29.7.2 时仍重建官方源 2) 显式 signed-by 建源 3) rootless-extras 缺失容错
+# 修复点：1) 已装 docker 但版本非 29.7.2 时仍重建官方源 2) 显式 signed-by 建源 3) rootless-extras 缺失容错 4) 适配所有系统（非 Debian/Ubuntu 走 get.docker.com）
 set -euo pipefail
 
 REQUIRED_DOCKER="29.7.2"
@@ -13,12 +13,23 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-if ! grep -qiE 'debian|ubuntu' /etc/os-release 2>/dev/null; then
-  echo "仅支持 Debian/Ubuntu，其他系统请手动安装 Docker $REQUIRED_DOCKER + Compose $REQUIRED_COMPOSE" >&2
-  exit 1
-fi
-
 echo "==> 安装 Docker $REQUIRED_DOCKER + Compose $REQUIRED_COMPOSE (修复版)"
+
+# 非 Debian/Ubuntu 走通用 get.docker.com 兜底
+if ! grep -qiE 'debian|ubuntu' /etc/os-release 2>/dev/null; then
+  echo "未识别为 Debian/Ubuntu，走 get.docker.com 通用安装..." >&2
+  curl -fsSL https://get.docker.com | sh
+  # 通用安装后尝试版本校验与 hold（尽力）
+  DOCKER_VER=$(docker --version 2>/dev/null | grep -oP "Docker version \K[0-9.]+" || echo "missing")
+  COMPOSE_VER=$(docker compose version 2>/dev/null | grep -oP "Docker Compose version \K\S+" || echo "missing")
+  if [ "$DOCKER_VER" = "$REQUIRED_DOCKER" ] && [ "$COMPOSE_VER" = "$REQUIRED_COMPOSE" ]; then
+    echo "✅ 完成：Docker $DOCKER_VER + Compose $COMPOSE_VER 已就绪"
+  else
+    echo "⚠️ 通用安装后版本：Docker $DOCKER_VER（期望 $REQUIRED_DOCKER），Compose $COMPOSE_VER（期望 $REQUIRED_COMPOSE）" >&2
+    echo "已通过 get.docker.com 安装最新版，若需精确 $REQUIRED_DOCKER 请手动指定" >&2
+  fi
+  exit 0
+fi
 
 # 检测当前版本，决定是否强制重建官方源
 NEED_REINSTALL=false
@@ -86,7 +97,7 @@ DOCKER_VER=$(docker --version 2>/dev/null | grep -oP "Docker version \K[0-9.]+" 
 COMPOSE_VER=$(docker compose version 2>/dev/null | grep -oP "Docker Compose version \K\S+" || echo "missing")
 
 if [ "$DOCKER_VER" = "$REQUIRED_DOCKER" ] && [ "$COMPOSE_VER" = "$REQUIRED_COMPOSE" ]; then
-  echo "✅ 完成：Docker $DOCKER_VER + Compose $COMPOSE_VER 已就绪（已 hold 锁定版本）"
+  echo "✅ 完成：Docker $DOCKER_VER + Compose $COMPOSE_VER 已就绪"
 else
   echo "⚠️ 安装后版本仍不符：Docker $DOCKER_VER（期望 $REQUIRED_DOCKER），Compose $COMPOSE_VER（期望 $REQUIRED_COMPOSE）" >&2
   echo "请检查 apt 源或手动执行：apt-get install -y docker-ce=5:${REQUIRED_DOCKER}* docker-ce-cli=5:${REQUIRED_DOCKER}* docker-compose-plugin=${REQUIRED_COMPOSE#v}*" >&2

@@ -20,11 +20,10 @@
 
 > 私有部署版，基于 `Ponphil/LitePan` 精简：**仅 3 驱动**，无 `STRM` 等。
 
-### 一键安装 Docker（Debian/Ubuntu）
+### 一键安装 Docker
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash
-# → Docker 29.7.2 + Compose v5.4.0（已 hold）
 ```
 
 ## 快速开始
