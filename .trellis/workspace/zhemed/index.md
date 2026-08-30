@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
+- **Total Sessions**: 7
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~233 | Active |
+| `journal-1.md` | ~273 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 7 | 2026-08-30 | Remove cache tasks and directory organization | `1bcfac8`, `05b5d51` | `main` |
 | 6 | 2026-08-30 | Remove file share (WebDAV dav) completely | `f3bbc8c` | `main` |
 | 5 | 2026-08-30 | Remove STRM feature completely | `38a8331` | `main` |
 | 4 | 2026-08-30 | Run LitePan in Docker container at :5211 | `2b67c75` | `main` |

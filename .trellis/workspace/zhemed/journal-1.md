@@ -231,3 +231,43 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec 需 trellis-update-spec 去除 share 描述；data 中旧 webdav_enabled 配置可忽略
+
+
+## Session 7: Remove cache tasks and directory organization
+<!-- trellis-session: v=2 fp=bd6f41587e11fd6b -->
+
+**Date**: 2026-08-30
+**Task**: Remove cache tasks and directory organization
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除缓存任务和目录整理相关的所有内容，60+文件→0，构建与容器仍正常
+
+### Main Changes
+
+- delete internal/cacheretention 15 files, internal/mediaorganize 30+ files, classifyorganize 3, aiorganize 4, coverextract/service_test, domain/cache_retention media_organize, store repos, api cache_retention/media_organize/ai_organize/classification, app wire_cache_retention/mediaorganize, router Deps, automation CacheClear/Organize
+- delete web api/cacheRetention mediaOrganize, CacheRetentionPanel MediaOrganizePanel Settings, useOrganizePlanPreview, TaskManagement organize tab, AdminView organize entry, Dashboard stats
+- keep internal/cache core, fusereadcache FuseReadCacheRetentionDays, mediaorganize/rules for file/name_align mrules.ParseFilenameWithGuessit, coverextract service for cover tools
+- web build 216 assets, go vet 0, go build 39M, docker build litepan-go:nocache-organize 125MB, container litepan on :5211 health ok, /api/admin/cache-retention 404, /api/admin/media-organize 404, /api/admin/automation/rules 200
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1bcfac8` | refactor(cache,organize): remove cache tasks and directory organization |
+| `05b5d51` | chore(task): archive 08-30-remove-cache-organize |
+
+### Testing
+
+- [OK] GOWORK=off go vet ./... PASS, go build -o /tmp/litepan-cache-org PASS 39M, cd web && npm run type-check PASS && npm run build PASS 1.27s 109 files, docker build -t litepan-go:nocache-organize PASS 125MB
+- [OK] docker run -p 5211:5211 health 200 ok, POST /api/auth/login form admin/Admin123456! 200 must_change false, GET /api/admin/automation/rules 200 [], GET /api/admin/cache-retention/tasks 404, GET /api/admin/media-organize/tasks 404
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec/backend/backend + spec/web/frontend 需 trellis-update-spec 去除 cache/organize 描述；data 中旧 cache_retention_tasks/media_organize_tasks 表保留兼容，旧 .trellis 任务已归档
