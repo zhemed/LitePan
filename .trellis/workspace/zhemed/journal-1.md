@@ -308,3 +308,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 后续任何 1 行改动必先 task.py create
+
+
+## Session 9: Record mandatory trellis rule
+<!-- trellis-session: v=2 fp=880ecfb872785e29 -->
+
+**Date**: 2026-08-30
+**Task**: Record mandatory trellis rule
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将‘所有操作必须调用trellis’与 admin/123456 持久化到 AGENTS.md 与 config.yaml
+
+### Main Changes
+
+- AGENTS.md 追加 项目强制规则 章节，首句 所有操作必须调用 trellis，含 admin/123456 说明
+- .trellis/config.yaml 顶部追加强制规则注释块，与 AGENTS.md 一致
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `02afdd6` | docs(trellis): record mandatory rule 'all operations must call trellis' and admin 123456 |
+| `551bac7` | chore(task): archive 08-30-record-mandatory-trellis-rule |
+
+### Testing
+
+- [OK] go vet 0, git diff --stat 2 files 16 insertions, get_context.py Clean
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续所有写操作必先 task.py create，已写入 AGENTS.md 即时生效

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
+- **Total Sessions**: 9
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~310 | Active |
+| `journal-1.md` | ~347 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-08-30 | Record mandatory trellis rule | `02afdd6`, `551bac7` | `main` |
 | 8 | 2026-08-30 | Fix coverextract nil panic (Trellis retro) | `2f1b620`, `e2e3e03` | `main` |
 | 7 | 2026-08-30 | Remove cache tasks and directory organization | `1bcfac8`, `05b5d51` | `main` |
 | 6 | 2026-08-30 | Remove file share (WebDAV dav) completely | `f3bbc8c` | `main` |
