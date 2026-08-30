@@ -1164,3 +1164,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 他人可 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash
+
+
+## Session 32: Remove instance install-docker hosting
+<!-- trellis-session: v=2 fp=cc5daebf92dac8a3 -->
+
+**Date**: 2026-08-30
+**Task**: Remove instance install-docker hosting
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除实例直链，仅保留GitHub raw
+
+### Main Changes
+
+- router.go:删 GET /install-docker.sh + serveInstallDocker + os import
+- rm /root/LitePan/data/install-docker.sh, curl /install-docker.sh → SPA 200
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1ebaa2a` | revert: remove instance install-docker hosting, keep only GitHub raw |
+| `64d0e0e` | chore(task): archive 08-30-remove-instance-install-docker |
+
+### Testing
+
+- [OK] grep serveInstallDocker 0, ls data/install-docker.sh No such file, raw.githubusercontent 89 行, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 他人仅 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash

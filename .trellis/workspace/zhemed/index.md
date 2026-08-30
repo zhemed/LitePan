@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 31
+- **Total Sessions**: 32
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1166 | Active |
+| `journal-1.md` | ~1203 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 32 | 2026-08-30 | Remove instance install-docker hosting | `1ebaa2a`, `64d0e0e` | `main` |
 | 31 | 2026-08-30 | Correct install-docker hosting to repo and update README | `a0fe719`, `e9dc128` | `main` |
 | 30 | 2026-08-30 | Fix install-docker and host on LitePan | `aceca55`, `657b11b` | `main` |
 | 29 | 2026-08-30 | Remove docker pull and git clone from README | `fd9a565`, `0f5de77` | `main` |
