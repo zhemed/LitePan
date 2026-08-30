@@ -32,8 +32,6 @@ const props = defineProps<{
   batchMoveFiles: () => void;
   batchCopyFiles: () => void;
   nameAlignFile: (file: FileItem) => void;
-  coverExtractEnabled: boolean;
-  coverExtractFile: (file: FileItem) => void;
   dragActive?: boolean;
   activeDropTargetId?: string;
   dragUnlockedTargetId?: string;
@@ -72,10 +70,7 @@ const inline = useFileTableInline({
   batchDeleteFiles: () => props.batchDeleteFiles(),
   batchMoveFiles: () => props.batchMoveFiles(),
   batchCopyFiles: () => props.batchCopyFiles(),
-  nameAlignFile: (file) => props.nameAlignFile(file),
-  coverExtractEnabled: toRef(props, "coverExtractEnabled"),
-  coverExtractFile: (file) => props.coverExtractFile(file),
-});
+  nameAlignFile: (file) => props.nameAlignFile(file),});
 
 const {
   renameDraft,

@@ -26,21 +26,16 @@ import (
 	"litepan/internal/automation"
 	"litepan/internal/backuprestore"
 	"litepan/internal/cache"
-	"litepan/internal/coverextract"
 	"litepan/internal/crosstransfer"
 	"litepan/internal/domain"
-	"litepan/internal/embyproxy"
 	"litepan/internal/favorites"
 	"litepan/internal/file"
-	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
 	"litepan/internal/logx"
 	"litepan/internal/notification"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
-	"litepan/internal/quarktv"
 	"litepan/internal/settings"
-	"litepan/internal/spacecleanup"
 	"litepan/internal/upload"
 )
 
@@ -65,9 +60,6 @@ type Deps struct {
 	Automation        *automation.Service
 	Fuse              *fusemount.Service
 	CrossTransfer     *crosstransfer.Service
-	EmbyProxy         *embyproxy.Service
-	FnosProxy         *fnosproxy.Service
-	QuarkTV           *quarktv.Service
 	ApiKeys           *apikey.Service
 	Auth              *auth.Service
 	AuthSched         *auth.Scheduler
@@ -75,8 +67,6 @@ type Deps struct {
 	Notifications     *notification.Service
 	Announcement      *announcement.Service
 	BackupRestore     *backuprestore.Service
-	SpaceCleanup      *spacecleanup.Service
-	CoverExtract      *coverextract.Service
 	DataDir           string
 	OnSettingsUpdated func(map[string]string)
 }
@@ -99,9 +89,6 @@ type Handler struct {
 	automation        *automation.Service
 	fuse              *fusemount.Service
 	crossTransfer     *crosstransfer.Service
-	embyProxy         *embyproxy.Service
-	fnosProxy         *fnosproxy.Service
-	quarktv           *quarktv.Service
 	apiKeys           *apikey.Service
 	auth              *auth.Service
 	authSched         *auth.Scheduler
@@ -109,8 +96,6 @@ type Handler struct {
 	notifications     *notification.Service
 	announcement      *announcement.Service
 	backupRestore     *backuprestore.Service
-	spaceCleanup      *spacecleanup.Service
-	coverExtract      *coverextract.Service
 	dataDir           string
 	onSettingsUpdated func(map[string]string)
 
@@ -141,9 +126,6 @@ func NewRouter(d Deps) http.Handler {
 		automation:        d.Automation,
 		fuse:              d.Fuse,
 		crossTransfer:     d.CrossTransfer,
-		embyProxy:         d.EmbyProxy,
-		fnosProxy:         d.FnosProxy,
-		quarktv:           d.QuarkTV,
 		apiKeys:           d.ApiKeys,
 		auth:              d.Auth,
 		authSched:         d.AuthSched,
@@ -151,8 +133,6 @@ func NewRouter(d Deps) http.Handler {
 		notifications:     d.Notifications,
 		announcement:      d.Announcement,
 		backupRestore:     d.BackupRestore,
-		spaceCleanup:      d.SpaceCleanup,
-		coverExtract:      d.CoverExtract,
 		dataDir:           d.DataDir,
 		onSettingsUpdated: d.OnSettingsUpdated,
 	}
@@ -164,7 +144,6 @@ func NewRouter(d Deps) http.Handler {
 	r.Use(chimw.Recoverer)
 
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/internal/cover-source/{token}", h.coverExtractSource)
 		r.Get("/health", h.health)
 		r.Get("/auth/status", h.authStatus)
 		r.Post("/auth/login", h.authLogin)
@@ -209,14 +188,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Delete("/{id}", h.deleteBackup)
 				})
 				r.Post("/update-credentials", h.adminUpdateCredentials)
-				r.Get("/emby/configs", h.listEmbyConfigs)
-				r.Put("/emby/configs", h.replaceEmbyConfigs)
-				r.Post("/emby/test", h.testEmbyConfig)
-				r.Get("/emby/libraries", h.listEmbyLibraries)
-				r.Post("/emby/refresh", h.refreshEmbyLibrary)
-				r.Get("/fnos/config", h.getFnosConfig)
-				r.Put("/fnos/config", h.updateFnosConfig)
-				r.Post("/fnos/test", h.testFnosConfig)
 				r.Get("/local-fs/browse", h.browseLocalFS)
 				r.Get("/drivers", h.listDrivers)
 				r.Get("/dev/state", h.getDevState)
@@ -255,37 +226,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Put("/config", h.updateLocalUploadConfig)
 					r.Post("/browse", h.browseLocalUpload)
 					r.Post("/upload", h.createLocalUploadTasks)
-				})
-				r.Route("/tools/quarktv", func(r chi.Router) {
-					r.Get("/status", h.getQuarkTVStatus)
-					r.Post("/enabled", h.setQuarkTVEnabled)
-					r.Get("/accounts", h.listQuarkTVAccounts)
-					r.Post("/bind/start", h.startQuarkTVBind)
-					r.Post("/bind/poll", h.pollQuarkTVBind)
-					r.Put("/binding/settings", h.updateQuarkTVBindingSettings)
-					r.Delete("/bind", h.unbindQuarkTV)
-				})
-				r.Route("/tools/cleanup", func(r chi.Router) {
-					r.Post("/scan", h.scanSpaceCleanup)
-					r.Post("/execute", h.executeSpaceCleanup)
-					r.Get("/report", h.latestSpaceCleanupReport)
-				})
-				r.Route("/tools/cover-extract", func(r chi.Router) {
-					r.Put("/enabled", h.updateCoverExtractEnabled)
-					r.Get("/files", h.listCoverExtractFiles)
-					r.Post("/files", h.addCoverExtractFile)
-					r.Delete("/files", h.clearCoverExtractFiles)
-					r.Delete("/files/{id}", h.removeCoverExtractFile)
-					r.Delete("/files/{id}/frames/{frameID}", h.removeCoverFrame)
-					r.Put("/files/{id}/target", h.updateCoverExtractTarget)
-					r.Post("/extract", h.extractCoverFrames)
-					r.Get("/images/{id}", h.coverExtractImage)
-					r.Post("/save", h.saveCoverFrame)
-					r.Post("/save-composed", h.saveComposedCover)
-					r.Get("/runtime", h.coverExtractRuntime)
-					r.Post("/runtime/download", h.downloadCoverExtractRuntime)
-					r.Get("/style", h.getCoverStyle)
-					r.Put("/style", h.putCoverStyle)
 				})
 				r.Route("/automation", func(r chi.Router) {
 					r.Get("/rules", h.listAutomationRules)

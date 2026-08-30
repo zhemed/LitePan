@@ -28,20 +28,8 @@ const (
 	KeyLogRetentionDays            = "log_retention_days"
 	KeyLogErrorAckAt               = "log_error_ack_at"
 	KeyAnnouncementReadVersion     = "announcement_read_version"
-	KeyEmbyEnabled                 = "emby_enabled"
-	KeyEmbyProxyInstances          = "emby_proxy_instances"
-	KeyFnosEnabled                 = "fnos_enabled"
-	KeyFnosName                    = "fnos_name"
-	KeyFnosURL                     = "fnos_url"
-	KeyFnosProxyPort               = "fnos_proxy_port"
 	KeyLocalUploadEnabled          = "local_upload_enabled"
 	KeyLocalUploadMappings         = "local_upload_mappings"
-	KeyCoverExtractEnabled         = "cover_extract_enabled"
-	KeyCoverExtractStyle           = "cover_extract_style"
-	KeyQuarkTVEnabled              = "quark_tv_enabled"
-	KeyQuarkTVPlayMode             = "quark_tv_play_mode"
-	KeyQuarkTVClientListMode       = "quark_tv_client_list_mode"
-	KeyQuarkTVProxyClients         = "quark_tv_proxy_clients"
 )
 
 // Type 决定后台表单控件与校验方式。
@@ -131,12 +119,6 @@ func defaultSpecs() []Spec {
 			{Value: "error", Label: "Error（错误）"},
 		}),
 		intSpec(KeyLogRetentionDays, "system", "日志保留天数", "按天落盘日志的保留期。自动清理与日志页手动清理都会按该天数删除更早的旧日志。", "30", "天", 1, 365),
-		{Key: KeyEmbyEnabled, Type: TypeBool, Default: "false", Hidden: true},
-		{Key: KeyEmbyProxyInstances, Type: TypeString, Default: "[]", Sensitive: true, Hidden: true},
-		boolSpec(KeyFnosEnabled, "fnos", "启用飞牛影视反代", "开启后且填写反代端口时，LitePan 会启动飞牛影视反代服务。", "false"),
-		stringSpec(KeyFnosName, "fnos", "飞牛影视配置名称", "飞牛影视反代配置的名称，仅用于界面区分。", "飞牛影视"),
-		stringSpec(KeyFnosURL, "fnos", "飞牛影视地址", "飞牛影视服务地址，默认端口 8005，例如 http://192.168.1.10:8005。", ""),
-		stringSpec(KeyFnosProxyPort, "fnos", "反代端口", "可留空。填写并启用后，LitePan 会在该端口启动飞牛影视反代服务。", ""),
 		{
 			Key:         KeyOAuthServerURL,
 			Type:        TypeString,
@@ -168,43 +150,6 @@ func defaultSpecs() []Spec {
 			Key:     KeyLocalUploadMappings,
 			Type:    TypeString,
 			Default: "[]",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyCoverExtractEnabled,
-			Type:    TypeBool,
-			Default: "false",
-			Hidden:  true,
-		},
-		{
-			// 海报默认样式（JSON）：shape/height/panel_color/opacity/text_color/packaged
-			Key:     KeyCoverExtractStyle,
-			Type:    TypeString,
-			Default: "",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyQuarkTVEnabled,
-			Type:    TypeBool,
-			Default: "false",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyQuarkTVPlayMode,
-			Type:    TypeString,
-			Default: "adaptive",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyQuarkTVClientListMode,
-			Type:    TypeString,
-			Default: "proxy_list",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyQuarkTVProxyClients,
-			Type:    TypeString,
-			Default: "vidhub",
 			Hidden:  true,
 		},
 	}

@@ -8,7 +8,6 @@ import (
 
 	"litepan/internal/apikey"
 	"litepan/internal/domain"
-	"litepan/internal/embyproxy"
 	filesvc "litepan/internal/file"
 )
 
@@ -16,7 +15,6 @@ type Service struct {
 	rules   domain.AutomationRuleRepository
 	runs    domain.AutomationRunRepository
 	apiKeys *apikey.Service
-	emby    *embyproxy.Service
 	files   *filesvc.Service
 	log      *slog.Logger
 
@@ -35,7 +33,6 @@ type Options struct {
 	Rules   domain.AutomationRuleRepository
 	Runs    domain.AutomationRunRepository
 	ApiKeys *apikey.Service
-	Emby    *embyproxy.Service
 	Files   *filesvc.Service
 	Log      *slog.Logger
 }
@@ -116,10 +113,9 @@ func New(opts Options) *Service {
 		log = slog.Default()
 	}
 	return &Service{
-		rules:   opts.Rules,
-		runs:    opts.Runs,
-		apiKeys: opts.ApiKeys,
-		emby:    opts.Emby,
+		rules:        opts.Rules,
+		runs:         opts.Runs,
+		apiKeys:      opts.ApiKeys,
 		files:        opts.Files,
 		log:          log,
 		runningStep:  make(map[int64]map[string]any),
@@ -267,18 +263,8 @@ func (s *Service) ClearRuns(ctx context.Context) (int, error) {
 }
 
 func (s *Service) ListOptions(ctx context.Context) (map[string]any, error) {
-	embyConfigs := make([]map[string]any, 0)
-	if s.emby != nil {
-		for _, cfg := range s.emby.Snapshots(nil) {
-			embyConfigs = append(embyConfigs, map[string]any{
-				"id":       cfg.ID,
-				"name":     cfg.Name,
-				"emby_url": cfg.EmbyURL,
-			})
-		}
-	}
 	return map[string]any{
-		"emby_configs": embyConfigs,
+		"emby_configs": make([]map[string]any, 0),
 	}, nil
 }
 

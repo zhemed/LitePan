@@ -9,42 +9,7 @@ import (
 )
 
 func (s *Service) ValidateRule(ctx context.Context, actions []RuleAction) (ValidationResult, error) {
-	issues := make([]ValidationIssue, 0)
-	for index, action := range actions {
-		switch action.Type {
-		case domain.AutomationActionEmbyRefresh:
-			mode := strings.TrimSpace(anyString(action.Params["mode"]))
-			if mode == "" {
-				mode = "global"
-			}
-			if mode != "global" && mode != "library" {
-				issues = append(issues, ValidationIssue{Level: "error", Message: "Emby 刷库模式无效", ActionIndex: index, ActionType: action.Type})
-				continue
-			}
-			if mode == "library" && strings.TrimSpace(anyString(action.Params["library_id"])) == "" {
-				issues = append(issues, ValidationIssue{Level: "error", Message: "请选择 Emby 媒体库", ActionIndex: index, ActionType: action.Type})
-				continue
-			}
-			embyID := strings.TrimSpace(anyString(action.Params["emby_id"]))
-			if s.emby == nil || !s.hasEmbyConfig(embyID) {
-				issues = append(issues, ValidationIssue{Level: "error", Message: "所选 Emby 配置不存在", ActionIndex: index, ActionType: action.Type})
-			}
-		}
-	}
-	return ValidationResult{OK: len(issues) == 0, Issues: issues}, nil
-}
-
-func (s *Service) hasEmbyConfig(id string) bool {
-	configs := s.emby.Snapshots(nil)
-	if id == "" {
-		return len(configs) > 0
-	}
-	for _, cfg := range configs {
-		if cfg.ID == id {
-			return true
-		}
-	}
-	return false
+	return ValidationResult{OK: true, Issues: nil}, nil
 }
 
 func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, error) {
@@ -106,7 +71,7 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 		}
 		in.Actions[i].Type = strings.TrimSpace(in.Actions[i].Type)
 		switch in.Actions[i].Type {
-		case domain.AutomationActionDelay, domain.AutomationActionEmbyRefresh:
+		case domain.AutomationActionDelay:
 		default:
 			return in, domain.Errorf(domain.CodeValidation, "存在不支持的动作")
 		}

@@ -9,16 +9,13 @@ import (
 	"litepan/internal/config"
 	"litepan/internal/crosstransfer"
 	"litepan/internal/domain"
-	"litepan/internal/embyproxy"
 	"litepan/internal/favorites"
 	"litepan/internal/file"
-	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
 	"litepan/internal/fusereadcache"
 	"litepan/internal/logx"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
-	"litepan/internal/quarktv"
 	"litepan/internal/settings"
 	"litepan/internal/upload"
 )
@@ -34,10 +31,7 @@ type servicesBundle struct {
 	fuse             *fusemount.Service
 	fuseReadCache    *fusereadcache.Service
 	crossTransfer    *crosstransfer.Service
-	embyProxy        *embyproxy.Service
-	fnosProxy        *fnosproxy.Service
 	favorites        *favorites.Service
-	quarktv          *quarktv.Service
 }
 
 func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *coreBundle) *servicesBundle {
@@ -94,16 +88,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		},
 	})
 	accountProfileSvc := accountprofile.New(core.exec)
-	quarktvSvc := quarktv.New(quarktv.Options{
-		Settings:       st.settings,
-		Bindings:       st.store.QuarkTVBindings,
-		Accounts:       st.store.Accounts,
-		AccountProfile: accountProfileSvc,
-		Bus:            core.bus,
-		Log:            logs.For(logx.ModuleSystem),
-	})
-	playbackSvc.SetDownloadResolverHook(quarktvSvc.ResolveHook)
-	lifecycle.quarktv = quarktvSvc
 	uploadSvc := upload.NewManager(upload.Options{
 		Exec:        core.exec,
 		Files:       fileSvc,
@@ -125,21 +109,9 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		Uploads: uploadSvc,
 		Log:     logs.For(logx.ModuleAPI),
 	})
-	embyProxySvc := embyproxy.New(embyproxy.Options{
-		Settings: st.settings,
-		Playback: playbackSvc,
-		Log:      logs.For(logx.ModuleSystem),
-	})
-	fnosProxySvc := fnosproxy.New(fnosproxy.Options{
-		Settings:       st.settings,
-		Playback:       playbackSvc,
-		Log:            logs.For(logx.ModuleSystem),
-		PortUsedByEmby: embyProxySvc.UsesPort,
-	})
 	automationSvc := automation.New(automation.Options{
 		Rules: st.store.AutomationRules,
 		Runs:  st.store.AutomationRuns,
-		Emby:  embyProxySvc,
 		Files: fileSvc,
 		Log:   logs.For(logx.ModuleSystem),
 	})
@@ -156,9 +128,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		fuse:             fuseSvc,
 		fuseReadCache:    fuseReadCache,
 		crossTransfer:    crossTransferSvc,
-		embyProxy:        embyProxySvc,
-		fnosProxy:        fnosProxySvc,
 		favorites:        favoritesSvc,
-		quarktv:          quarktvSvc,
 	}
 }

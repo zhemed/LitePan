@@ -1,11 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import ProxyToolsPanel from "@/components/admin/ProxyToolsPanel.vue";
-import QuarkTVToolCard from "@/components/admin/QuarkTVToolCard.vue";
-import AIToolCard from "@/components/admin/AIToolCard.vue";
-import ClassificationToolCard from "@/components/admin/ClassificationToolCard.vue";
-import CleanupToolCard from "@/components/admin/CleanupToolCard.vue";
-import CoverExtractToolCard from "@/components/admin/CoverExtractToolCard.vue";
 import LocalUploadToolCard from "@/components/admin/LocalUploadToolCard.vue";
 
 const props = withDefaults(defineProps<{ searchOpen?: boolean }>(), { searchOpen: false });
@@ -13,7 +7,7 @@ const emit = defineEmits<{ "update:searchOpen": [boolean] }>();
 
 const searchQuery = ref("");
 const searchInputRef = ref<HTMLInputElement | null>(null);
-const cardTitles = ["Emby 反代", "飞牛影视反代", "夸克 TV 接管", "AI 辅助识别", "目录整理分类", "从服务器上传", "垃圾清理工具", "视频海报生成"];
+const cardTitles = ["从服务器上传"];
 
 const hasMatch = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
@@ -43,24 +37,12 @@ watch(
     <div v-if="searchOpen" class="tool-search">
       <div class="tool-search__mask" @click="closeSearch" />
       <div class="tool-search__box">
-        <input ref="searchInputRef" v-model="searchQuery" placeholder="搜索工具，如：飞牛、Emby、反代" @keydown.esc="closeSearch" />
+        <input ref="searchInputRef" v-model="searchQuery" placeholder="搜索工具" @keydown.esc="closeSearch" />
         <button type="button" @click="closeSearch">×</button>
       </div>
     </div>
     <div class="cloud-tools__grid">
-      <ProxyToolsPanel :search-query="searchQuery" />
-
-      <QuarkTVToolCard :search-query="searchQuery" />
-
-      <AIToolCard :search-query="searchQuery" />
-
-      <ClassificationToolCard :search-query="searchQuery" />
-
       <LocalUploadToolCard :search-query="searchQuery" />
-
-      <CleanupToolCard :search-query="searchQuery" />
-
-      <CoverExtractToolCard :search-query="searchQuery" />
     </div>
     <div v-if="searchOpen && !hasMatch" class="tool-search__empty">没有找到相关工具</div>
   </div>

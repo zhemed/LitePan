@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"litepan/internal/domain"
-	"litepan/internal/embyproxy"
 )
 
 func (s *Service) RunAsync(ctx context.Context, id int64, triggerSource string) (map[string]any, error) {
@@ -104,8 +103,6 @@ func (s *Service) executeAction(ctx context.Context, action RuleAction) map[stri
 	switch action.Type {
 	case domain.AutomationActionDelay:
 		return s.runDelay(ctx, action.Params)
-	case domain.AutomationActionEmbyRefresh:
-		return s.runEmbyRefresh(ctx, action.Params)
 	default:
 		return map[string]any{"status": "failed", "success": false, "message": "动作类型不支持"}
 	}
@@ -123,37 +120,6 @@ func (s *Service) runDelay(ctx context.Context, params map[string]any) map[strin
 	}
 }
 
-func (s *Service) runEmbyRefresh(ctx context.Context, params map[string]any) map[string]any {
-	if s.emby == nil {
-		return map[string]any{"status": "failed", "success": false, "message": "Emby 服务未就绪"}
-	}
-	req := embyproxy.RefreshRequest{
-		ConfigID:  strings.TrimSpace(anyString(params["emby_id"])),
-		Mode:      strings.TrimSpace(anyString(params["mode"])),
-		LibraryID: strings.TrimSpace(anyString(params["library_id"])),
-	}
-	result, err := s.emby.RefreshLibrary(ctx, req)
-	if err != nil {
-		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-	}
-	message := "已通知 Emby 刷库"
-	if result.Mode == "library" && result.LibraryName != "" {
-		message = "已通知 Emby 扫描媒体库：" + result.LibraryName
-	}
-	return map[string]any{
-		"status":  "success",
-		"success": true,
-		"message": message,
-		"data": map[string]any{
-			"emby_id":      result.ConfigID,
-			"emby_name":    result.ConfigName,
-			"mode":         result.Mode,
-			"task_id":      result.TaskID,
-			"library_id":   result.LibraryID,
-			"library_name": result.LibraryName,
-		},
-	}
-}
 
 type submitRunResult struct {
 	queued bool
@@ -272,8 +238,6 @@ func actionDisplayName(action RuleAction) string {
 	switch action.Type {
 	case domain.AutomationActionDelay:
 		return "等待"
-	case domain.AutomationActionEmbyRefresh:
-		return "Emby 刷库"
 	default:
 		return action.Type
 	}

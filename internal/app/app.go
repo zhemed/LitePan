@@ -16,11 +16,9 @@ import (
 	"litepan/internal/cache"
 	"litepan/internal/config"
 	"litepan/internal/driver"
-	"litepan/internal/embyproxy"
-	"litepan/internal/eventbus"
+		"litepan/internal/eventbus"
 	"litepan/internal/file"
-	"litepan/internal/fnosproxy"
-	"litepan/internal/fusemount"
+		"litepan/internal/fusemount"
 	"litepan/internal/logx"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
@@ -51,8 +49,6 @@ type App struct {
 	playback         *playback.Service
 	automation       *automation.Service
 	fuse             *fusemount.Service
-	embyProxy        *embyproxy.Service
-	fnosProxy        *fnosproxy.Service
 	httpSrv          *http.Server
 	httpBaseCancel   context.CancelFunc
 	restartCh        <-chan struct{}
@@ -131,8 +127,6 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		playback:         svc.playback,
 		automation:       svc.automation,
 		fuse:             svc.fuse,
-		embyProxy:        svc.embyProxy,
-		fnosProxy:        svc.fnosProxy,
 		httpSrv:          httpSrv,
 		httpBaseCancel:   httpBaseCancel,
 		restartCh:        restartCh,
@@ -158,12 +152,6 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.offlineDownloads != nil {
 		a.offlineDownloads.Start(ctx)
-	}
-	if a.embyProxy != nil {
-		a.embyProxy.Start(ctx)
-	}
-	if a.fnosProxy != nil {
-		a.fnosProxy.Start(ctx)
 	}
 	errCh := make(chan error, 1)
 	go func() {
@@ -201,12 +189,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 	}
 	if a.httpBaseCancel != nil {
 		a.httpBaseCancel()
-	}
-	if a.embyProxy != nil {
-		a.embyProxy.Shutdown(ctx)
-	}
-	if a.fnosProxy != nil {
-		a.fnosProxy.Shutdown(ctx)
 	}
 
 	httpCtx, cancelHTTP := context.WithTimeout(ctx, shutdownHTTPBudget)

@@ -14,7 +14,6 @@ import CloudLocalUploadPanel from "@/components/file/CloudLocalUploadPanel.vue";
 import { useOfflineDownloads } from "@/composables/useOfflineDownloads";
 import { toast } from "@/composables/useToast";
 import { filesApi } from "@/api/files";
-import { coverExtractApi } from "@/api/coverExtract";
 import type { Account, BrowserFavoriteItem, FileItem, FileNameAlignPreviewResult } from "@/api/types";
 import type { OfflineDownloadTask } from "@/types/offline-download";
 import { getApiErrorMessage } from "@/api/client";
@@ -149,22 +148,7 @@ const fileActions = useFileActions({
   reloadFiles: (opts) => store.loadFiles({ ...opts, silent: true }),
 });
 
-const coverExtractEnabled = ref(false);
 
-async function sendToCoverExtract(file: FileItem) {
-  if (currentAccountId.value == null) return;
-  try {
-    await coverExtractApi.add({
-      account_id: currentAccountId.value,
-      file_id: file.id,
-      parent_id: currentParentId.value,
-      directory_chain: breadcrumb.value.map((item) => ({ id: item.id, name: item.name })),
-    });
-    toast.success("已加入视频海报生成工具，可在辅助工具中打开");
-  } catch (e) {
-    toast.error(getApiErrorMessage(e, "加入视频海报生成工具失败"));
-  }
-}
 
 const offline = useOfflineDownloads({
   selectedAccountId: currentAccountId,
@@ -837,9 +821,7 @@ onMounted(async () => {
   if (isAdmin.value) {
     void Promise.allSettled([
       uploadApi.fetchUploadTasks(),
-      offline.fetchTasks(false, true),
-      coverExtractApi.runtime().then((value) => { coverExtractEnabled.value = value.enabled; }),
-    ]);
+      offline.fetchTasks(false, true),    ]);
   }
   browserContextReady.value = true;
   void restoreTaskPanelFromRoute();
@@ -1000,9 +982,7 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
             :batch-move-files="fileActions.requestBatchMove"
             :batch-copy-files="fileActions.requestBatchCopy"
             :name-align-file="openNameAlign"
-            :cover-extract-enabled="coverExtractEnabled"
-            :cover-extract-file="sendToCoverExtract"
-            :drag-active="dragMove.active"
+                                    :drag-active="dragMove.active"
             :active-drop-target-id="dragMove.targetId"
             :drag-unlocked-target-id="dragMove.unlockedTargetId"
             :drag-lock-progress="dragMove.lockProgress"
