@@ -38,6 +38,11 @@ fi
 if [ "$NEED_REINSTALL" = true ] || [ ! -f /etc/apt/sources.list.d/docker.list ]; then
   echo "配置 Docker 官方源..."
   mkdir -p /etc/apt/keyrings
+  if ! command -v gpg >/dev/null 2>&1; then
+    echo "未检测到 gpg，安装 gnupg..."
+    apt-get update -qq
+    apt-get install -y gnupg
+  fi
   curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
   chmod a+r /etc/apt/keyrings/docker.gpg
   . /etc/os-release
