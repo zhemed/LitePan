@@ -1201,3 +1201,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 他人仅 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash
+
+
+## Session 33: Fix install-docker gpg missing
+<!-- trellis-session: v=2 fp=5721dc949efa4b24 -->
+
+**Date**: 2026-08-30
+**Task**: Fix install-docker gpg missing
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+修复 10.0.0.99 上 gpg missing 导致安装失败
+
+### Main Changes
+
+- install-docker.sh 89→94 行，显式安装 gnupg 前置
+- 10.0.0.99 上验证 Docker 29.7.2 + Compose v5.4.0 成功
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d54f5e1` | fix(install-docker): handle gpg missing on Debian12 minimal |
+| `f925cc1` | chore(task): archive 08-30-fix-install-docker-gpg-missing |
+
+### Testing
+
+- [OK] bash -n 0, ssh 10.0.0.99 which gpg 存在, docker --version 29.7.2
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 他人可 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash
