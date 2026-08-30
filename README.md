@@ -10,7 +10,7 @@
 &nbsp;
 <a href="https://space.bilibili.com/1501989416"><img src="https://img.shields.io/badge/Bilibili-交流与演示-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white&labelColor=1B1B2F" alt="Bilibili"></a>
 &nbsp;
-<a href="https://hub.docker.com/r/ponphil/litepan"><img src="https://img.shields.io/badge/Docker-ponphil%2Flitepan-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1B1B2F" alt="Docker"></a>
+<a href="https://github.com/zhemed/LitePan"><img src="https://img.shields.io/badge/Docker-zhemed%2FLitePan-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1B1B2F" alt="Docker"></a>
 
 
 [![docker-pulls][docker-pulls-shield]][docker-url]
@@ -33,25 +33,13 @@
 <table>
   <tr>
     <td width="50%" valign="top" align="center">
-      <h3>多网盘聚合</h3>
-      <p align="left">多账号统一管理，一个界面看完。</p>
+      <h3>多网盘聚合（仅 3 驱动）</h3>
+      <p align="left">仅支持 <strong>115网盘Open / 天翼云盘 (189Cloud) / 本机存储 (LocalFs)</strong> 3 驱动，其余 8 驱动已移除（2026-08-30 three-drivers）。一个界面看完。</p>
       <img src="docs/pictures/feature-browser.png" alt="多网盘聚合" height="220">
     </td>
     <td width="50%" valign="top" align="center">
-      <h3>跨盘秒传</h3>
-      <p align="left">能秒传就秒传，否则自动上传。</p>
-      <img src="docs/pictures/feature-crosstransfer.png" alt="跨盘秒传" height="220">
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <h3>目录整理</h3>
-      <p align="left">TMDB 识别，预览后再归档。</p>
-      <img src="docs/pictures/feature-organize.png" alt="目录整理" height="220">
-    </td>
-    <td width="50%" valign="top" align="center">
-      <h3>自动联动</h3>
-      <p align="left">整理与刷库串起来。</p>
+      <h3>自动联动（仅 delay）</h3>
+      <p align="left">仅保留 <code>delay</code> 等待动作，Emby/整理等联动已移除。</p>
       <img src="docs/pictures/feature-automation.png" alt="自动联动" height="220">
     </td>
   </tr>
@@ -59,18 +47,20 @@
 
 ## ▎ 挂载与更多功能
 
-支持 WebDAV 与 FUSE 本地挂载，另有 302 直链、缓存保持、命名对齐、离线下载等能力。
+支持 **FUSE 本地挂载** 与 **从服务器上传**（`LocalUpload`，增强工具中唯一保留），另有离线下载等能力。`WebDAV`（`internal/share/dav`）、`跨盘秒传`、`目录整理`、`缓存保持` 等已移除（2026-08-30 精简）。
+
+> **支持网盘**：`115网盘Open` / `天翼云盘 (189Cloud)` / `本机存储 (LocalFs)` 3 项。其余 8 驱动（`123_Open` / `139Cloud` / `Baidu_Open` / `Guangya` / `OneDrive` / `OpenList` / `Quark` / `WebDAV`）已移除，镜像 `128M → 118M`。
 
 ---
 
 ## ▎ 快速开始
 
-**Docker Compose 部署** · 镜像标签：`Beta`或指定`v0.5.2-Beta`
+**Docker Compose 部署** · 镜像标签：`latest`（`zhemed/litepan`）或本地 `litepan-go:three-drivers`（118M，仅 3 驱动）
 
 ```yaml
 services:
   litepan:
-    image: ponphil/litepan:beta
+    image: zhemed/litepan:latest  # 或 litepan-go:three-drivers（本地构建 118M）
     container_name: litepan
     restart: unless-stopped
     ports:
@@ -90,11 +80,6 @@ services:
       - /dev/fuse:/dev/fuse
     pid: "host"
     privileged: true
-    # 没有代理环境的，可以在下方配置tmdb的hosts
-    # extra_hosts:
-      # - "api.themoviedb.org:这里填写对应的ip"
-      # - "image.tmdb.org:这里填写对应的ip"
-    # 注意：也可以在程序内「目录整理 → TMDB 设置」填写反代主域名（自动补 /3 与 /t/p），与 hosts 二选一即可
 ```
 
 打开 `http://你的IP:5211`，默认管理员密码均为admin。  
@@ -138,7 +123,7 @@ services:
 第三方依赖见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。请遵守各网盘服务条款与当地法规。
 
 [docker-pulls-shield]: https://img.shields.io/docker/pulls/ponphil/litepan?logo=docker&logoColor=white&style=flat-square
-[version-shield]: https://img.shields.io/badge/Version-v0.5.2--Beta-6C63FF?style=flat-square
+[version-shield]: https://img.shields.io/badge/Version-v0.6.0--lite-6C63FF?style=flat-square
 [license-shield]: https://img.shields.io/badge/License-PolyForm%20NC-red?style=flat-square
-[docker-url]: https://hub.docker.com/r/ponphil/litepan
+[docker-url]: https://github.com/zhemed/LitePan
 [license-url]: ./LICENSE
