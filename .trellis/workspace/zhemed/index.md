@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
+- **Total Sessions**: 5
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~157 | Active |
+| `journal-1.md` | ~195 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 5 | 2026-08-30 | Remove STRM feature completely | `38a8331` | `main` |
 | 4 | 2026-08-30 | Run LitePan in Docker container at :5211 | `2b67c75` | `main` |
 | 3 | 2026-08-30 | Install Docker 29.7.2 + Compose v5.4.0 via new-api-own | `202ab10` | `main` |
 | 2 | 2026-08-30 | Deploy LitePan locally at :5211 | `eb37adf` | `main` |

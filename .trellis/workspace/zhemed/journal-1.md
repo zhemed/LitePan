@@ -155,3 +155,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 容器持久 --restart unless-stopped，数据在 ./data，日志 docker logs litepan -f；后续改代码需重建 docker build
+
+
+## Session 5: Remove STRM feature completely
+<!-- trellis-session: v=2 fp=45797efc0e1e1197 -->
+
+**Date**: 2026-08-30
+**Task**: Remove STRM feature completely
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除 STRM 及刮削、播放、目录缓存等所有内容，167 文件→0
+
+### Main Changes
+
+- delete internal/strm 44 files, strmscrape 24, domain/strm*.go, store/strm*.go, api/strm_*.go, app/wire_strm.go, config StrmDir, automation Strm/Scrape
+- delete web api/strm.ts, Strm* components 4, FileBrowser prompt bar, AdminView strm tab, Dashboard strm stats
+- delete Dockerfile /app/strm, compose strm mount, README STRM docs
+- verified: grep -r -i strm 0, go vet 0, go build 41M, web type-check 0, vite build 148, docker build nostrm 127M, curl /api/strm 404, container litepan-go:nostrm on :5211
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `38a8331` | refactor(strm): remove STRM feature completely |
+
+### Testing
+
+- [OK] go vet ./...; go build -o /tmp/litepan; cd web && npm run type-check && npm run build; docker build -t litepan-go:nostrm; curl /api/health ok
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec/backend/backend + web/frontend 需 trellis-update-spec 去除 STRM 描述；旧 strm/ 目录可手动 rm -rf
