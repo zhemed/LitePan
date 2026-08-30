@@ -421,3 +421,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec 已与 119M 镜像对齐
+
+
+## Session 12: Remove cross-drive instant transfer
+<!-- trellis-session: v=2 fp=323df6303fede8b3 -->
+
+**Date**: 2026-08-30
+**Task**: Remove cross-drive instant transfer
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除跨盘秒传（crosstransfer）前后端
+
+### Main Changes
+
+- rm -rf internal/crosstransfer 4 文件 + internal/api/cross_transfer_admin.go 5 handler NDJSON
+- wire_services/http/router 去 CrossTransfer 注入与 /cross-transfer 5 路由
+- web 删 crossTransfer.ts + CrossDriveTransfer/Tree/ProbeNoticeDialog + AdminView 跨盘入口
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cc36596` | refactor(crosstransfer): remove cross-drive instant transfer |
+| `dc9fac3` | chore(task): archive 08-30-remove-crosstransfer |
+
+### Testing
+
+- [OK] go vet 0, type-check 0, build 33M, web 104 files, docker 119M, /cross-transfer/routes 404, local-upload 200, health 200
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 需 trellis-update-spec 清理跨盘描述
