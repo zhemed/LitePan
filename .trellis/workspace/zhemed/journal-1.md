@@ -758,3 +758,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 可对比 /root/LitePan-own（sibling）与 /root/LitePan/LitePan-own（nested）
+
+
+## Session 21: Extract LitePan-own custom parts
+<!-- trellis-session: v=2 fp=484357a936eeab31 -->
+
+**Date**: 2026-08-30
+**Task**: Extract LitePan-own custom parts
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
+
+### Main Changes
+
+- _extracted/LitePan-own-custom/README_CUSTOM.md 含9 commits表
+- diff/stat.diff + patches/9 + combined + files/4 快照
+- .gitignore 追加 /_extracted/ 隔离
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `80f8d11` | chore: ignore _extracted for LitePan-own custom extraction |
+| `642ef62` | chore(task): archive 08-30-extract-litepan-own-custom |
+
+### Testing
+
+- [OK] ls README_CUSTOM 存在, patches 9, grep runLocalUpload 2, git status _extracted 0, LitePan-own Clean
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 可 cp _extracted/files/... 按需移植到 three-drivers

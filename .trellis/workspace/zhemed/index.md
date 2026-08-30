@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
+- **Total Sessions**: 21
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~760 | Active |
+| `journal-1.md` | ~798 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-08-30 | Extract LitePan-own custom parts | `80f8d11`, `642ef62` | `main` |
 | 20 | 2026-08-30 | Clone LitePan-own into workspace | `c48667e`, `cf1b7b6` | `main` |
 | 19 | 2026-08-30 | Revert admin to admin/admin | `7f5eea5`, `a73e3ce` | `main` |
 | 18 | 2026-08-30 | Thoroughly refactor README from scratch | `ac578c2`, `00625f3` | `main` |
