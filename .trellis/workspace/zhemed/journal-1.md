@@ -117,3 +117,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 可用 docker compose 部署 new-api-own 或 LitePan 容器化：docker compose up -d
+
+
+## Session 4: Run LitePan in Docker container at :5211
+<!-- trellis-session: v=2 fp=0f7bb080bf86d850 -->
+
+**Date**: 2026-08-30
+**Task**: Run LitePan in Docker container at :5211
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将 LitePan 从原生切换到容器，构建并启动 litepan-go:dev
+
+### Main Changes
+
+- kill 76998 释放 :5211，原生日志末尾优雅关闭
+- docker build -t litepan-go:dev . (128MB) 成功， web vite 9.8s + go mod 30s + go build 13.8s
+- docker run -d --name litepan -p 5211:5211 -p 42069:42069 -v ./data:/app/data 等 shared bind + /dev/fuse privileged --pid host
+- 验证容器: docker ps Up, curl /api/health ok, /api/auth/status ok, / 返回 LitePan, login admin/admin succ, /app/data/litepan.db 224K 共享
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2b67c75` | chore(task): archive 08-30-run-container |
+
+### Testing
+
+- [OK] docker images litepan-go:dev; docker ps --filter name=litepan; curl -s http://127.0.0.1:5211/api/health | grep ok; login ok
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 容器持久 --restart unless-stopped，数据在 ./data，日志 docker logs litepan -f；后续改代码需重建 docker build
