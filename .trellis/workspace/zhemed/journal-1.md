@@ -80,3 +80,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 访问 http://127.0.0.1:5211 (DSH 内可用，宿主机需端口转发); 后续 web 需 npm ci+build 若前端改动; 数据持久在 ./data/litepan.db
+
+
+## Session 3: Install Docker 29.7.2 + Compose v5.4.0 via new-api-own
+<!-- trellis-session: v=2 fp=4fbae5a07df667a9 -->
+
+**Date**: 2026-08-30
+**Task**: Install Docker 29.7.2 + Compose v5.4.0 via new-api-own
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+执行 new-api-own/install-docker.sh 完成 Docker 29.7.2 + Compose v5.4.0 安装
+
+### Main Changes
+
+- 首次脚本因缺 Docker 官方源失败（containerd.io/buildx 等 not found），已添加 /etc/apt/sources.list.d/docker.list 并 apt update
+- 二次执行脚本 EXIT 0，docker --version 29.7.2, docker compose v5.4.0, buildx v0.36.1 就绪（hold）
+- LitePan *:5211 (pid 76998) 全程存活，未受影响
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `202ab10` | chore(task): archive 08-30-install-docker-newapi |
+
+### Testing
+
+- [OK] docker --version | grep 29.7.2; docker compose version | grep v5.4.0; ss -tlnp | grep 5211; ps -p 76998
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 可用 docker compose 部署 new-api-own 或 LitePan 容器化：docker compose up -d
