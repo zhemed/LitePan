@@ -647,3 +647,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - README 已与 118M 镜像对齐
+
+
+## Session 18: Thoroughly refactor README from scratch
+<!-- trellis-session: v=2 fp=7af25a7651f108e2 -->
+
+**Date**: 2026-08-30
+**Task**: Thoroughly refactor README from scratch
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底重构README，按three-drivers实际从零重写
+
+### Main Changes
+
+- 新 7 章：简介对比表（已移除 vs 仍保留）、功能清单 7 项、支持网盘 3 行表格、快速开始 zhemed/litepan、技术栈与构建
+- 移除旧 4 格中跨盘/整理及 WebDAV 相关图文，更新 badge 与 compose
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ac578c2` | docs(readme): thoroughly refactor for three-drivers actual |
+| `00625f3` | chore(task): archive 08-30-refactor-readme-thorough |
+
+### Testing
+
+- [OK] grep feature-crosstransfer 0, README 163 行, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已与 118M 镜像完全对齐
