@@ -193,3 +193,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec/backend/backend + web/frontend 需 trellis-update-spec 去除 STRM 描述；旧 strm/ 目录可手动 rm -rf
+
+
+## Session 6: Remove file share (WebDAV dav) completely
+<!-- trellis-session: v=2 fp=cffdfe418eb61e76 -->
+
+**Date**: 2026-08-30
+**Task**: Remove file share (WebDAV dav) completely
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除文件共享相关的所有内容，internal/share/dav + FileShareManagement
+
+### Main Changes
+
+- rm -rf internal/share/dav 16 files, keep internal/share/fuse for fusemount
+- delete FileShareManagement.vue, AdminView share page (nav share, PAGE_TABS share)
+- remove api/router WebDAV davLog and /dav bypass, auth handler, adminauth KeyWebDAVEnabled, settings KeyWebDAVCacheEnabled, cache webdav_keys, logx ModuleWebDAV
+- verified: grep FileShare 0, grep internal/share/dav 0, go vet 0, go build 41M, web type-check 0, vite build 136 files, docker build noshare 127M, curl /dav fallback SPA and /api/health ok
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f3bbc8c` | refactor(share): remove file share (WebDAV dav) completely |
+
+### Testing
+
+- [OK] go vet ./...; go build; cd web && npm run type-check && npm run build; docker build -t litepan-go:noshare; curl /api/health ok
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 需 trellis-update-spec 去除 share 描述；data 中旧 webdav_enabled 配置可忽略
