@@ -35,3 +35,4 @@ dist/*.tar.gz
 .env.*
 drivers/115/
 LitePan-own/
+/_extracted/
