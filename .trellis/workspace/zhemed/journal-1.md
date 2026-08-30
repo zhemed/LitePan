@@ -796,3 +796,41 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 可 cp _extracted/files/... 按需移植到 three-drivers
+
+
+## Session 22: Adapt LitePan-own local_upload to LitePan
+<!-- trellis-session: v=2 fp=a6bd8f3f23f837bf -->
+
+**Date**: 2026-08-30
+**Task**: Adapt LitePan-own local_upload to LitePan
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将 LitePan-own 的本地自动上传（hash增量）适配到 three-drivers
+
+### Main Changes
+
+- domain: AutomationActionLocalUpload
+- service: Settings/DataDir/Uploads + runLocalUpload/fileHash/state
+- frontend: AutomationActionType local_upload + 面板本地上传
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `be39a6a` | feat(automation): adapt local_upload from LitePan-own |
+| `a112daf` | chore(task): archive 08-30-adapt-litepan-own-localupload |
+
+### Testing
+
+- [OK] go vet 0, build 32M, type-check 0, docker 118M, validate local_upload ok
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 非 LitePan-own 提交，已隔离
