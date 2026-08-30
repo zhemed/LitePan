@@ -1349,3 +1349,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 后续 0.0.2 递增
+
+
+## Session 37: Record 0.0.1 stable versioning
+<!-- trellis-session: v=2 fp=dbca30368122347f -->
+
+**Date**: 2026-08-30
+**Task**: Record 0.0.1 stable versioning
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+记录0.0.1为稳定基线，后续0.0.2递增，不跳1.0.0
+
+### Main Changes
+
+- AGENTS.md: 追加版本基线 0.0.1 稳定，后续 0.0.2 递增
+- .trellis/config.yaml: 同步更新版本注释
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f7dd72f` | docs: record 0.0.1 stable versioning |
+| `34375ff` | chore(task): archive 08-30-record-versioning-0-0-1-stable |
+
+### Testing
+
+- [OK] grep 0.0.1 稳定 1, grep 0.0.2 递增 1, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续按0.0.2递增
