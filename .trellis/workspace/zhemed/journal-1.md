@@ -871,3 +871,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 非 LitePan-own 提交
+
+
+## Session 24: Final thorough README refactor
+<!-- trellis-session: v=2 fp=7857ed022ef4e178 -->
+
+**Date**: 2026-08-30
+**Task**: Final thorough README refactor
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按‘全部删除，内容由你重写’彻底重构README为97行 ghcr 单列流
+
+### Main Changes
+
+- 新 6 屏：顶部GHCR/一句话/支持网盘3行/功能7项/快速开始ghcr compose/技术栈
+- 删除旧 4格表格中跨盘/整理及 WebDAV 相关
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `08fd2f8` | docs(readme): thoroughly refactor from scratch for three-drivers |
+| `f902a76` | chore(task): archive 08-30-final-thorough-readme |
+
+### Testing
+
+- [OK] grep ghcr 3, wc -l 97, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已与 118M 实际一致
