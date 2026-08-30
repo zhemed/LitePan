@@ -34,3 +34,4 @@ dist/*.tar.gz
 .env
 .env.*
 drivers/115/
+LitePan-own/
