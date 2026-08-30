@@ -1,6 +1,6 @@
 # Driver Development
 
-> Pluggable drivers under `drivers/`: 115_Open, 123_Open, 139Cloud, 189Cloud, Baidu_Open, Guangya, Quark, OneDrive, OpenList, WebDAV, LocalFs, template.
+> Pluggable drivers under `drivers/`: 115_Open, 189Cloud, LocalFs, template.  # 2026-08-30 three-drivers: 仅保留 3，已移除 123_Open/139Cloud/Baidu_Open/Guangya/Quark/OneDrive/OpenList/WebDAV
 
 ---
 

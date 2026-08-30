@@ -10,8 +10,8 @@
 .
 ├── cmd/litepan/main.go          # entry, flag parsing, app wiring
 ├── drivers/                     # pluggable cloud drivers (pure, no business deps)
-│   ├── 115_Open/ 123_Open/ 139Cloud/ 189Cloud/ Baidu_Open/ Guangya/
-│   │   Quark/ OneDrive/ OpenList/ WebDAV/ LocalFs/ template/
+│   ├── 115_Open/ 189Cloud/ LocalFs/ template/  # 2026-08-30 three-drivers: 仅保留 115、天翼云盘、本机存储，其余 8 已 rm -rf
+│   │   # 已移除: 123_Open/139Cloud/Baidu_Open/Guangya/Quark/OneDrive/OpenList/WebDAV
 │   └── all.go, B-driver registration via internal/driver/registry.go
 ├── internal/                    # business monolith, 47 packages
 │   ├── api/                     # chi router, handlers, go:embed web
