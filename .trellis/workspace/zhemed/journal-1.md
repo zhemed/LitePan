@@ -1550,3 +1550,36 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 43: Check and organize workspace
+<!-- trellis-session: v=2 fp=e876b10d6180fa0b -->
+
+**Date**: 2026-08-31
+**Task**: Check and organize workspace
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+巡检工作区并执行A+B+D+E+F整理
+
+### Main Changes
+
+- rm __pycache__/.tmp/strm
+- .gitignore 新增 __pycache__
+- compose beta->v0.0.3
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `61c07c6` | chore: organize workspace - sync compose to v0.0.3, ignore __pycache__, remove strm |
+
+### Testing
+
+- [OK] go vet 0 type-check 0
+
+### Status
+
+[OK] **Completed**
