@@ -19,8 +19,6 @@ const (
 	AutomationTriggerWebhook         = "webhook"
 	AutomationTriggerOfflineDownload = "offline_download"
 
-	AutomationActionOrganize    = "organize"
-	AutomationActionCacheClear  = "cache_clear"
 	AutomationActionDelay       = "delay"
 	AutomationActionEmbyRefresh = "emby_refresh"
 

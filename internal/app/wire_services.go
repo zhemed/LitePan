@@ -5,10 +5,7 @@ import (
 
 	"litepan/internal/account"
 	"litepan/internal/accountprofile"
-	"litepan/internal/aiorganize"
 	"litepan/internal/automation"
-	"litepan/internal/cacheretention"
-	"litepan/internal/classifyorganize"
 	"litepan/internal/config"
 	"litepan/internal/crosstransfer"
 	"litepan/internal/domain"
@@ -19,7 +16,6 @@ import (
 	"litepan/internal/fusemount"
 	"litepan/internal/fusereadcache"
 	"litepan/internal/logx"
-	"litepan/internal/mediaorganize"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
 	"litepan/internal/quarktv"
@@ -34,13 +30,9 @@ type servicesBundle struct {
 	playback         *playback.Service
 	account          *account.Service
 	accountProfile   *accountprofile.Service
-	mediaOrganize    *mediaorganize.Service
-	aiOrganize       *aiorganize.Service
-	classifyOrganize *classifyorganize.Service
 	automation       *automation.Service
 	fuse             *fusemount.Service
 	fuseReadCache    *fusereadcache.Service
-	cacheRetention   *cacheretention.Service
 	crossTransfer    *crosstransfer.Service
 	embyProxy        *embyproxy.Service
 	fnosProxy        *fnosproxy.Service
@@ -57,12 +49,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	fileSvc := file.NewService(core.exec, core.cache, st.store.Accounts, core.bus, st.settings, core.listHits)
 	fileSvc.SetLogger(logs.For(logx.ModuleFileOp))
 	playbackSvc := playback.NewService(core.exec, core.cache)
-	retentionSvc, retentionCoord := wireCacheRetention(st, fileSvc, core.cache, core.bus, logs)
-	aiOrganizeSvc := aiorganize.New(st.settings)
-	classifyOrganizeSvc := classifyorganize.New(st.settings)
-	mediaOrganizeSvc := wireMediaOrganize(st, fileSvc, logs, cfg.DataDir, aiOrganizeSvc, classifyOrganizeSvc)
-	retentionSvc.SetOrganizeBusyChecker(mediaOrganizeSvc)
-	retentionSvc.SetStartupGate(startupGate)
 	fuseReadCache := wireFuseReadCacheOrNil(context.Background(), cfg, logs, st, core.bus)
 	offlineDownloadSvc := offlinedownload.New(offlinedownload.Options{
 		Exec:     core.exec,
@@ -92,8 +78,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	lifecycle := &accountLifecycle{
 		fuse:      fuseSvc,
 		readCache: fuseReadCache,
-		retention: retentionCoord,
-		media:     mediaOrganizeSvc,
 		favorites: favoritesSvc,
 		offline:   offlineDownloadSvc,
 	}
@@ -153,12 +137,11 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		PortUsedByEmby: embyProxySvc.UsesPort,
 	})
 	automationSvc := automation.New(automation.Options{
-		Rules:    st.store.AutomationRules,
-		Runs:     st.store.AutomationRuns,
-		Organize: mediaOrganizeSvc,
-		Emby:     embyProxySvc,
-		Files:    fileSvc,
-		Log:      logs.For(logx.ModuleSystem),
+		Rules: st.store.AutomationRules,
+		Runs:  st.store.AutomationRuns,
+		Emby:  embyProxySvc,
+		Files: fileSvc,
+		Log:   logs.For(logx.ModuleSystem),
 	})
 	automationSvc.SetStartupGate(startupGate)
 	automationSvc.Register(core.bus)
@@ -169,13 +152,9 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		playback:         playbackSvc,
 		account:          accountSvc,
 		accountProfile:   accountProfileSvc,
-		mediaOrganize:    mediaOrganizeSvc,
-		aiOrganize:       aiOrganizeSvc,
-		classifyOrganize: classifyOrganizeSvc,
 		automation:       automationSvc,
 		fuse:             fuseSvc,
 		fuseReadCache:    fuseReadCache,
-		cacheRetention:   retentionSvc,
 		crossTransfer:    crossTransferSvc,
 		embyProxy:        embyProxySvc,
 		fnosProxy:        fnosProxySvc,

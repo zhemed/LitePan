@@ -58,8 +58,8 @@ const PAGE_TABS: Record<string, { defaultTab: string; tabs: Record<string, strin
     tabs: { security: "账号安全", homepage: "首页设置", service: "其他设置", "api-keys": "API 秘钥" },
   },
   tasks: {
-    defaultTab: "cache",
-    tabs: { cache: "缓存任务", organize: "目录整理", automation: "自动联动" },
+    defaultTab: "automation",
+    tabs: { automation: "自动联动" },
   },
   tools: {
     defaultTab: "enhanced",
@@ -242,7 +242,11 @@ watch(
   ([qPage, qTab]) => {
     const pageKey = String(qPage ?? "").trim();
     const tabKey = String(qTab ?? "").trim();
-    // 旧书签兼容：已下线的任务/工具 tab 统一回落到辅助工具的增强工具页
+    // 旧书签兼容：已下线的任务/工具 tab 统一回落
+    if (pageKey === "tasks" && (tabKey === "cache" || tabKey === "organize")) {
+      void router.replace({ query: { ...route.query, tab: "automation" } });
+      return;
+    }
     if (pageKey === "tasks" && LEGACY_TASK_TOOL_TABS.has(tabKey)) {
       void router.replace({ query: { ...route.query, page: "tools", tab: "enhanced" } });
       return;

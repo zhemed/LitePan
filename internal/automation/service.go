@@ -10,16 +10,14 @@ import (
 	"litepan/internal/domain"
 	"litepan/internal/embyproxy"
 	filesvc "litepan/internal/file"
-	"litepan/internal/mediaorganize"
 )
 
 type Service struct {
-	rules    domain.AutomationRuleRepository
-	runs     domain.AutomationRunRepository
-	apiKeys  *apikey.Service
-	organize *mediaorganize.Service
-	emby     *embyproxy.Service
-	files    *filesvc.Service
+	rules   domain.AutomationRuleRepository
+	runs    domain.AutomationRunRepository
+	apiKeys *apikey.Service
+	emby    *embyproxy.Service
+	files   *filesvc.Service
 	log      *slog.Logger
 
 	mu            sync.Mutex
@@ -34,12 +32,11 @@ type Service struct {
 }
 
 type Options struct {
-	Rules    domain.AutomationRuleRepository
-	Runs     domain.AutomationRunRepository
-	ApiKeys  *apikey.Service
-	Organize *mediaorganize.Service
-	Emby     *embyproxy.Service
-	Files    *filesvc.Service
+	Rules   domain.AutomationRuleRepository
+	Runs    domain.AutomationRunRepository
+	ApiKeys *apikey.Service
+	Emby    *embyproxy.Service
+	Files   *filesvc.Service
 	Log      *slog.Logger
 }
 
@@ -108,12 +105,6 @@ type WebhookEvent struct {
 	DelayTime int `json:"delayTime,omitempty"`
 }
 
-type cacheClearTarget struct {
-	accountID int64
-	parentID  string
-	path      string
-}
-
 type queuedRun struct {
 	ruleID        int64
 	triggerSource string
@@ -125,11 +116,10 @@ func New(opts Options) *Service {
 		log = slog.Default()
 	}
 	return &Service{
-		rules:        opts.Rules,
-		runs:         opts.Runs,
-		apiKeys:      opts.ApiKeys,
-		organize:     opts.Organize,
-		emby:         opts.Emby,
+		rules:   opts.Rules,
+		runs:    opts.Runs,
+		apiKeys: opts.ApiKeys,
+		emby:    opts.Emby,
 		files:        opts.Files,
 		log:          log,
 		runningStep:  make(map[int64]map[string]any),
@@ -277,18 +267,6 @@ func (s *Service) ClearRuns(ctx context.Context) (int, error) {
 }
 
 func (s *Service) ListOptions(ctx context.Context) (map[string]any, error) {
-	organizeTasks, err := s.organize.ListTasks(ctx)
-	if err != nil {
-		return nil, err
-	}
-	organizeData := make([]map[string]any, 0, len(organizeTasks))
-	for _, task := range organizeTasks {
-		organizeData = append(organizeData, map[string]any{
-			"id":         task.ID,
-			"name":       task.TaskName,
-			"account_id": task.AccountID,
-		})
-	}
 	embyConfigs := make([]map[string]any, 0)
 	if s.emby != nil {
 		for _, cfg := range s.emby.Snapshots(nil) {
@@ -300,8 +278,7 @@ func (s *Service) ListOptions(ctx context.Context) (map[string]any, error) {
 		}
 	}
 	return map[string]any{
-		"organize_tasks": organizeData,
-		"emby_configs":   embyConfigs,
+		"emby_configs": embyConfigs,
 	}, nil
 }
 

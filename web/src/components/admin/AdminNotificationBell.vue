@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import AppModal from "@/components/base/AppModal.vue";
-import { ackRetentionScopeWarn } from "@/api/cacheRetention";
 import {
   deleteAllNotifications,
   deleteNotification,
@@ -198,7 +197,6 @@ async function handleDismissScopeWarn() {
   if (taskId <= 0) return;
   detailBusy.value = true;
   try {
-    await ackRetentionScopeWarn(taskId);
     items.value = items.value.filter(
       (it) => !(isCacheScopeWarnNotification(it) && it.ref_id === taskId),
     );

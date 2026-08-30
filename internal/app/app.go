@@ -14,7 +14,6 @@ import (
 	"litepan/internal/automation"
 	"litepan/internal/backuprestore"
 	"litepan/internal/cache"
-	"litepan/internal/cacheretention"
 	"litepan/internal/config"
 	"litepan/internal/driver"
 	"litepan/internal/embyproxy"
@@ -23,7 +22,6 @@ import (
 	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
 	"litepan/internal/logx"
-	"litepan/internal/mediaorganize"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
 	"litepan/internal/settings"
@@ -51,10 +49,8 @@ type App struct {
 	uploads          *upload.Manager
 	offlineDownloads *offlinedownload.Service
 	playback         *playback.Service
-	mediaOrganize    *mediaorganize.Service
 	automation       *automation.Service
 	fuse             *fusemount.Service
-	cacheRetention   *cacheretention.Service
 	embyProxy        *embyproxy.Service
 	fnosProxy        *fnosproxy.Service
 	httpSrv          *http.Server
@@ -133,10 +129,8 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		uploads:          svc.uploads,
 		offlineDownloads: svc.offlineDownloads,
 		playback:         svc.playback,
-		mediaOrganize:    svc.mediaOrganize,
 		automation:       svc.automation,
 		fuse:             svc.fuse,
-		cacheRetention:   svc.cacheRetention,
 		embyProxy:        svc.embyProxy,
 		fnosProxy:        svc.fnosProxy,
 		httpSrv:          httpSrv,
@@ -152,9 +146,6 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.sched != nil && a.settings != nil {
 		a.sched.InitActiveRefresh(ctx, a.settings.Bool(settings.KeyAuthActiveRefresh))
-	}
-	if a.cacheRetention != nil {
-		a.cacheRetention.Start(ctx)
 	}
 	if a.automation != nil {
 		a.automation.Start(ctx)

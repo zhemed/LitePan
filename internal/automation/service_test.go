@@ -3,7 +3,6 @@ package automation
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"sort"
 	"strings"
 	"sync"
@@ -12,7 +11,6 @@ import (
 
 	"litepan/internal/apikey"
 	"litepan/internal/domain"
-	"litepan/internal/mediaorganize"
 )
 
 func TestSubmitRunQueuesWhileStartupGateBlocked(t *testing.T) {
@@ -240,119 +238,6 @@ func TestValidateRuleRequiresLibrarySelectionForEmbyLibraryMode(t *testing.T) {
 	}
 }
 
-func TestEvaluateOrganizeAction(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name        string
-		summary     map[string]any
-		params      map[string]any
-		completed   bool
-		success     bool
-		risk        float64
-		riskTotal   int
-		messagePart string
-	}{
-		{
-			name: "异常跳过未超过允许比例",
-			summary: map[string]any{
-				"total": 10, "skipped": 4, "normal_skipped": 2, "abnormal_skipped": 2,
-			},
-			params:    map[string]any{"max_risk_percent": 30},
-			completed: true, success: true, risk: 25, riskTotal: 8,
-			messagePart: "异常比例 25%",
-		},
-		{
-			name: "异常跳过超过允许比例",
-			summary: map[string]any{
-				"total": 10, "skipped": 4, "normal_skipped": 2, "abnormal_skipped": 3,
-			},
-			params:    map[string]any{"max_risk_percent": 30},
-			completed: true, success: false, risk: 37.5, riskTotal: 8,
-			messagePart: "超过允许值 30%",
-		},
-		{
-			name: "真实失败不受允许比例兜底",
-			summary: map[string]any{
-				"total": 10, "failed": 1,
-			},
-			params:    map[string]any{"max_risk_percent": 100},
-			completed: true, success: false, risk: 10, riskTotal: 10,
-			messagePart: "失败项：1 个",
-		},
-		{
-			name: "旧结果缺少异常跳过时使用跳过数",
-			summary: map[string]any{
-				"total": 3, "skipped": 1,
-			},
-			params:    map[string]any{},
-			completed: true, success: false, risk: 33.33, riskTotal: 3,
-			messagePart: "超过允许值 30%",
-		},
-		{
-			name: "任务停止始终失败",
-			summary: map[string]any{
-				"total": 10, "stopped": true,
-			},
-			params:    map[string]any{},
-			completed: true, success: false, risk: 0, riskTotal: 10,
-			messagePart: "已停止",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := evaluateOrganizeAction(tt.summary, tt.params, tt.completed)
-			if got.success != tt.success || got.riskPercent != tt.risk || got.riskTotal != tt.riskTotal {
-				t.Fatalf("结果 = success:%v risk:%v total:%d，期望 success:%v risk:%v total:%d",
-					got.success, got.riskPercent, got.riskTotal, tt.success, tt.risk, tt.riskTotal)
-			}
-			if !strings.Contains(got.message, tt.messagePart) {
-				t.Fatalf("消息 %q 不包含 %q", got.message, tt.messagePart)
-			}
-		})
-	}
-}
-
-func TestValidateRuleChecksEveryOrganizeCombination(t *testing.T) {
-	t.Parallel()
-
-	organizeSvc := mediaorganize.NewService(mediaorganize.ServiceOptions{
-		Repo: newMediaOrganizeTaskRepo(
-			&domain.MediaOrganizeTask{
-				ID:        "org-1",
-				TaskName:  "电影整理",
-				AccountID: 1,
-				Config:    mustJSON(map[string]any{"target_root": "/movies/2024"}),
-			},
-			&domain.MediaOrganizeTask{
-				ID:        "org-2",
-				TaskName:  "电视剧整理",
-				AccountID: 1,
-				Config:    mustJSON(map[string]any{"target_root": "/tv"}),
-			},
-		),
-	})
-	service := New(Options{
-		Rules:    newAutomationRuleRepo(),
-		Runs:     &automationRunRepo{},
-		Organize: organizeSvc,
-	})
-
-	result, err := service.ValidateRule(context.Background(), []RuleAction{
-		{ID: "org-1", Type: domain.AutomationActionOrganize, Params: map[string]any{"task_id": "org-1"}},
-		{ID: "org-2", Type: domain.AutomationActionOrganize, Params: map[string]any{"task_id": "org-2"}},
-	})
-	if err != nil {
-		t.Fatalf("ValidateRule 返回错误: %v", err)
-	}
-	if result.OK {
-		t.Fatalf("期望校验失败，但返回 OK")
-	}
-	if len(result.Issues) == 0 || !strings.Contains(result.Issues[0].Message, "第 2 个整理动作") {
-		t.Fatalf("期望识别第二个整理动作不兼容，实际 issues=%#v", result.Issues)
-	}
-}
-
 func webhookRule(id int64, name string) *domain.AutomationRule {
 	triggerConfig, _ := json.Marshal(map[string]any{"event": "library.updated"})
 	actions, _ := json.Marshal([]RuleAction{{
@@ -492,34 +377,3 @@ func (r *apiKeyRepo) Create(context.Context, *domain.ApiKey) (int64, error)     
 func (r *apiKeyRepo) Update(context.Context, *domain.ApiKey) error              { return nil }
 func (r *apiKeyRepo) Delete(context.Context, int64) error                       { return nil }
 func (r *apiKeyRepo) TouchLastUsed(context.Context, int64, time.Time) error     { return nil }
-
-type mediaOrganizeTaskRepo struct {
-	tasks map[string]*domain.MediaOrganizeTask
-}
-
-func newMediaOrganizeTaskRepo(tasks ...*domain.MediaOrganizeTask) *mediaOrganizeTaskRepo {
-	repo := &mediaOrganizeTaskRepo{tasks: make(map[string]*domain.MediaOrganizeTask, len(tasks))}
-	for _, task := range tasks {
-		copy := *task
-		repo.tasks[task.ID] = &copy
-	}
-	return repo
-}
-
-func (r *mediaOrganizeTaskRepo) Create(context.Context, *domain.MediaOrganizeTask) error { return nil }
-func (r *mediaOrganizeTaskRepo) Update(context.Context, *domain.MediaOrganizeTask) error { return nil }
-func (r *mediaOrganizeTaskRepo) Delete(context.Context, string) error                    { return nil }
-func (r *mediaOrganizeTaskRepo) List(context.Context) ([]*domain.MediaOrganizeTask, error) {
-	return nil, nil
-}
-func (r *mediaOrganizeTaskRepo) ListByAccount(context.Context, int64) ([]*domain.MediaOrganizeTask, error) {
-	return nil, nil
-}
-func (r *mediaOrganizeTaskRepo) Get(_ context.Context, id string) (*domain.MediaOrganizeTask, error) {
-	task, ok := r.tasks[id]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	copy := *task
-	return &copy, nil
-}

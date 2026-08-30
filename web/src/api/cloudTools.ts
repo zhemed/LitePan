@@ -35,67 +35,6 @@ export interface LocalUploadCreatePayload {
   items: { rel_path: string; is_dir: boolean }[];
 }
 
-export interface AIOrganizeInstance {
-  id: string;
-  name: string;
-  base_url: string;
-  api_key: string;
-  model: string;
-  default: boolean;
-}
-
-export interface AIOrganizeConfig {
-  enabled: boolean;
-  items: AIOrganizeInstance[];
-}
-
-export interface AIOrganizeInstanceUpdate {
-  id?: string;
-  name: string;
-  base_url: string;
-  api_key: string;
-  model: string;
-  default?: boolean;
-}
-
-export type ClassificationTemplateKind = "media" | "region" | "genre" | "custom";
-
-export interface ClassificationRule {
-  name: string;
-  condition: string;
-  fallback_to_self?: boolean;
-  children?: ClassificationRule[];
-}
-
-export interface ClassificationTemplate {
-  kind: ClassificationTemplateKind;
-  rules: ClassificationRule[];
-}
-
-export interface ClassificationConfig {
-  version: number;
-  enabled: boolean;
-  selected_template: ClassificationTemplateKind;
-  templates: ClassificationTemplate[];
-}
-
-export interface ClassificationTMDBGenre {
-  id?: number;
-  name?: string;
-}
-
-export interface ClassificationTMDBDetail extends Record<string, unknown> {
-  id?: number;
-  media_type?: "movie" | "tv";
-  title?: string;
-  name?: string;
-  original_title?: string;
-  original_name?: string;
-  origin_country?: string[];
-  original_language?: string;
-  genres?: ClassificationTMDBGenre[];
-}
-
 export interface QuarkTVBinding {
   account_id: number;
   account_name: string;
@@ -154,22 +93,6 @@ export const localUploadApi = {
     http.post<LocalUploadBrowseResult>("/admin/tools/local-upload/browse", { mapping, path }),
   upload: (payload: LocalUploadCreatePayload) =>
     http.post<{ accepted: boolean; count: number }>("/admin/tools/local-upload/upload", payload),
-};
-
-export const aiOrganizeApi = {
-  getConfig: () => http.get<AIOrganizeConfig>("/admin/tools/ai-organize/config"),
-  saveConfig: (payload: { enabled: boolean; items: AIOrganizeInstanceUpdate[] }) =>
-    http.put<AIOrganizeConfig>("/admin/tools/ai-organize/config", payload),
-  testConfig: (payload: AIOrganizeInstanceUpdate) =>
-    http.post<{ ok: boolean }>("/admin/tools/ai-organize/test", payload),
-};
-
-export const classificationApi = {
-  getConfig: () => http.get<ClassificationConfig>("/admin/tools/classification/config"),
-  saveConfig: (payload: ClassificationConfig) =>
-    http.put<ClassificationConfig>("/admin/tools/classification/config", payload),
-  lookupTMDBDetail: (payload: { tmdb_id: string; media_type: "movie" | "tv" }) =>
-    http.post<ClassificationTMDBDetail>("/admin/tools/classification/tmdb-detail", payload),
 };
 
 export const quarkTVApi = {

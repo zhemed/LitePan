@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"litepan/internal/domain"
-	mrules "litepan/internal/mediaorganize/rules"
 )
 
 type NameAlignPreviewInput struct {
@@ -392,15 +391,53 @@ func isMediaName(name string) bool {
 
 func extractAlignMeta(name string) (alignMeta, bool) {
 	out := alignMeta{}
-	parsed := mrules.ParseFilenameWithGuessit(name)
-	parsed = mrules.ApplyEpisodeFallbacks(name, parsed)
-	episode := asAlignInt(parsed["episode"])
-	if episode == nil {
-		return out, false
+	// Simple extraction without mediaorganize/rules: try SxxExx, CN, etc.
+	if m := alignSxeRe.FindStringSubmatch(name); m != nil {
+		if ep, err := strconv.Atoi(m[2]); err == nil {
+			out.episode = ep
+			if s, err := strconv.Atoi(m[1]); err == nil {
+				out.season = &s
+			}
+			return out, true
+		}
 	}
-	out.episode = *episode
-	out.season = asAlignInt(parsed["season"])
-	return out, true
+	if m := alignCnSeasonEpisodeRe.FindStringSubmatch(name); m != nil {
+		if ep := parseEpisodeNumber(m[3]); ep != nil {
+			out.episode = *ep
+			if s := parseEpisodeNumber(m[1]); s != nil {
+				out.season = s
+			}
+			return out, true
+		}
+	}
+	if m := alignCnEpisodeRe.FindStringSubmatch(name); m != nil {
+		if ep := parseEpisodeNumber(m[1]); ep != nil {
+			out.episode = *ep
+			return out, true
+		}
+	}
+	if m := alignEpisodeOnlyRe.FindStringSubmatch(name); m != nil {
+		if ep, err := strconv.Atoi(m[2]); err == nil {
+			out.episode = ep
+			return out, true
+		}
+	}
+	if m := alignBracketEpisodeRe.FindStringSubmatch(name); m != nil {
+		if ep, err := strconv.Atoi(m[2]); err == nil {
+			out.episode = ep
+			return out, true
+		}
+	}
+	// fallback: last number in name
+	if locs := alignDigitRe.FindAllString(name, -1); len(locs) > 0 {
+		for i := len(locs) - 1; i >= 0; i-- {
+			if ep := parseEpisodeNumber(locs[i]); ep != nil {
+				out.episode = *ep
+				return out, true
+			}
+		}
+	}
+	return out, false
 }
 
 func asAlignInt(v any) *int {
@@ -418,7 +455,7 @@ func asAlignInt(v any) *int {
 		n := int(t)
 		return &n
 	case string:
-		return mrules.ParseEpisodeNumber(t)
+		return parseEpisodeNumber(t)
 	default:
 		return nil
 	}
@@ -457,7 +494,7 @@ func locateEpisodeTemplate(stem string, meta alignMeta, l episodeLocator) *align
 			continue
 		}
 		epStr := stem[start:end]
-		episode := mrules.ParseEpisodeNumber(epStr)
+		episode := parseEpisodeNumber(epStr)
 		if episode == nil || *episode != meta.episode {
 			continue
 		}
@@ -497,7 +534,7 @@ func buildBareTemplate(stem string, meta alignMeta) *alignTemplate {
 	locs := alignDigitRe.FindAllStringIndex(stem, -1)
 	matches := make([][2]int, 0, len(locs))
 	for _, loc := range locs {
-		value := mrules.ParseEpisodeNumber(stem[loc[0]:loc[1]])
+		value := parseEpisodeNumber(stem[loc[0]:loc[1]])
 		if value == nil || *value != meta.episode {
 			continue
 		}
@@ -572,7 +609,7 @@ func normalizeAlignSignaturePart(part string, meta alignMeta) string {
 			if start < 0 || end <= start {
 				continue
 			}
-			episode := mrules.ParseEpisodeNumber(part[start:end])
+			episode := parseEpisodeNumber(part[start:end])
 			if episode == nil || *episode != meta.episode {
 				continue
 			}
@@ -644,6 +681,29 @@ func zeroPad(v, width int) string {
 	return leftPadNumber(v, width)
 }
 
+
+func parseEpisodeNumber(s string) *int {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	// handle chinese numerals simple: try direct int
+	if n, err := strconv.Atoi(s); err == nil {
+		n2 := n
+		return &n2
+	}
+	// try to parse chinese numerals via fallback: digit extraction
+	// Use simple mapping for common chinese numbers
+	cnMap := map[string]int{"零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+	if val, ok := cnMap[s]; ok {
+		return &val
+	}
+	// for multi-char like "十二" etc, try to find digits
+	if n, err := strconv.Atoi(strings.Trim(s, "零〇一二两三四五六七八九十百")); err == nil {
+		return &n
+	}
+	return nil
+}
 func leftPadNumber(v, width int) string {
 	s := strconv.Itoa(v)
 	if len(s) >= width {

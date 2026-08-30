@@ -12,27 +12,6 @@ func (s *Service) ValidateRule(ctx context.Context, actions []RuleAction) (Valid
 	issues := make([]ValidationIssue, 0)
 	for index, action := range actions {
 		switch action.Type {
-		case domain.AutomationActionOrganize:
-			taskID := strings.TrimSpace(anyString(action.Params["task_id"]))
-			if taskID == "" {
-				issues = append(issues, ValidationIssue{Level: "error", Message: "未选择整理任务", ActionIndex: index, ActionType: action.Type})
-				continue
-			}
-			if _, err := s.organize.GetTask(ctx, taskID); err != nil {
-				issues = append(issues, ValidationIssue{Level: "error", Message: "整理任务不存在", ActionIndex: index, ActionType: action.Type})
-				continue
-			}
-		case domain.AutomationActionCacheClear:
-			hasFollowingTask := false
-			for _, next := range actions[index+1:] {
-				if next.Type == domain.AutomationActionOrganize {
-					hasFollowingTask = true
-					break
-				}
-			}
-			if !hasFollowingTask {
-				issues = append(issues, ValidationIssue{Level: "error", Message: "刷新目录后面需要有整理任务", ActionIndex: index, ActionType: action.Type})
-			}
 		case domain.AutomationActionEmbyRefresh:
 			mode := strings.TrimSpace(anyString(action.Params["mode"]))
 			if mode == "" {
@@ -127,7 +106,7 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 		}
 		in.Actions[i].Type = strings.TrimSpace(in.Actions[i].Type)
 		switch in.Actions[i].Type {
-		case domain.AutomationActionOrganize, domain.AutomationActionCacheClear, domain.AutomationActionDelay, domain.AutomationActionEmbyRefresh:
+		case domain.AutomationActionDelay, domain.AutomationActionEmbyRefresh:
 		default:
 			return in, domain.Errorf(domain.CodeValidation, "存在不支持的动作")
 		}

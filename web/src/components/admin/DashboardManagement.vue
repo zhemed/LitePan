@@ -2,16 +2,9 @@
 import { computed, defineAsyncComponent, onMounted, ref } from "vue";
 import { accountsApi } from "@/api/accounts";
 import { clearCache, fetchCacheStats, type CacheStats } from "@/api/cache";
-import {
-  fetchCacheRetentionStats,
-  fetchCacheRetentionTasks,
-  type CacheRetentionStats,
-  type CacheRetentionTask,
-} from "@/api/cacheRetention";
 import { getApiErrorMessage } from "@/api/client";
 import { fetchFuseMounts, type FuseMount } from "@/api/fuse";
 import { logsApi, type LogStats } from "@/api/logs";
-import { fetchMediaOrganizeTasks, type MediaOrganizeTask } from "@/api/mediaOrganize";
 import { fetchNotifications, fetchUnreadCount, type NotificationItem } from "@/api/notifications";
 import type { Account } from "@/api/types";
 import SectionTabBar from "@/components/admin/SectionTabBar.vue";
@@ -39,10 +32,7 @@ const logPresetSeq = ref(0);
 
 const accounts = ref<Account[]>([]);
 const cacheStats = ref<CacheStats | null>(null);
-const cacheRetentionTasks = ref<CacheRetentionTask[]>([]);
-const cacheRetentionStats = ref<CacheRetentionStats | null>(null);
 const fuseMounts = ref<FuseMount[]>([]);
-const organizeTasks = ref<MediaOrganizeTask[]>([]);
 const notifications = ref<NotificationItem[]>([]);
 const unreadCount = ref(0);
 const logStats = ref<LogStats | null>(null);
@@ -54,10 +44,7 @@ useAdminPageLoading("dashboard", computed(() => activeTab.value === OVERVIEW_TAB
 
 type OverviewResult =
   | Account[]
-  | { items: CacheRetentionTask[]; startup_remaining: number }
-  | CacheRetentionStats
   | FuseMount[]
-  | MediaOrganizeTask[]
   | CacheStats
   | { items: NotificationItem[] }
   | { count: number }
@@ -69,21 +56,8 @@ const inactiveAccountCount = computed(() => Math.max(0, accountCount.value - act
 const authErrorAccountCount = computed(() => accounts.value.filter((account) => isAccountAuthError(account)).length);
 const cooldownAccountCount = computed(() => accounts.value.filter((account) => isAccountCooldown(account)).length);
 
-const enabledCacheCount = computed(() => {
-  if (cacheRetentionStats.value) return cacheRetentionStats.value.running;
-  return cacheRetentionTasks.value.filter((task) => isCacheTaskEnabled(task)).length;
-});
-const enabledOrganizeCount = computed(
-  () => organizeTasks.value.filter((task) => isOrganizeTaskEnabled(task)).length,
-);
-const enabledTaskCount = computed(
-  () => enabledCacheCount.value + enabledOrganizeCount.value,
-);
-const totalTaskCount = computed(
-  () =>
-    (cacheRetentionStats.value?.total ?? cacheRetentionTasks.value.length) +
-    organizeTasks.value.length,
-);
+const enabledTaskCount = computed(() => 0);
+const totalTaskCount = computed(() => 0);
 const mountedFuseCount = computed(() => fuseMounts.value.filter((mount) => mount.state === "mounted").length);
 const totalFuseCount = computed(() => fuseMounts.value.length);
 
@@ -116,11 +90,7 @@ const canJumpToErrorLogs = computed(
   () => recentErrorCount.value > 0 && authErrorAccountCount.value === 0 && cooldownAccountCount.value === 0,
 );
 
-const cacheHitRate = computed(() => `${Math.round(cacheStats.value?.hit_rate ?? 0)}%`);
-const cacheItemCount = computed(() => cacheStats.value?.total_keys ?? 0);
 const cacheSizeLabel = computed(() => formatSize(cacheStats.value?.total_size_bytes ?? 0));
-const latestCacheRefresh = computed(() => latestTime(cacheRetentionTasks.value.map((task) => task.last_refresh)));
-const latestOrganizeRun = computed(() => latestTime(organizeTasks.value.map((task) => task.last_run_at)));
 
 const sortedAccounts = computed(() =>
   [...accounts.value].sort((a, b) => {
@@ -129,51 +99,26 @@ const sortedAccounts = computed(() =>
     return a.id - b.id;
   }),
 );
-const taskSummaries = computed(() => [
-  {
-    title: "缓存任务",
-    icon: "fa-box-archive",
-    count: cacheRetentionStats.value?.total ?? cacheRetentionTasks.value.length,
-    enabled: enabledCacheCount.value,
-    detail: `${cacheItemCount.value} 条缓存 · ${cacheHitRate.value} 命中率`,
-    progress: taskProgress(
-      enabledCacheCount.value,
-      cacheRetentionStats.value?.total ?? cacheRetentionTasks.value.length,
-    ),
-    tone: "blue",
-    updated: formatRelativeTimeAgo(latestCacheRefresh.value, "从未刷新"),
-  },
-  {
-    title: "目录整理",
-    icon: "fa-wand-magic-sparkles",
-    count: organizeTasks.value.length,
-    enabled: enabledOrganizeCount.value,
-    detail: organizeTaskDetail.value,
-    progress: taskProgress(enabledOrganizeCount.value, organizeTasks.value.length),
-    tone: "amber",
-    updated: formatRelativeTimeAgo(latestOrganizeRun.value, "从未执行"),
-  },
-]);
-
-const organizeTaskDetail = computed(() => {
-  const failed = organizeTasks.value.filter((task) => (task.last_run_result?.failed ?? 0) > 0).length;
-  if (failed > 0) return `${failed} 个任务最近有失败项`;
-  const renamed = organizeTasks.value.reduce((sum, task) => sum + (task.last_run_result?.renamed ?? 0), 0);
-  return renamed > 0 ? `最近整理 ${renamed} 个条目` : "可预览后手动确认执行";
-});
+const taskSummaries = computed(() => [] as Array<{
+  title: string;
+  icon: string;
+  count: number;
+  enabled: number;
+  detail: string;
+  progress: number;
+  tone: string;
+  updated: string;
+}>);
 
 async function loadOverview() {
-  const firstLoad = !accounts.value.length && !cacheRetentionTasks.value.length;
+  const firstLoad = !accounts.value.length && !fuseMounts.value.length;
   loading.value = firstLoad;
   refreshing.value = !firstLoad;
   loadError.value = "";
   try {
     const requests = [
       accountsApi.list(),
-      fetchCacheRetentionTasks(),
-      fetchCacheRetentionStats(),
       fetchFuseMounts(),
-      fetchMediaOrganizeTasks(),
       fetchCacheStats(),
       fetchNotifications({ limit: 1, offset: 0 }),
       fetchUnreadCount(),
@@ -186,27 +131,18 @@ async function loadOverview() {
       accounts.value = value;
     });
     assignSettled(results[1], (value) => {
-      cacheRetentionTasks.value = value.items ?? [];
-    });
-    assignSettled(results[2], (value) => {
-      cacheRetentionStats.value = value;
-    });
-    assignSettled(results[3], (value) => {
       fuseMounts.value = value;
     });
-    assignSettled(results[4], (value) => {
-      organizeTasks.value = value;
-    });
-    assignSettled(results[5], (value) => {
+    assignSettled(results[2], (value) => {
       cacheStats.value = value;
     });
-    assignSettled(results[6], (value) => {
+    assignSettled(results[3], (value) => {
       notifications.value = value.items ?? [];
     });
-    assignSettled(results[7], (value) => {
+    assignSettled(results[4], (value) => {
       unreadCount.value = value.count ?? 0;
     });
-    assignSettled(results[8], (value) => {
+    assignSettled(results[5], (value) => {
       logStats.value = value;
     });
 
@@ -264,29 +200,6 @@ function isAccountAuthError(account: Account) {
 
 function isAccountCooldown(account: Account) {
   return account.is_active && normalizeAuthStatus(account) === "cooldown";
-}
-
-function isCacheTaskEnabled(task: CacheRetentionTask): boolean {
-  return normalizeStatus(task.status) === "running";
-}
-
-function isOrganizeTaskEnabled(task: MediaOrganizeTask): boolean {
-  return normalizeStatus(task.status) !== "paused";
-}
-
-function taskProgress(enabled: number, total: number) {
-  if (enabled <= 0 || total <= 0) return 0;
-  return Math.max(8, Math.min(100, Math.round((enabled / total) * 100)));
-}
-
-function latestTime(values: Array<string | undefined>) {
-  let latest = 0;
-  for (const value of values) {
-    if (!value) continue;
-    const time = new Date(value).getTime();
-    if (!Number.isNaN(time) && time > latest) latest = time;
-  }
-  return latest > 0 ? new Date(latest).toISOString() : "";
 }
 
 function parseAccountConfig(account: Account): Record<string, unknown> {
@@ -551,7 +464,7 @@ onMounted(() => {
             </div>
           </header>
 
-            <div class="task-list">
+            <div v-if="taskSummaries.length" class="task-list">
               <div v-for="task in taskSummaries" :key="task.title" class="task-row">
                 <div class="task-row__icon" :class="`task-row__icon--${task.tone}`">
                   <i class="fas" :class="task.icon" />
@@ -568,6 +481,7 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+            <div v-else class="panel-empty" style="min-height: 80px">暂无后台任务</div>
           </article>
 
           <article class="dashboard-panel">

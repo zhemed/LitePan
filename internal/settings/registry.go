@@ -42,30 +42,6 @@ const (
 	KeyQuarkTVPlayMode             = "quark_tv_play_mode"
 	KeyQuarkTVClientListMode       = "quark_tv_client_list_mode"
 	KeyQuarkTVProxyClients         = "quark_tv_proxy_clients"
-
-	KeyMOProxyEnabled          = "mo_proxy_enabled"
-	KeyMOProxyURL              = "mo_proxy_url"
-	KeyMOProxyUsername         = "mo_proxy_username"
-	KeyMOProxyPassword         = "mo_proxy_password"
-	KeyMOTmdbAPIKey            = "mo_tmdb_api_key"
-	KeyMOTmdbLanguage          = "mo_tmdb_language"
-	KeyMOTmdbAPIHost           = "mo_tmdb_api_host"
-	KeyMOTmdbImageHost         = "mo_tmdb_image_host"
-	KeyMOAPIRequestIntervalMS  = "mo_api_request_interval_ms"
-	KeyMOTmdbRequestIntervalMS = "mo_tmdb_request_interval_ms"
-	KeyMOFileExtensions        = "mo_file_extensions"
-	KeyMOMetadataExtensions    = "mo_metadata_extensions"
-	KeyMOMediaTagOrder         = "mo_media_tag_order"
-	KeyMOAlignMediaTags        = "mo_align_media_tags"
-	KeyMOMaxWorksPerRun        = "mo_max_works_per_run"
-	KeyMOOverwriteExisting     = "mo_overwrite_existing"
-	KeyAIOrganizeEnabled       = "ai_organize_enabled"
-	KeyAIOrganizeInstances     = "ai_organize_instances"
-	KeyAIOrganizeBaseURL       = "ai_organize_base_url"
-	KeyAIOrganizeAPIKey        = "ai_organize_api_key"
-	KeyAIOrganizeModel         = "ai_organize_model"
-	KeyMOClassificationEnabled = "mo_classification_enabled"
-	KeyMOClassificationConfig  = "mo_classification_config"
 )
 
 // Type 决定后台表单控件与校验方式。
@@ -161,66 +137,6 @@ func defaultSpecs() []Spec {
 		stringSpec(KeyFnosName, "fnos", "飞牛影视配置名称", "飞牛影视反代配置的名称，仅用于界面区分。", "飞牛影视"),
 		stringSpec(KeyFnosURL, "fnos", "飞牛影视地址", "飞牛影视服务地址，默认端口 8005，例如 http://192.168.1.10:8005。", ""),
 		stringSpec(KeyFnosProxyPort, "fnos", "反代端口", "可留空。填写并启用后，LitePan 会在该端口启动飞牛影视反代服务。", ""),
-		boolSpec(KeyMOProxyEnabled, "media_organize", "启用代理", "TMDB 请求经代理出站。", "false"),
-		stringSpec(KeyMOProxyURL, "media_organize", "代理地址", "HTTP/HTTPS 代理地址，例如 http://127.0.0.1:7890。", ""),
-		stringSpec(KeyMOProxyUsername, "media_organize", "代理用户名", "代理认证用户名，无认证可留空。", ""),
-		stringSpec(KeyMOProxyPassword, "media_organize", "代理密码", "代理认证密码。", ""),
-		stringSpec(KeyMOTmdbAPIKey, "media_organize", "TMDB API Key", "The Movie Database API 密钥。", ""),
-		stringSpec(KeyMOTmdbLanguage, "media_organize", "TMDB 搜索语言", "TMDB 搜索与详情语言，例如 zh-CN。", "zh-CN"),
-		stringSpec(KeyMOTmdbAPIHost, "media_organize", "TMDB API 主域名", "自建反代时填写主域名，程序自动补 /3。", "https://api.themoviedb.org"),
-		stringSpec(KeyMOTmdbImageHost, "media_organize", "TMDB 图片主域名", "自建反代时填写主域名，程序自动补 /t/p。", "https://image.tmdb.org"),
-		intSpec(KeyMOAPIRequestIntervalMS, "media_organize", "API 额外补偿间隔", "网盘 API 请求之间的额外等待时间。", "300", "毫秒", 50, 10000),
-		intSpec(KeyMOTmdbRequestIntervalMS, "media_organize", "TMDB 请求间隔", "两次 TMDB API 请求之间的最小间隔。", "250", "毫秒", 100, 5000),
-		stringSpec(KeyMOFileExtensions, "media_organize", "媒体文件扩展名", "参与整理的媒体扩展名，英文分号分隔。", "mkv;mp4;avi;ts;mov;wmv;iso;m2ts;rmvb;flv;m4v;webm"),
-		stringSpec(KeyMOMetadataExtensions, "media_organize", "元数据文件扩展名", "随媒体一起整理的元数据扩展名，英文分号分隔。", "nfo;ass;ssa;srt;sub;idx;sup;vtt;jpg;jpeg;png;webp;bmp"),
-		stringSpec(KeyMOMediaTagOrder, "media_organize", "媒体信息标签排序", "重命名时媒体标签的排列顺序，JSON 数组字符串。", `["screen_size","video_codec","audio_codec","audio_channels"]`),
-		boolSpec(KeyMOAlignMediaTags, "media_organize", "强迫症模式", "同后缀文件保持媒体信息标签一致。", "false"),
-		intSpec(KeyMOMaxWorksPerRun, "media_organize", "每次最多整理作品数", "单次执行最多处理的作品数，0 表示不限制。", "50", "", 0, 10000),
-		boolSpec(KeyMOOverwriteExisting, "media_organize", "同名冲突时覆盖", "目标位置已有同名文件时覆盖，默认跳过。", "false"),
-		{
-			Key:     KeyAIOrganizeEnabled,
-			Type:    TypeBool,
-			Default: "false",
-			Hidden:  true,
-		},
-		{
-			Key:       KeyAIOrganizeInstances,
-			Type:      TypeString,
-			Default:   "[]",
-			Sensitive: true,
-			Hidden:    true,
-		},
-		{
-			Key:     KeyAIOrganizeBaseURL,
-			Type:    TypeString,
-			Default: "https://api.deepseek.com",
-			Hidden:  true,
-		},
-		{
-			Key:       KeyAIOrganizeAPIKey,
-			Type:      TypeString,
-			Default:   "",
-			Sensitive: true,
-			Hidden:    true,
-		},
-		{
-			Key:     KeyAIOrganizeModel,
-			Type:    TypeString,
-			Default: "deepseek-chat",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyMOClassificationEnabled,
-			Type:    TypeBool,
-			Default: "false",
-			Hidden:  true,
-		},
-		{
-			Key:     KeyMOClassificationConfig,
-			Type:    TypeString,
-			Default: "",
-			Hidden:  true,
-		},
 		{
 			Key:         KeyOAuthServerURL,
 			Type:        TypeString,
@@ -300,6 +216,5 @@ func categories() []Category {
 		{ID: "system", Label: "系统设置"},
 		{ID: "account_display", Label: "网盘账号显示"},
 		{ID: "performance", Label: "性能设置"},
-		{ID: "media_organize", Label: "媒体整理设置"},
 	}
 }

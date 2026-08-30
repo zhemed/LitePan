@@ -20,15 +20,12 @@ import (
 	"litepan/internal/account"
 	"litepan/internal/accountprofile"
 	"litepan/internal/adminauth"
-	"litepan/internal/aiorganize"
 	"litepan/internal/announcement"
 	"litepan/internal/apikey"
 	"litepan/internal/auth"
 	"litepan/internal/automation"
 	"litepan/internal/backuprestore"
 	"litepan/internal/cache"
-	"litepan/internal/cacheretention"
-	"litepan/internal/classifyorganize"
 	"litepan/internal/coverextract"
 	"litepan/internal/crosstransfer"
 	"litepan/internal/domain"
@@ -38,7 +35,6 @@ import (
 	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
 	"litepan/internal/logx"
-	"litepan/internal/mediaorganize"
 	"litepan/internal/notification"
 	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
@@ -66,10 +62,6 @@ type Deps struct {
 	Uploads           *upload.Manager
 	OfflineDownloads  *offlinedownload.Service
 	Playback          *playback.Service
-	CacheRetention    *cacheretention.Service
-	MediaOrganize     *mediaorganize.Service
-	AIOrganize        *aiorganize.Service
-	ClassifyOrganize  *classifyorganize.Service
 	Automation        *automation.Service
 	Fuse              *fusemount.Service
 	CrossTransfer     *crosstransfer.Service
@@ -104,10 +96,6 @@ type Handler struct {
 	uploads           *upload.Manager
 	offlineDownloads  *offlinedownload.Service
 	playback          *playback.Service
-	cacheRetention    *cacheretention.Service
-	mediaOrganize     *mediaorganize.Service
-	aiOrganize        *aiorganize.Service
-	classifyOrganize  *classifyorganize.Service
 	automation        *automation.Service
 	fuse              *fusemount.Service
 	crossTransfer     *crosstransfer.Service
@@ -150,10 +138,6 @@ func NewRouter(d Deps) http.Handler {
 		uploads:           d.Uploads,
 		offlineDownloads:  d.OfflineDownloads,
 		playback:          d.Playback,
-		cacheRetention:    d.CacheRetention,
-		mediaOrganize:     d.MediaOrganize,
-		aiOrganize:        d.AIOrganize,
-		classifyOrganize:  d.ClassifyOrganize,
 		automation:        d.Automation,
 		fuse:              d.Fuse,
 		crossTransfer:     d.CrossTransfer,
@@ -258,19 +242,6 @@ func NewRouter(d Deps) http.Handler {
 				r.Get("/cache/stats", h.cacheStats)
 				r.Get("/cache/stats/{id}", h.accountCacheStats)
 				r.Post("/clear-cache", h.clearCache)
-				r.Route("/cache-retention", func(r chi.Router) {
-					r.Get("/configs", h.listRetentionTasks)
-					r.Get("/stats", h.getRetentionStats)
-					r.Get("/defaults", h.retentionDefaults)
-					r.Get("/startup", h.retentionStartupRemaining)
-					r.Post("/configs", h.createRetentionTask)
-					r.Put("/configs/{id}", h.updateRetentionTask)
-					r.Delete("/configs/{id}", h.deleteRetentionTask)
-					r.Post("/configs/{id}/toggle", h.toggleRetentionTask)
-					r.Post("/configs/{id}/refresh", h.refreshRetentionTask)
-					r.Post("/configs/{id}/force-stop", h.forceStopRetentionTask)
-					r.Post("/configs/{id}/ack-scope-warn", h.ackRetentionScopeWarn)
-				})
 				r.Get("/notifications", h.listNotifications)
 				r.Get("/notifications/unread-count", h.notificationUnreadCount)
 				r.Post("/notifications/read-all", h.markAllNotificationsRead)
@@ -284,16 +255,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Put("/config", h.updateLocalUploadConfig)
 					r.Post("/browse", h.browseLocalUpload)
 					r.Post("/upload", h.createLocalUploadTasks)
-				})
-				r.Route("/tools/ai-organize", func(r chi.Router) {
-					r.Get("/config", h.getAIOrganizeConfig)
-					r.Put("/config", h.updateAIOrganizeConfig)
-					r.Post("/test", h.testAIOrganizeConfig)
-				})
-				r.Route("/tools/classification", func(r chi.Router) {
-					r.Get("/config", h.getClassificationConfig)
-					r.Put("/config", h.updateClassificationConfig)
-					r.Post("/tmdb-detail", h.lookupClassificationTMDBDetail)
 				})
 				r.Route("/tools/quarktv", func(r chi.Router) {
 					r.Get("/status", h.getQuarkTVStatus)
@@ -325,29 +286,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Post("/runtime/download", h.downloadCoverExtractRuntime)
 					r.Get("/style", h.getCoverStyle)
 					r.Put("/style", h.putCoverStyle)
-				})
-				r.Route("/media-organize", func(r chi.Router) {
-					r.Get("/tasks", h.listMediaOrganizeTasks)
-					r.Post("/tasks", h.createMediaOrganizeTask)
-					r.Put("/tasks/{id}", h.updateMediaOrganizeTask)
-					r.Delete("/tasks/{id}", h.deleteMediaOrganizeTask)
-					r.Post("/tasks/{id}/plan", h.planMediaOrganizeTask)
-					r.Get("/tasks/{id}/plan", h.getMediaOrganizePlan)
-					r.Delete("/tasks/{id}/plan", h.deleteMediaOrganizePlan)
-					r.Put("/tasks/{id}/plan/actions/{action_id}", h.updateMediaOrganizePlanAction)
-					r.Delete("/tasks/{id}/plan/actions/{action_id}", h.deleteMediaOrganizePlanAction)
-					r.Post("/tasks/{id}/plan/actions/batch-delete", h.batchDeleteMediaOrganizePlanActions)
-					r.Post("/tasks/{id}/apply", h.applyMediaOrganizeTask)
-					r.Post("/tasks/{id}/run", h.runMediaOrganizeTask)
-					r.Post("/tasks/{id}/stop", h.stopMediaOrganizeTask)
-					r.Get("/tasks/{id}/logs", h.getMediaOrganizeLogs)
-					r.Get("/tasks/{id}/progress", h.getMediaOrganizeProgress)
-					r.Get("/settings", h.getMediaOrganizeSettings)
-					r.Put("/settings", h.updateMediaOrganizeSettings)
-					r.Get("/guess-file", h.guessMediaOrganizeFile)
-					r.Post("/test-tmdb", h.testMediaOrganizeTMDB)
-					r.Get("/search-tmdb", h.searchMediaOrganizeTMDB)
-					r.Post("/tasks/{id}/bindings", h.setMediaOrganizeBinding)
 				})
 				r.Route("/automation", func(r chi.Router) {
 					r.Get("/rules", h.listAutomationRules)

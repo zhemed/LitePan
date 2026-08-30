@@ -13,7 +13,6 @@ import (
 	"litepan/internal/buildinfo"
 	"litepan/internal/cache"
 	"litepan/internal/config"
-	"litepan/internal/coverextract"
 	"litepan/internal/logx"
 	"litepan/internal/notification"
 	"litepan/internal/settings"
@@ -45,16 +44,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Secret:    core.secret,
 		Log:       logs.For(logx.ModuleSystem),
 		OnRestart: onRestart,
-	})
-	if err != nil {
-		return nil, err
-	}
-	coverExtractSvc, err := coverextract.New(coverextract.Options{
-		DataDir:    cfg.DataDir,
-		ListenAddr: cfg.ListenAddr,
-		Files:      svc.files,
-		Playback:   svc.playback,
-		Log:        logs.For(logx.ModuleSystem),
 	})
 	if err != nil {
 		return nil, err
@@ -104,12 +93,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 			}
 			return svc.fuseReadCache.ClearAll(ctx)
 		},
-		CoverExtractStats: func() (int, int, int64) {
-			return coverExtractSvc.Stats()
-		},
-		ClearCoverExtract: func() (int, int, int64) {
-			return coverExtractSvc.ClearWithStats()
-		},
 		AfterMetadataClear: func() {
 			core.listHits.Reset()
 			svc.playback.InvalidateAll()
@@ -124,39 +107,34 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		return nil, err
 	}
 	router := api.NewRouter(api.Deps{
-		Logs:              logs,
-		AccountSvc:        svc.account,
-		AccountProfile:    svc.accountProfile,
-		Accounts:          st.store.Accounts,
-		Configs:           st.store.Configs,
-		Settings:          st.settings,
-		Cache:             core.cache,
-		ListHitTracker:    core.listHits,
-		Files:             svc.files,
-		Favorites:         svc.favorites,
-		Uploads:           svc.uploads,
-		OfflineDownloads:  svc.offlineDownloads,
-		Playback:          svc.playback,
-		CacheRetention:    svc.cacheRetention,
-		MediaOrganize:     svc.mediaOrganize,
-		AIOrganize:        svc.aiOrganize,
-		ClassifyOrganize:  svc.classifyOrganize,
-		Automation:        svc.automation,
-		Fuse:              svc.fuse,
-		CrossTransfer:     svc.crossTransfer,
-		EmbyProxy:         svc.embyProxy,
-		FnosProxy:         svc.fnosProxy,
-		QuarkTV:           svc.quarktv,
-		ApiKeys:           apiKeySvc,
-		Auth:              core.auth,
-		AuthSched:         core.sched,
-		AdminAuth:         adminauth.New(st.store.Configs, core.secret, logs.For(logx.ModuleAPI)),
-		Notifications:     notifySvc,
-		Announcement:      announcement.New(announcement.DefaultURL, logs.For(logx.ModuleAPI)),
-		BackupRestore:     backupRestoreSvc,
-		SpaceCleanup:      spaceCleanupSvc,
-		CoverExtract:      coverExtractSvc,
-		DataDir:           cfg.DataDir,
+		Logs:             logs,
+		AccountSvc:       svc.account,
+		AccountProfile:   svc.accountProfile,
+		Accounts:         st.store.Accounts,
+		Configs:          st.store.Configs,
+		Settings:         st.settings,
+		Cache:            core.cache,
+		ListHitTracker:   core.listHits,
+		Files:            svc.files,
+		Favorites:        svc.favorites,
+		Uploads:          svc.uploads,
+		OfflineDownloads: svc.offlineDownloads,
+		Playback:         svc.playback,
+		Automation:       svc.automation,
+		Fuse:             svc.fuse,
+		CrossTransfer:    svc.crossTransfer,
+		EmbyProxy:        svc.embyProxy,
+		FnosProxy:        svc.fnosProxy,
+		QuarkTV:          svc.quarktv,
+		ApiKeys:          apiKeySvc,
+		Auth:             core.auth,
+		AuthSched:        core.sched,
+		AdminAuth:        adminauth.New(st.store.Configs, core.secret, logs.For(logx.ModuleAPI)),
+		Notifications:    notifySvc,
+		Announcement:     announcement.New(announcement.DefaultURL, logs.For(logx.ModuleAPI)),
+		BackupRestore:    backupRestoreSvc,
+		SpaceCleanup:     spaceCleanupSvc,
+		DataDir:          cfg.DataDir,
 		OnSettingsUpdated: cacheSettingsHook(core.cache, st.settings, cfg.DataDir),
 	})
 
