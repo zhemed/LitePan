@@ -29,7 +29,6 @@ func (d *Driver) rootPath() string {
 	return "/"
 }
 
-
 // 空串/"/"/"0"/"root" 视为根目录。
 func (d *Driver) normalizePath(parentID string) string {
 	p := strings.TrimSpace(parentID)

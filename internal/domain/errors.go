@@ -9,15 +9,15 @@ import (
 type ErrorCode string
 
 const (
-	CodeAuthExpired      ErrorCode = "AUTH_EXPIRED"
+	CodeAuthExpired       ErrorCode = "AUTH_EXPIRED"
 	CodeAdminAuthRequired ErrorCode = "ADMIN_AUTH_REQUIRED"
-	CodeRateLimited      ErrorCode = "RATE_LIMITED"
-	CodeNotFound         ErrorCode = "NOT_FOUND"
-	CodeDriverError      ErrorCode = "DRIVER_ERROR"
-	CodeValidation       ErrorCode = "VALIDATION"
-	CodeNotImplement     ErrorCode = "NOT_IMPLEMENT"
-	CodePermissionDenied ErrorCode = "PERMISSION_DENIED"
-	CodeInternal         ErrorCode = "INTERNAL"
+	CodeRateLimited       ErrorCode = "RATE_LIMITED"
+	CodeNotFound          ErrorCode = "NOT_FOUND"
+	CodeDriverError       ErrorCode = "DRIVER_ERROR"
+	CodeValidation        ErrorCode = "VALIDATION"
+	CodeNotImplement      ErrorCode = "NOT_IMPLEMENT"
+	CodePermissionDenied  ErrorCode = "PERMISSION_DENIED"
+	CodeInternal          ErrorCode = "INTERNAL"
 )
 
 type codeMeta struct {
@@ -29,12 +29,12 @@ var codeTable = map[ErrorCode]codeMeta{
 	CodeAuthExpired:       {401, "账号认证已失效，请重新授权"},
 	CodeAdminAuthRequired: {401, "需要管理员权限"},
 	CodeRateLimited:       {429, "请求过于频繁，请稍后重试"},
-	CodeNotFound:         {404, "文件不存在"},
-	CodeDriverError:      {502, "网盘服务异常"},
-	CodeValidation:       {400, "参数错误"},
-	CodeNotImplement:     {501, "该操作不支持"},
-	CodePermissionDenied: {403, "权限不足"},
-	CodeInternal:         {500, "服务内部错误"},
+	CodeNotFound:          {404, "文件不存在"},
+	CodeDriverError:       {502, "网盘服务异常"},
+	CodeValidation:        {400, "参数错误"},
+	CodeNotImplement:      {501, "该操作不支持"},
+	CodePermissionDenied:  {403, "权限不足"},
+	CodeInternal:          {500, "服务内部错误"},
 }
 
 // AppError 是带错误码的应用错误，可被 errors.As / errors.AsType 提取。

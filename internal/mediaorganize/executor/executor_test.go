@@ -275,7 +275,7 @@ func TestApplyMetadataFollowersOnRenameMerge(t *testing.T) {
 			TargetName:     "千与千寻 (2001) [1080p H.264 PCM 2.0].mkv",
 			Metadata: map[string]any{
 				"_resolved_target_parent_id": "d1",
-				"mode":                     "rename",
+				"mode":                       "rename",
 			},
 		}},
 		Diagnostics: map[string]any{

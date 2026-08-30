@@ -5,13 +5,11 @@ import (
 	"strings"
 )
 
-
 const (
 	SettingOAuthServerURL = "oauth_server_url"
 
 	DefaultOAuthServerURL = "https://oauth.litepan.top"
 )
-
 
 var blockedOAuthHosts = map[string]struct{}{
 	"my.proxy.test": {},

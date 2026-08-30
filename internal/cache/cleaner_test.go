@@ -82,7 +82,7 @@ func TestApplyMutationInvalidatesMovedFilesAndBothDirectories(t *testing.T) {
 	}
 }
 
-func TestInvalidateAccountIncludesWebDAVCaches(t *testing.T) {
+func TestInvalidateAccountIncludesCaches(t *testing.T) {
 	cache := NewService(Options{MaxItems: 16})
 	t.Cleanup(cache.Close)
 	const accountID int64 = 7
@@ -90,14 +90,10 @@ func TestInvalidateAccountIncludesWebDAVCaches(t *testing.T) {
 		DirKey(accountID, "root"),
 		FileInfoKey(accountID, "file"),
 		DownloadURLKey(accountID, "file", "ua"),
-		PathMapKey(accountID, "/movie"),
-		WebDAVMetaKey(accountID, "PROPFIND|/movie|depth=1"),
 	}
 	for _, key := range keys {
 		cache.Set(key, "cached", time.Hour)
 	}
-	otherAccountKey := PathMapKey(8, "/movie")
-	cache.Set(otherAccountKey, "keep", time.Hour)
 
 	cache.InvalidateAccount(accountID)
 
@@ -105,8 +101,5 @@ func TestInvalidateAccountIncludesWebDAVCaches(t *testing.T) {
 		if _, ok := cache.Get(key); ok {
 			t.Fatalf("account cache %q was not invalidated", key)
 		}
-	}
-	if _, ok := cache.Get(otherAccountKey); !ok {
-		t.Fatal("another account cache must be preserved")
 	}
 }

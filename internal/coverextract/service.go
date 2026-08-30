@@ -35,9 +35,9 @@ import (
 )
 
 const (
-	maxFiles       = 20
-	maxFrames      = 50
-	maxImageBytes  = int64(200 << 20)
+	maxFiles      = 20
+	maxFrames     = 50
+	maxImageBytes = int64(200 << 20)
 	// defaultReadMax 是单次提取读取量的基础上限；newSource 会按文件大小
 	// 提升为 max(256MB, 文件大小)，避免深位置取帧（MKV 无 Cues）被截断。
 	defaultReadMax = int64(256 << 20)
@@ -527,9 +527,9 @@ func (s *Service) ServeSource(w http.ResponseWriter, r *http.Request, token stri
 	// 夸克TV 转码直链在深位置/随机取帧上不稳定（实测丢帧），驱动本体读原始文件稳定，
 	// 虽取链较慢但可靠。ForceProxy 保证 Litepan 代取（不走 302，ffmpeg 只面对本机）。
 	return s.opts.Playback.ServeHTTP(cw, r, playback.Request{AccountID: accountID, FileID: fileID}, playback.Intent{
-		FileName:     "source",
-		OriginalFile: true,
-		ForceProxy:   true,
+		FileName:       "source",
+		OriginalFile:   true,
+		ForceProxy:     true,
 		SkipRangeLimit: true,
 	})
 }

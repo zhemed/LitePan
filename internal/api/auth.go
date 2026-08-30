@@ -69,16 +69,3 @@ func (h *Handler) adminUpdateCredentials(w http.ResponseWriter, r *http.Request)
 	}
 	writeOK(w, map[string]any{})
 }
-
-func (h *Handler) adminWebDAVConfig(w http.ResponseWriter, r *http.Request) {
-	var req adminauth.WebDAVConfigRequest
-	if err := decodeJSON(r, &req); err != nil {
-		writeErr(w, err)
-		return
-	}
-	if err := h.adminAuth.UpdateWebDAVConfig(r.Context(), req); err != nil {
-		writeErr(w, err)
-		return
-	}
-	writeOK(w, map[string]any{})
-}

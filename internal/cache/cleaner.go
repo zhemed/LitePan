@@ -19,7 +19,6 @@ func NewCleaner(c *Service, log *slog.Logger) *Cleaner {
 	return &Cleaner{cache: c, log: log}
 }
 
-
 func (cl *Cleaner) Register(bus *eventbus.Bus) {
 	eventbus.Subscribe(bus, func(_ context.Context, e eventbus.FileMutated) {
 		cl.handle(e)
@@ -30,13 +29,11 @@ func (cl *Cleaner) handle(e eventbus.FileMutated) {
 	ApplyMutation(cl.cache, e)
 }
 
-
 func ApplyMutation(c *Service, e eventbus.FileMutated) {
 	if c == nil {
 		return
 	}
 	acc := e.AccountID
-	InvalidateWebDAVAccountCaches(c, acc)
 
 	switch e.Op {
 	case "create":

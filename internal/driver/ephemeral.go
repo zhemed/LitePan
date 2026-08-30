@@ -12,7 +12,6 @@ type EphemeralConfig struct {
 	OAuthServerURL func(ctx context.Context) string
 }
 
-
 func OpenEphemeral(ctx context.Context, driverType, configJSON string, cfg EphemeralConfig) (Driver, func(context.Context), error) {
 	drv, ok := New(driverType)
 	if !ok {

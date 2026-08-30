@@ -28,7 +28,6 @@ const (
 	KeyAdminPassword              = "admin_password"
 	KeySessionTimeout             = "session_timeout"
 	KeyPublicIndexEnabled         = "public_index_enabled"
-	KeyWebDAVEnabled              = "webdav_enabled"
 	KeyIndexAccountSwitchMode     = "index_account_switch_mode"
 	KeyCompactHomeEnabled         = "compact_home_enabled"
 	KeyAdminHomeReturnMode        = "admin_home_return_mode"
@@ -42,7 +41,6 @@ const (
 var passwordChangeExemptPaths = map[string]struct{}{
 	"/api/admin/system-config":      {},
 	"/api/admin/update-credentials": {},
-	"/api/admin/webdav-config":      {},
 }
 
 type Session struct {
@@ -84,11 +82,6 @@ type SystemConfig struct {
 	UploadTaskConcurrency    int     `json:"upload_task_concurrency,omitempty"`
 	LogRetentionDays         int     `json:"log_retention_days,omitempty"`
 	AuthActiveRefreshEnabled bool    `json:"auth_active_refresh_enabled,omitempty"`
-	WebDAVEnabled            bool    `json:"webdav_enabled"`
-}
-
-type WebDAVConfigRequest struct {
-	WebDAVEnabled *bool `json:"webdav_enabled"`
 }
 
 type UpdateCredentialsRequest struct {
@@ -389,7 +382,6 @@ func (s *Service) SystemConfig(ctx context.Context) SystemConfig {
 		UploadTaskConcurrency:    s.configInt(ctx, "upload_task_concurrency", 3),
 		LogRetentionDays:         s.configInt(ctx, "log_retention_days", 30),
 		AuthActiveRefreshEnabled: s.configBool(ctx, "auth_active_refresh_enabled", true),
-		WebDAVEnabled:            s.webdavEnabled(ctx),
 	}
 }
 
@@ -403,13 +395,6 @@ func (s *Service) CompactHomeEnabled(ctx context.Context) bool {
 
 func (s *Service) HeaderEffectsEnabled(ctx context.Context) bool {
 	return s.headerEffectsEnabled(ctx)
-}
-
-func (s *Service) UpdateWebDAVConfig(ctx context.Context, req WebDAVConfigRequest) error {
-	if req.WebDAVEnabled != nil {
-		_ = s.configs.Set(ctx, KeyWebDAVEnabled, boolString(*req.WebDAVEnabled))
-	}
-	return nil
 }
 
 type configUpdate struct {
@@ -555,10 +540,6 @@ func (s *Service) credentialState(ctx context.Context) security.CredentialState 
 
 func (s *Service) publicIndexEnabled(ctx context.Context) bool {
 	return s.configBool(ctx, KeyPublicIndexEnabled, false)
-}
-
-func (s *Service) webdavEnabled(ctx context.Context) bool {
-	return s.configBool(ctx, KeyWebDAVEnabled, true)
 }
 
 func (s *Service) headerEffectsEnabled(ctx context.Context) bool {

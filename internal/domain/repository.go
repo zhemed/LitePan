@@ -2,8 +2,6 @@ package domain
 
 import "context"
 
-
-
 type AccountRepository interface {
 	Create(ctx context.Context, a *Account) (int64, error)
 	Update(ctx context.Context, a *Account) error

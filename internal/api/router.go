@@ -44,7 +44,6 @@ import (
 	"litepan/internal/playback"
 	"litepan/internal/quarktv"
 	"litepan/internal/settings"
-	"litepan/internal/share/dav"
 	"litepan/internal/spacecleanup"
 	"litepan/internal/upload"
 )
@@ -226,7 +225,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Delete("/{id}", h.deleteBackup)
 				})
 				r.Post("/update-credentials", h.adminUpdateCredentials)
-				r.Post("/webdav-config", h.adminWebDAVConfig)
 				r.Get("/emby/configs", h.listEmbyConfigs)
 				r.Put("/emby/configs", h.replaceEmbyConfigs)
 				r.Post("/emby/test", h.testEmbyConfig)
@@ -426,40 +424,13 @@ func NewRouter(d Deps) http.Handler {
 		})
 	})
 
-	davLog := apiLog
-	if d.Logs != nil {
-		davLog = d.Logs.For(logx.ModuleWebDAV)
-	}
-	davSrv := dav.New(dav.Deps{
-		Logs:         davLog,
-		Files:        d.Files,
-		Playback:     d.Playback,
-		Accounts:     d.Accounts,
-		Configs:      d.Configs,
-		Cache:        d.Cache,
-		Settings:     d.Settings,
-		DataDir:      d.DataDir,
-		TempRegistry: d.Uploads.TempRegistry(),
-	})
-
 	sub, err := fs.Sub(webFS, "web")
 	if err != nil {
 		panic(err) // 编译期内嵌，理论上不会失败
 	}
 	r.Handle("/*", spaHandler(sub))
 
-	return davBypass(davSrv, r)
-}
-
-// chi 不认 WebDAV 方法，/dav 须在外层旁路
-func davBypass(dav http.Handler, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/dav" || strings.HasPrefix(r.URL.Path, "/dav/") {
-			dav.ServeHTTP(w, r)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+	return r
 }
 
 func spaHandler(fsys fs.FS) http.Handler {

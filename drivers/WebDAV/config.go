@@ -26,7 +26,6 @@ func secondsOr(value flexString, def time.Duration) time.Duration {
 	return time.Duration(positiveIntOr(value, int(def/time.Second))) * time.Second
 }
 
-
 type Addition struct {
 	Address      string     `json:"address" label:"WebDAV 根 URL" form:"required,pair=base" example:"https://dav.example.com"`
 	Username     string     `json:"username" label:"用户名" form:"required,pair=auth"`

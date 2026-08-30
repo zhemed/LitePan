@@ -11,25 +11,25 @@ const (
 )
 
 type CacheRetentionTask struct {
-	ID                int64
-	AccountID         int64
-	AccountName       string
-	ParentID          string
-	Path              string
-	ScanDepth         int
-	ApiInterval       int
-	RefreshInterval   int
-	Status            string
-	PausedReason      string
-	FileCount         int
-	LastRefresh       *time.Time
-	LastRefreshStatus string
-	LastDurationMS    int
-	LastAPICalls      int
-	LastSkipCalls     int
-	LastScannedDirs   int
-	LastRunConfigFP   string
-	ErrorMessage      string
+	ID                   int64
+	AccountID            int64
+	AccountName          string
+	ParentID             string
+	Path                 string
+	ScanDepth            int
+	ApiInterval          int
+	RefreshInterval      int
+	Status               string
+	PausedReason         string
+	FileCount            int
+	LastRefresh          *time.Time
+	LastRefreshStatus    string
+	LastDurationMS       int
+	LastAPICalls         int
+	LastSkipCalls        int
+	LastScannedDirs      int
+	LastRunConfigFP      string
+	ErrorMessage         string
 	TimeWindowEnabled    bool
 	TimeStart            string
 	TimeEnd              string

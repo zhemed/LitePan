@@ -13,24 +13,24 @@ const (
 )
 
 type FuseMount struct {
-	ID          int64
-	Name        string
-	AccountID   int64
-	RootItemID  string
-	RootPath    string
-	MountPoint  string
-	ReadOnly    bool
-	AutoMount   bool
-	UID         uint32
-	GID         uint32
-	DirMode     uint32
-	FileMode    uint32
-	Enabled     bool
-	State       string
-	LastError   string
-	SortOrder   int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID         int64
+	Name       string
+	AccountID  int64
+	RootItemID string
+	RootPath   string
+	MountPoint string
+	ReadOnly   bool
+	AutoMount  bool
+	UID        uint32
+	GID        uint32
+	DirMode    uint32
+	FileMode   uint32
+	Enabled    bool
+	State      string
+	LastError  string
+	SortOrder  int
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type FuseMountRepository interface {

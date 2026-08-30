@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"litepan/internal/cache"
 	"litepan/internal/settings"
 )
 
@@ -47,9 +46,6 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 			h.settings.Bool(settings.KeyAuthActiveRefresh),
 			previousActiveRefresh,
 		)
-	}
-	if _, ok := in[settings.KeyWebDAVCacheEnabled]; ok && h.cache != nil {
-		cache.InvalidateAllWebDAVCaches(h.cache)
 	}
 	if h.onSettingsUpdated != nil {
 		h.onSettingsUpdated(in)

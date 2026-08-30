@@ -175,6 +175,6 @@ func isLatinScript(text string) bool {
 }
 
 var (
-	dualTitleRe = regexp.MustCompile(`^(.+?) - (.+?) \((\d{4})\)(.*)$`)
+	dualTitleRe  = regexp.MustCompile(`^(.+?) - (.+?) \((\d{4})\)(.*)$`)
 	bracketTagRe = regexp.MustCompile(`\[([^\]]+)\]`)
 )

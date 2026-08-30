@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultTimeout        = 30 * time.Second
+	DefaultTimeout         = 30 * time.Second
 	defaultIdleConnTimeout = 90 * time.Second
 )
 

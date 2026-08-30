@@ -120,5 +120,3 @@ func (h *Handler) deleteApiKey(w http.ResponseWriter, r *http.Request) {
 	}
 	writeOK(w, map[string]any{"id": id})
 }
-
-

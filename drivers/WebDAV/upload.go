@@ -76,7 +76,6 @@ func (d *Driver) UploadLocalFile(ctx context.Context, req driver.LocalUploadRequ
 	}, nil
 }
 
-
 func (d *Driver) prepareUploadTarget(ctx context.Context, parentID, name, policy string) (string, bool, error) {
 	if policy == "overwrite" {
 		return name, false, nil

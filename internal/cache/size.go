@@ -37,8 +37,6 @@ func estimatePayload(v any) int64 {
 		return downloadInfoPayload(*t)
 	case domain.DownloadInfo:
 		return downloadInfoPayload(t)
-	case PathMapEntry:
-		return pathMapPayload(t)
 	case []byte:
 		return byteSlicePayload(t)
 	default:
@@ -65,20 +63,6 @@ func fileItemPayload(f domain.FileItem) int64 {
 	_, raw, err := encodeSnapshotValue(f)
 	if err != nil {
 		return 128
-	}
-	return int64(len(raw))
-}
-
-func pathMapPayload(ent PathMapEntry) int64 {
-	raw, err := json.Marshal(struct {
-		Item     fileItemDTO `json:"item"`
-		ParentID string      `json:"parent_id"`
-	}{
-		Item:     fileItemToDTO(ent.Item),
-		ParentID: ent.ParentID,
-	})
-	if err != nil {
-		return fileItemPayload(ent.Item) + int64(len(ent.ParentID)) + 32
 	}
 	return int64(len(raw))
 }

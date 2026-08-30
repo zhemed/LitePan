@@ -13,7 +13,6 @@ const (
 	ModuleAuth         Module = "auth"
 	ModuleFileOp       Module = "file_op"
 	ModuleConfig       Module = "config"
-	ModuleWebDAV       Module = "webdav"
 )
 
 func (m Module) String() string {
@@ -27,7 +26,7 @@ func (m Module) Group() (id, name, color string) {
 	switch m {
 	case ModuleDriver, ModuleDriverSystem, ModuleAuth:
 		return "driver", "驱动", "#4CAF50"
-	case ModuleFileOp, ModuleWebDAV:
+	case ModuleFileOp:
 		return "file", "文件", "#009688"
 	case ModuleCache:
 		return "cache", "缓存", "#795548"
@@ -46,7 +45,7 @@ func ModulesInGroup(group string) []string {
 	case "driver":
 		return []string{string(ModuleDriver), string(ModuleDriverSystem), string(ModuleAuth)}
 	case "file":
-		return []string{string(ModuleFileOp), string(ModuleWebDAV)}
+		return []string{string(ModuleFileOp)}
 	case "cache":
 		return []string{string(ModuleCache)}
 	case "interface":

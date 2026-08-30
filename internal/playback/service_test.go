@@ -80,7 +80,6 @@ func TestIntentAllowsPlaybackResolve(t *testing.T) {
 		want   bool
 	}{
 		{name: "普通播放", intent: Intent{}, want: true},
-		{name: "WebDAV 读取原始文件", intent: Intent{WebDAV: true}, want: false},
 		{name: "海报取帧读取原始文件", intent: Intent{OriginalFile: true}, want: false},
 	}
 
@@ -129,23 +128,6 @@ func TestWriteRedirectDisablesCaching(t *testing.T) {
 	}, Intent{})
 
 	assertDynamicRedirect(t, recorder.Result())
-}
-
-func TestWriteRedirectWebDAVRangeDisablesCaching(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/dav/file", nil)
-	req.Header.Set("Range", "bytes=10-19")
-	recorder := httptest.NewRecorder()
-
-	writeRedirect(recorder, req, Resolved{
-		File: domain.FileItem{Size: 100},
-		Link: domain.DownloadInfo{URL: "https://cdn.example/file"},
-	}, Intent{WebDAV: true})
-
-	response := recorder.Result()
-	assertDynamicRedirect(t, response)
-	if got := response.Header.Get("Content-Range"); got != "bytes 10-19/100" {
-		t.Fatalf("Content-Range = %q", got)
-	}
 }
 
 func assertDynamicRedirect(t *testing.T, response *http.Response) {

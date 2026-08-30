@@ -77,7 +77,5 @@ func accountTypePrefixes(accountID int64) []string {
 		prefixDir + sep + id + sep,
 		prefixFileInfo + sep + id + sep,
 		prefixDownloadURL + sep + id + sep,
-		prefixPathMap + sep + id + sep,
-		prefixWebDAVMeta + sep + id + sep,
 	}
 }
