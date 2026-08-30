@@ -36,3 +36,7 @@ dist/*.tar.gz
 drivers/115/
 LitePan-own/
 /_extracted/
+
+# Python 缓存
+__pycache__/
+**/__pycache__/
