@@ -1090,3 +1090,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - README 仅保留 yaml compose
+
+
+## Session 30: Fix install-docker and host on LitePan
+<!-- trellis-session: v=2 fp=ecd267f1d07cb83f -->
+
+**Date**: 2026-08-30
+**Task**: Fix install-docker and host on LitePan
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+修复 new-api-own 的 install-docker.sh 兼容性并托管到 LitePan
+
+### Main Changes
+
+- 原 49 行 → 89 行修复版：强制重建官方源、显式 signed-by、rootless 容错
+- LitePan 新增 GET /install-docker.sh 直链，data/install-docker.sh 落盘，ghcr v0.5.2-Beta 已更新
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `aceca55` | feat: serve install-docker.sh via LitePan at /install-docker.sh (fix version pinning) |
+| `657b11b` | chore(task): archive 08-30-fix-install-docker-and-host |
+
+### Testing
+
+- [OK] bash -n 0, curl http://IP:5211/install-docker.sh 89 行, go vet 0, docker 118M
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 他人可 curl -fsSL http://LitePan-IP:5211/install-docker.sh | bash
