@@ -300,8 +300,6 @@ onBeforeUnmount(() => {
       <span>{{ passwordChangeMessage }}</span>
     </WarningBanner>
 
-    />
-
     <AdminEmptyState
       v-if="!cachedPageComponent && !['settings'].includes(page)"
       icon="🚧"
