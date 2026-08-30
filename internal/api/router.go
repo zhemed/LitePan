@@ -8,8 +8,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
-	"os"
-	"path"
+		"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -139,9 +138,6 @@ func NewRouter(d Deps) http.Handler {
 	r.Use(chimw.RequestID)
 	r.Use(h.attachRequestLogger)
 	r.Use(chimw.Recoverer)
-
-	r.Get("/install-docker.sh", h.serveInstallDocker)
-	r.Get("/install-docker-fixed.sh", h.serveInstallDocker)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/health", h.health)
@@ -302,40 +298,6 @@ func NewRouter(d Deps) http.Handler {
 	r.Handle("/*", spaHandler(sub))
 
 	return r
-}
-
-func (h *Handler) serveInstallDocker(w http.ResponseWriter, r *http.Request) {
-	candidates := []string{
-		h.dataDir + "/install-docker.sh",
-		h.dataDir + "/install-docker-fixed.sh",
-		"/app/data/install-docker.sh",
-		"/app/data/install-docker-fixed.sh",
-	}
-	var data []byte
-	var lastErr error
-	for _, p := range candidates {
-		if p == "" || p == "/" {
-			continue
-		}
-		if b, err := os.ReadFile(p); err == nil {
-			data = b
-			lastErr = nil
-			break
-		} else {
-			lastErr = err
-		}
-	}
-	if len(data) == 0 {
-		msg := "install-docker.sh not found"
-		if lastErr != nil {
-			msg += ": " + lastErr.Error()
-		}
-		http.Error(w, msg, http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache")
-	_, _ = w.Write(data)
 }
 
 func spaHandler(fsys fs.FS) http.Handler {
