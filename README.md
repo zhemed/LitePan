@@ -28,39 +28,4 @@
 | **天翼云盘** `189_cloud` | `扫码登录` |
 | **本机存储** `localfs` | `无` |
 
-## 快速开始
-
-```bash
-docker pull ghcr.io/zhemed/litepan:v0.5.2-Beta
-```
-
-```yaml
-services:
-  litepan:
-    image: ghcr.io/zhemed/litepan:v0.5.2-Beta
-    container_name: litepan
-    restart: unless-stopped
-    ports: ["5211:5211", "42069:42069/tcp", "42069:42069/udp"]
-    environment: [TZ=Asia/Shanghai]
-    volumes: ["./data:/app/data", "./mounts:/app/mounts:shared"]
-    devices: ["/dev/fuse:/dev/fuse"]
-    pid: "host"
-    privileged: true
-```
-
-```bash
-git clone https://github.com/zhemed/LitePan.git && cd LitePan && docker compose up -d
-# http://IP:5211  admin / admin
-```
-
-## 能做什么
-
-* 看 / 管：`FileBrowser` 浏览 `List/Download/Move/Copy/Rename`
-* 挂：`FUSE` `mounts:shared` · 传：`从服务器上传` · 离线：`Magnet/BT`
-* 动：`delay` · 备：`zstd` 快照
-
----
-
-[PolyForm Noncommercial 1.0.0](./LICENSE) · [Issues](https://github.com/zhemed/LitePan/issues) · [致谢](./ACKNOWLEDGEMENTS.md)
-
 <p align="center"><a href="#readme-top">回顶部</a></p>
