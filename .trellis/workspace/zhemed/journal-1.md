@@ -459,3 +459,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec 需 trellis-update-spec 清理跨盘描述
+
+
+## Session 13: Update spec for crosstransfer removal
+<!-- trellis-session: v=2 fp=e7c297e7d6cdb06d -->
+
+**Date**: 2026-08-30
+**Task**: Update spec for crosstransfer removal
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将 spec 中跨盘秒传标记为已移除
+
+### Main Changes
+
+- backend api-layering: Route(/cross-transfer) 5 handler 与 Deps CrossTransfer 已移除
+- frontend directory-structure/api-client: CrossDriveTransfer 3 文件与 crossTransfer.ts 已删
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f1cd69e` | docs(spec): update for crosstransfer removal |
+| `6e8fec5` | chore(task): archive 08-30-update-spec-crosstransfer-removed |
+
+### Testing
+
+- [OK] grep 2026-08-30 nocross 3 处, go vet 0, type-check 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 已与 119M nocross 对齐
