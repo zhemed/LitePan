@@ -1054,3 +1054,39 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - README 已与 host 实际一致
+
+
+## Session 29: Remove docker pull and git clone from README
+<!-- trellis-session: v=2 fp=1e530eed4472a9a4 -->
+
+**Date**: 2026-08-30
+**Task**: Remove docker pull and git clone from README
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按‘不要不要，这两个去掉’删除README中2个bash块
+
+### Main Changes
+
+- README.md 63→54 行，删 docker pull ghcr 与 git clone+http://IP 2 段
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fd9a565` | docs(readme): remove docker pull and git clone as requested |
+| `0f5de77` | chore(task): archive 08-30-remove-readme-quickstart-lines |
+
+### Testing
+
+- [OK] grep docker pull 0, git clone 0, http://IP 0, wc -l 54, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 仅保留 yaml compose

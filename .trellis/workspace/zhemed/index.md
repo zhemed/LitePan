@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 28
+- **Total Sessions**: 29
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1056 | Active |
+| `journal-1.md` | ~1092 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 29 | 2026-08-30 | Remove docker pull and git clone from README | `fd9a565`, `0f5de77` | `main` |
 | 28 | 2026-08-30 | Update README with host compose deployment | `d75616e`, `e606dd6` | `main` |
 | 27 | 2026-08-30 | Remove quick start and features sections from README | `22e2108`, `704b046` | `main` |
 | 26 | 2026-08-30 | Final README minimal 66 lines | `2f29d59`, `df09b0a` | `main` |
