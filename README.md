@@ -4,9 +4,11 @@
 
 <img src="docs/pictures/banner.png" alt="LitePan" width="100%">
 
-**LitePan · 115 / 天翼 / 本机 · 118M**
+# LitePan
 
-`115网盘 · 天翼云盘 · 本机存储` 一个界面
+**115 · 天翼 · 本机 · 一个界面 · 118M**
+
+`Go 1.26.6` · `Vue 3.5.41` · `ghcr.io/zhemed/litepan:v0.5.2-Beta`
 
 <br>
 
@@ -14,11 +16,9 @@
 <a href="https://github.com/zhemed/LitePan/pkgs/container/litepan"><img src="https://img.shields.io/badge/GHCR-ghcr.io%2Fzhemed%2Flitepan-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="GHCR"></a>
 <a href="./LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20NC-red?style=for-the-badge" alt="License"></a>
 
-`ghcr.io/zhemed/litepan:v0.5.2-Beta` · `118M` · `3 驱动`
-
 </div>
 
-> 精简版 `zhemed` 基于 `Ponphil/LitePan`：**仅 3 驱动与文件管理核心**，`STRM/WebDAV/跨盘/整理/7 项增强` 已移除。
+> 私有部署版，基于 `Ponphil/LitePan` 精简：**仅 3 驱动**，无 `STRM` 等。
 
 ## 支持网盘
 
@@ -35,7 +35,6 @@ docker pull ghcr.io/zhemed/litepan:v0.5.2-Beta
 ```
 
 ```yaml
-# compose.yml
 services:
   litepan:
     image: ghcr.io/zhemed/litepan:v0.5.2-Beta
@@ -51,25 +50,17 @@ services:
 
 ```bash
 git clone https://github.com/zhemed/LitePan.git && cd LitePan && docker compose up -d
-# http://IP:5211  admin / admin 首次改密
+# http://IP:5211  admin / admin
 ```
 
 ## 能做什么
 
-* **看/管**：多账号浏览 `List/Download/Move/Copy/Rename/Delete/Favorites`
-* **挂**：`FUSE` `mounts:shared` + `从服务器上传`（`LocalUpload`）
-* **动**：`delay` / `local_upload`（`sha256` 增量，`LitePan-own` 移植）
-* **备**：`备份恢复` `zstd` · `离线下载` · `系统设置`
+* 看 / 管：`FileBrowser` 浏览 `List/Download/Move/Copy/Rename`
+* 挂：`FUSE` `mounts:shared` · 传：`从服务器上传` · 离线：`Magnet/BT`
+* 动：`delay` · 备：`zstd` 快照
 
-## 验证
+---
 
-```bash
-GOWORK=off go vet ./... && cd web && npm run type-check
-curl -s http://127.0.0.1:5211/api/health | grep ok  # 3 驱动
-```
-
-## 许可
-
-[PolyForm Noncommercial 1.0.0](./LICENSE) · [ACKNOWLEDGEMENTS.md](./ACKNOWLEDGEMENTS.md) · [Issues](https://github.com/zhemed/LitePan/issues)
+[PolyForm Noncommercial 1.0.0](./LICENSE) · [Issues](https://github.com/zhemed/LitePan/issues) · [致谢](./ACKNOWLEDGEMENTS.md)
 
 <p align="center"><a href="#readme-top">回顶部</a></p>
