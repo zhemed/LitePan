@@ -1418,3 +1418,36 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 39: Review LitePan-own extraction and fusion
+<!-- trellis-session: v=2 fp=bc62a02127177d48 -->
+
+**Date**: 2026-08-31
+**Task**: Review LitePan-own extraction and fusion
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+审计提取完整、融合5处缺口待补
+
+### Main Changes
+
+- 核对 LitePan-own 9 commits 与 _extracted 9 patches 一致
+- 核对 LitePan local_upload 已融合 B mode/云检查/多选
+- 发现5缺口：115 600s/512MB、189Cloud容错、file NOT_FOUND、AppSelect multiple
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e017c33` | chore(task): archive 08-31-fix-adminview-stray-tag |
+
+### Testing
+
+- [OK] grep vet, diff, review.md 150行
+
+### Status
+
+[OK] **Completed**
