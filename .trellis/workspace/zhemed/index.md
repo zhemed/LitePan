@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 39
+- **Total Sessions**: 40
 - **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1453 | Active |
+| `journal-1.md` | ~1487 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 40 | 2026-08-31 | Fuse LitePan-own 5 fixes 0.0.3 | `4d8e868` | `main` |
 | 39 | 2026-08-31 | Review LitePan-own extraction and fusion | `e017c33` | `main` |
 | 38 | 2026-08-31 | Fix AdminView stray /> | `6ef108b` | `main` |
 | 37 | 2026-08-30 | Record 0.0.1 stable versioning | `f7dd72f`, `34375ff` | `main` |

@@ -1451,3 +1451,37 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 40: Fuse LitePan-own 5 fixes 0.0.3
+<!-- trellis-session: v=2 fp=7543b346fb9569bc -->
+
+**Date**: 2026-08-31
+**Task**: Fuse LitePan-own 5 fixes 0.0.3
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+补齐5缺口并发布0.0.3
+
+### Main Changes
+
+- 115 600s/512MB
+- 189Cloud容错
+- file NOT_FOUND
+- AppSelect multiple
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4d8e868` | fix(fuse): 补齐 LitePan-own 5处修复并发布 0.0.3 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 118MB 0.0.3
+
+### Status
+
+[OK] **Completed**
