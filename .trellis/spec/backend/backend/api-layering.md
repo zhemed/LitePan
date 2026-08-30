@@ -54,7 +54,7 @@ func (h *Handler) ListAccounts(w http.ResponseWriter, r *http.Request) {
 - All routes wired in `internal/api/router.go: NewRouter`.
 - Public: `GET /auth/status`, `POST /auth/login`, `GET /` (SPA), `GET /api/public/*`.
 - Admin: grouped under `r.Route("/admin", func(r chi.Router){ r.Use(h.adminOnly) ... })` — see `internal/api/admin_middleware.go`.
-- WebDAV: `internal/share/dav` 已移除（`2026-08-30 remove-share`）。`GET /internal/cover-source/{token}`（cover-extract）与 `Route("/tools/quarktv/cleanup/cover-extract")`、`Route("/emby")`、`/fnos` 均已移除，仅保留 `Route("/tools/local-upload", 4 handler)`。
+- WebDAV: `internal/share/dav` 已移除（`2026-08-30 remove-share`）。`GET /internal/cover-source/{token}`（cover-extract）与 `Route("/tools/quarktv/cleanup/cover-extract")`、`Route("/emby")`、`/fnos` 均已移除，仅保留 `Route("/tools/local-upload", 4 handler)`；`Route("/cross-transfer", 5 handler: routes/scan/scan/stream/probe/execute)` 与 `Deps{ CrossTransfer}` 已在 `2026-08-30 nocross` 移除。
 
 Example registration:
 

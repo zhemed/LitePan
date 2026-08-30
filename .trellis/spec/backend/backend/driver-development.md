@@ -112,7 +112,7 @@ Enforced by `.golangci.yml: drivers-pure`. If you need business logic, put it in
 
 ## Cross-Transfer / Rapid Upload
 
-- `Config.ProvideHashes` (source can supply) + `Config.RapidUploadHashes` (dest accepts) drive `internal/crosstransfer/service.go`.
+- `Config.ProvideHashes` (source can supply) + `Config.RapidUploadHashes` (dest accepts) drive `internal/crosstransfer/service.go`（`2026-08-30 nocross` 已移除，`ProvideHashes` 保留）.
 - Upload path: `internal/upload.Manager` orchestrates `drivers/*: upload.go UploadSession` + `domain.UploadTaskRecord` state machine (`Pending→Uploading→Success/Failed`).
 
 ---

@@ -28,7 +28,7 @@ These guides help you **ask the right questions before coding**.
 
 ## 已移除增强工具（2026-08-30）
 
-- 增强工具仅保留 `LocalUpload`，其余 7 项（Emby/飞牛/夸克TV/AI/分类/清理/海报）已 `rm -rf` 前后端，后续 `cross-layer` 思考无需考虑这些路径。
+- 增强工具仅保留 `LocalUpload`，其余 7 项（Emby/飞牛/夸克TV/AI/分类/清理/海报）+ `crosstransfer` 跨盘秒传 4 文件已 `rm -rf` 前后端，后续 `cross-layer` 思考无需考虑这些路径。
 
 ## Quick Reference: Thinking Triggers
 
