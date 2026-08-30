@@ -534,3 +534,40 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - spec 需 trellis-update-spec 清理驱动描述
+
+
+## Session 15: Update spec for drivers keep only three
+<!-- trellis-session: v=2 fp=76d5ad4167013c08 -->
+
+**Date**: 2026-08-30
+**Task**: Update spec for drivers keep only three
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将 spec 中驱动列表更新为仅保留115/天翼/本机存储
+
+### Main Changes
+
+- backend directory-structure: drivers 11→3，仅 115_Open/189Cloud/LocalFs
+- driver-development: Pluggable drivers 列表更新为 3
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4283b83` | docs(spec): update for drivers keep only three |
+| `542ea57` | chore(task): archive 08-30-update-spec-drivers-keep-three |
+
+### Testing
+
+- [OK] grep 3 驱动, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 已与 118M three-drivers 对齐
