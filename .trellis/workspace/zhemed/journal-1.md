@@ -1018,3 +1018,39 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - README 已极简，仅保留顶部与支持网盘
+
+
+## Session 28: Update README with host compose deployment
+<!-- trellis-session: v=2 fp=51c9738778023122 -->
+
+**Date**: 2026-08-30
+**Task**: Update README with host compose deployment
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+将验证通过的 host 网络部署方式写入README
+
+### Main Changes
+
+- README.md 31→63 行，新增快速开始 host compose（ghcr v0.5.2-Beta, 3 卷, ro 映射）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d75616e` | docs(readme): add host compose deployment |
+| `e606dd6` | chore(task): archive 08-30-update-readme-host-compose |
+
+### Testing
+
+- [OK] grep network_mode: host 1, ghcr 3, strm 0, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已与 host 实际一致
