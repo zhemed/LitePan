@@ -1275,3 +1275,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - 他人可 curl raw.githubusercontent.com/zhemed/LitePan/main/install-docker.sh | bash 全平台
+
+
+## Session 35: Remove announcement feature completely
+<!-- trellis-session: v=2 fp=6f22f4bfa59f4d1e -->
+
+**Date**: 2026-08-30
+**Task**: Remove announcement feature completely
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除公告相关的所有内容，消除WARN
+
+### Main Changes
+
+- rm -rf internal/announcement + api/announcement.go + router/wire_http
+- web 删 AdminAnnouncementModal + useAnnouncement + api/announcement
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2d1412a` | refactor(announcement): remove announcement completely |
+| `786020e` | chore(task): archive 08-30-remove-announcement |
+
+### Testing
+
+- [OK] grep announcement 0, go vet 0, build 32M, web 104 files, docker logs 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 非 LitePan-own 提交
