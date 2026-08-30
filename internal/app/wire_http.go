@@ -13,6 +13,7 @@ import (
 	"litepan/internal/buildinfo"
 	"litepan/internal/cache"
 	"litepan/internal/config"
+	"litepan/internal/coverextract"
 	"litepan/internal/logx"
 	"litepan/internal/notification"
 	"litepan/internal/settings"
@@ -44,6 +45,16 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Secret:    core.secret,
 		Log:       logs.For(logx.ModuleSystem),
 		OnRestart: onRestart,
+	})
+	if err != nil {
+		return nil, err
+	}
+	coverExtractSvc, err := coverextract.New(coverextract.Options{
+		DataDir:    cfg.DataDir,
+		ListenAddr: cfg.ListenAddr,
+		Files:      svc.files,
+		Playback:   svc.playback,
+		Log:        logs.For(logx.ModuleSystem),
 	})
 	if err != nil {
 		return nil, err
@@ -93,6 +104,12 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 			}
 			return svc.fuseReadCache.ClearAll(ctx)
 		},
+		CoverExtractStats: func() (int, int, int64) {
+			return coverExtractSvc.Stats()
+		},
+		ClearCoverExtract: func() (int, int, int64) {
+			return coverExtractSvc.ClearWithStats()
+		},
 		AfterMetadataClear: func() {
 			core.listHits.Reset()
 			svc.playback.InvalidateAll()
@@ -134,6 +151,7 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Announcement:     announcement.New(announcement.DefaultURL, logs.For(logx.ModuleAPI)),
 		BackupRestore:    backupRestoreSvc,
 		SpaceCleanup:     spaceCleanupSvc,
+		CoverExtract:      coverExtractSvc,
 		DataDir:          cfg.DataDir,
 		OnSettingsUpdated: cacheSettingsHook(core.cache, st.settings, cfg.DataDir),
 	})
