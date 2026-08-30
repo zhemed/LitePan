@@ -982,3 +982,39 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - README 已与 118M 实际一致
+
+
+## Session 27: Remove quick start and features sections from README
+<!-- trellis-session: v=2 fp=57534d78392a3f0d -->
+
+**Date**: 2026-08-30
+**Task**: Remove quick start and features sections from README
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户要求删除README中快速开始、能做什么、PolyForm三段
+
+### Main Changes
+
+- README.md 66→31 行，删快速开始 docker pull/compose/git clone/能做什么 3 行/PolyForm 行
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `22e2108` | docs(readme): remove quick start, features, PolyForm as requested |
+| `704b046` | chore(task): archive 08-30-remove-readme-sections |
+
+### Testing
+
+- [OK] grep 快速开始 0, 能做什么 0, PolyForm Issues 0, wc -l 31, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已极简，仅保留顶部与支持网盘
