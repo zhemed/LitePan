@@ -345,3 +345,41 @@ Initialized Trellis DSH workspace, fixed config.yaml for Go+Vue (backend/web), r
 ### Next Steps
 
 - 后续所有写操作必先 task.py create，已写入 AGENTS.md 即时生效
+
+
+## Session 10: Remove aux enhanced tools keep local-upload
+<!-- trellis-session: v=2 fp=4a878993cdfbaac5 -->
+
+**Date**: 2026-08-30
+**Task**: Remove aux enhanced tools keep local-upload
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+辅助工具-增强工具仅保留从服务器上传，其余 7 项彻底移除
+
+### Main Changes
+
+- CloudToolsPanel 8→1，仅 LocalUploadToolCard，删 7 卡片及 cloudTools/coverExtract/emby/fnos API
+- rm -rf internal/embyproxy/fnosproxy/quarktv/spacecleanup/coverextract + api handlers + wire_services/http/router + settings 12 keys
+- 备份管理（BackupRestorePanel）本次完全不动，与增强工具隔离
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a101eef` | refactor(aux-tools): remove enhanced tools keep local-upload |
+| `7c40560` | chore(task): archive 08-30-remove-aux-enhanced-keep-upload |
+
+### Testing
+
+- [OK] go vet 0, type-check 0, build 33M, web build 106 files, docker 119M, local-upload/config 200, cover-extract/quarktv/cleanup 404, health 200
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- spec 需 trellis-update-spec 清理增强工具描述
