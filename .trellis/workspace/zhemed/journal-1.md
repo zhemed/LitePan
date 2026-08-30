@@ -1485,3 +1485,36 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 41: Investigate LitePan-own actual usage
+<!-- trellis-session: v=2 fp=b283c6a91106448d -->
+
+**Date**: 2026-08-31
+**Task**: Investigate LitePan-own actual usage
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+核验实际在用与0.0.3融合一致
+
+### Main Changes
+
+- 静态：镜像/3映射/端口
+- 规则：daily 02:00 local_upload多选 B mode 云检查
+- 驱动：115 600s/512MB 189容错 file NOT_FOUND AppSelect
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9fbd968` | chore(task): archive 08-31-fuse-litepan-own-drivers-fixes |
+
+### Testing
+
+- [OK] grep vet investigation.md 126行
+
+### Status
+
+[OK] **Completed**
