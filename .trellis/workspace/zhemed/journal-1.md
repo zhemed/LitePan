@@ -908,3 +908,40 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Next Steps
 
 - README 已与 118M 实际一致
+
+
+## Session 25: Final thorough README 75 lines
+<!-- trellis-session: v=2 fp=bc43560fb30ba0da -->
+
+**Date**: 2026-08-30
+**Task**: Final thorough README 75 lines
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按‘全部删除，内容由你重写’彻底重构为75行极简版
+
+### Main Changes
+
+- 新 4 屏：顶部GHCR/一句话/支持网盘3行/功能4项/快速开始ghcr compose
+- 删除旧 4格表格中跨盘/整理及 WebDAV 相关
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8745fbf` | docs(readme): final thorough rewrite 75 lines concise |
+| `073077c` | chore(task): archive 08-30-final-readme-thorough-rewrite |
+
+### Testing
+
+- [OK] grep ghcr 3, wc -l 75, go vet 0
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- README 已与 118M 实际一致

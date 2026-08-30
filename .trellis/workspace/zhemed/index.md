@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 24
+- **Total Sessions**: 25
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~910 | Active |
+| `journal-1.md` | ~947 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 25 | 2026-08-30 | Final thorough README 75 lines | `8745fbf`, `073077c` | `main` |
 | 24 | 2026-08-30 | Final thorough README refactor | `08fd2f8`, `f902a76` | `main` |
 | 23 | 2026-08-30 | Build ghcr image and thoroughly refactor README | `bcb538d`, `5054d12` | `main` |
 | 22 | 2026-08-30 | Adapt LitePan-own local_upload to LitePan | `be39a6a`, `a112daf` | `main` |
