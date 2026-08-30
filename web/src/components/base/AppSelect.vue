@@ -10,23 +10,29 @@ interface Option {
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string | number | boolean | null;
+    modelValue: string | number | boolean | null | (string | number | boolean)[];
     options: Option[];
     placeholder?: string;
     disabled?: boolean;
+    multiple?: boolean;
   }>(),
-  { placeholder: "请选择", disabled: false },
+  { placeholder: "请选择", disabled: false, multiple: false },
 );
-const emit = defineEmits<{ "update:modelValue": [string | number | boolean] }>();
+const emit = defineEmits<{ "update:modelValue": [any] }>();
 
 const open = ref(false);
 const triggerRef = ref<HTMLButtonElement | null>(null);
 const menuRef = ref<HTMLElement | null>(null);
 const menuStyle = ref<Record<string, string>>({});
 
-const selectedLabel = computed(
-  () => props.options.find((o) => o.value === props.modelValue)?.label ?? "",
-);
+const selectedLabel = computed(() => {
+  if (props.multiple) {
+    const vals = Array.isArray(props.modelValue) ? props.modelValue : []
+    const labels = vals.map(v => props.options.find(o => o.value === v)?.label).filter(Boolean)
+    return labels.join('、') || ""
+  }
+  return props.options.find((o) => o.value === props.modelValue)?.label ?? ""
+});
 
 async function positionMenu() {
   await nextTick();
@@ -59,6 +65,14 @@ function toggle() {
 
 function choose(opt: Option) {
   if (opt.disabled) return;
+  if (props.multiple) {
+    const vals = Array.isArray(props.modelValue) ? [...props.modelValue] as (string|number|boolean)[] : []
+    const idx = vals.indexOf(opt.value)
+    if (idx >= 0) vals.splice(idx, 1)
+    else vals.push(opt.value)
+    emit("update:modelValue", vals)
+    return
+  }
   emit("update:modelValue", opt.value);
   close();
 }

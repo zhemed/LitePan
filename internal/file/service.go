@@ -226,8 +226,12 @@ func (s *Service) DeleteFiles(ctx context.Context, accountID int64, fileIDs []st
 		return deleter.DeleteFiles(ctx, fileIDs)
 	})
 	if err != nil {
-		s.log.Warn("删除文件失败", "account_id", accountID, "count", len(fileIDs), "err", err)
-		return err
+		if ae, ok := domain.AsAppError(err); ok && ae.Code == domain.CodeNotFound {
+			s.log.Info("删除文件时文件已不存在，视为成功", "account_id", accountID, "count", len(fileIDs))
+		} else {
+			s.log.Warn("删除文件失败", "account_id", accountID, "count", len(fileIDs), "err", err)
+			return err
+		}
 	}
 	if s.cache != nil && parentID != "" {
 		cache.InvalidateDirKeys(s.cache, accountID, parentID)

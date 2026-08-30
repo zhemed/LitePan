@@ -743,28 +743,8 @@ func buildUploadTarget(parentID string) string {
 
 func calculateOSSPartSize(fileSize int64) int64 {
 	const mb = 1024 * 1024
-	const gb = 1024 * mb
-	const tb = 1024 * gb
-	partSize := int64(20 * mb)
-	if fileSize <= partSize {
-		return partSize
-	}
-	switch {
-	case fileSize > tb:
-		return 5 * gb
-	case fileSize > 768*gb:
-		return 109951163
-	case fileSize > 512*gb:
-		return 82463373
-	case fileSize > 384*gb:
-		return 54975582
-	case fileSize > 256*gb:
-		return 41231687
-	case fileSize > 128*gb:
-		return 27487791
-	default:
-		return partSize
-	}
+	// 固定 512 MB 一片（用户 2026-08-26 定制，与 LitePan-own 099cbc9 一致）
+	return int64(512 * mb)
 }
 
 func buildOSSURL(endpoint, bucket, objectName string, query map[string]string) string {

@@ -266,15 +266,25 @@ func (d *Driver) batchTaskInfos(ctx context.Context, fileIDs []string) ([]map[st
 	for _, id := range fileIDs {
 		item, err := d.GetFileInfo(ctx, id)
 		if err != nil {
-			return nil, err
+			// 刚上传的文件 getFileInfo 可能 NOT_FOUND，但 list 已可见，做容错：先查缓存，再尝试用 ID 当文件名兜底（与 LitePan-own b4ff744 一致）
+			if cached, ok := d.cachedItem(id); ok {
+				item = &cached
+			} else {
+				// 兜底：用 ID 当文件名，视为文件，仍可建批量任务，天翼侧会按 fileId 执行
+				item = &domain.FileItem{Name: id, IsDir: false}
+			}
 		}
 		isFolder := 0
 		if item.IsDir {
 			isFolder = 1
 		}
+		name := item.Name
+		if strings.TrimSpace(name) == "" {
+			name = id
+		}
 		out = append(out, map[string]any{
 			"fileId":   id,
-			"fileName": item.Name,
+			"fileName": name,
 			"isFolder": isFolder,
 		})
 	}
