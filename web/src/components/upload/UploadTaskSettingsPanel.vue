@@ -192,8 +192,13 @@ onMounted(() => {
 
 .task-settings__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
+  place-items: center;
   gap: 14px;
+}
+
+.task-settings__grid:has(> :only-child) {
+  grid-template-columns: 1fr;
 }
 
 .task-settings__item {
@@ -206,6 +211,13 @@ onMounted(() => {
 }
 
 .task-settings__item--wide {
+  grid-column: 1 / -1;
+}
+
+.task-settings__item--stepper:only-child {
+  width: min(420px, 100%);
+  max-width: 420px;
+  margin: 0 auto;
   grid-column: 1 / -1;
 }
 

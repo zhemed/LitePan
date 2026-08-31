@@ -1,6 +1,6 @@
 services:
   litepan:
-    image: ghcr.io/zhemed/litepan:v0.0.7
+    image: ghcr.io/zhemed/litepan:v0.0.8
     container_name: litepan
     restart: unless-stopped
     ports:
