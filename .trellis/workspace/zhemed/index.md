@@ -7,8 +7,8 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-1.md`
-- **Total Sessions**: 55
+- **Active File**: `journal-2.md`
+- **Total Sessions**: 56
 - **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,8 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1973 | Active |
+| `journal-2.md` | ~39 | Active |
+| `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 56 | 2026-08-31 | Adjust task concurrency width | `912b97d` | `main` |
 | 55 | 2026-08-31 | Apply task settings padding | `c2bf2c9` | `main` |
 | 54 | 2026-08-31 | Investigate task settings padding | `a576484` | `main` |
 | 53 | 2026-08-31 | Remove builtin offline | `a576484` | `main` |
