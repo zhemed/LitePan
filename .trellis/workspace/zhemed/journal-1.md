@@ -1746,3 +1746,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 49: Investigate local mapping hardcode
+<!-- trellis-session: v=2 fp=c224a73551b38c3a -->
+
+**Date**: 2026-08-31
+**Task**: Investigate local mapping hardcode
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+本地映射非硬编码已动态化
+
+### Main Changes
+
+- 现状 ref+fetch API
+- 历史 283b875 硬编码 2b44969 动态化
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7439a18` | fix(schedule): interval next run in same day and bump to 0.0.5 |
+
+### Testing
+
+- [OK] grep localMappingOptions
+
+### Status
+
+[OK] **Completed**
