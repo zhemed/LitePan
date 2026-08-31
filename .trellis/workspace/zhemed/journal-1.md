@@ -1874,3 +1874,36 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 53: Remove builtin offline
+<!-- trellis-session: v=2 fp=6de22cfc3bb3d817 -->
+
+**Date**: 2026-08-31
+**Task**: Remove builtin offline
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+移除磁力与临时下载 0.0.7
+
+### Main Changes
+
+- settings 3键
+- go.mod torrent
+- 面板仅并发
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a576484` | refactor: remove builtin offline magnet/temp and bump to 0.0.7 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 105MB
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 52
+- **Total Sessions**: 53
 - **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1876 | Active |
+| `journal-1.md` | ~1909 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 53 | 2026-08-31 | Remove builtin offline | `a576484` | `main` |
 | 52 | 2026-08-31 | Investigate builtin offline removal | `feea7b0` | `main` |
 | 51 | 2026-08-31 | Remove offline download completely | `feea7b0` | `main` |
 | 50 | 2026-08-31 | Investigate offline download removal | `7439a18` | `main` |
