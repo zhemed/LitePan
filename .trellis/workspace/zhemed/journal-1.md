@@ -1682,3 +1682,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 47: Check interval scheduling
+<!-- trellis-session: v=2 fp=8933c451a82f8303 -->
+
+**Date**: 2026-08-31
+**Task**: Check interval scheduling
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+审计 00:05每1h 次日缺陷
+
+### Main Changes
+
+- 复现 computeIntervalStartRunAt 仅首档
+- 报告根因与修复方案
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `01a1557` | chore(task): archive 08-31-remove-automation-keep-localupload-only |
+
+### Testing
+
+- [OK] grep schedule
+
+### Status
+
+[OK] **Completed**
