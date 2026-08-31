@@ -3,7 +3,7 @@ import { http } from "./client";
 export type AutomationTriggerType = "daily" | "interval" | "webhook" | "offline_download";
 export type AutomationStatus = "running" | "paused";
 export type AutomationCondition = "always" | "prev_success" | "prev_failed";
-export type AutomationActionType = "delay" | "local_upload";
+export type AutomationActionType = "local_upload";
 
 export interface AutomationAction {
   id: string;
@@ -67,12 +67,8 @@ export interface AutomationOptionItem {
 }
 
 export interface AutomationOptions {
-  organize_tasks: AutomationOptionItem[];
-  emby_configs: Array<{
-    id: string;
-    name: string;
-    emby_url: string;
-  }>;
+  // Backend now returns {} — no organize/emby options needed; keep index signature for forward compat
+  [key: string]: unknown;
 }
 
 export interface AutomationTriggerConfig {

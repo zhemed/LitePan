@@ -12,7 +12,6 @@ func (s *Service) ValidateRule(ctx context.Context, actions []RuleAction) (Valid
 	issues := make([]ValidationIssue, 0)
 	for index, action := range actions {
 		switch action.Type {
-		case domain.AutomationActionDelay:
 		case domain.AutomationActionLocalUpload:
 			accountID := int64(anyInt(action.Params["account_id"]))
 			if accountID <= 0 {
@@ -116,7 +115,7 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 		}
 		in.Actions[i].Type = strings.TrimSpace(in.Actions[i].Type)
 		switch in.Actions[i].Type {
-		case domain.AutomationActionDelay, domain.AutomationActionLocalUpload:
+		case domain.AutomationActionLocalUpload:
 		default:
 			return in, domain.Errorf(domain.CodeValidation, "存在不支持的动作")
 		}

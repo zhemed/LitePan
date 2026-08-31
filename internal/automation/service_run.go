@@ -110,24 +110,10 @@ func (s *Service) runRule(id int64, triggerSource string) {
 
 func (s *Service) executeAction(ctx context.Context, action RuleAction) map[string]any {
 	switch action.Type {
-	case domain.AutomationActionDelay:
-		return s.runDelay(ctx, action.Params)
 	case domain.AutomationActionLocalUpload:
 		return s.runLocalUpload(ctx, action.Params)
 	default:
 		return map[string]any{"status": "failed", "success": false, "message": "动作类型不支持"}
-	}
-}
-
-func (s *Service) runDelay(ctx context.Context, params map[string]any) map[string]any {
-	seconds := clampInt(anyInt(params["seconds"]), 1, 24*3600)
-	timer := time.NewTimer(time.Duration(seconds) * time.Second)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return map[string]any{"status": "failed", "success": false, "message": "等待被取消"}
-	case <-timer.C:
-		return map[string]any{"status": "success", "success": true, "message": fmt.Sprintf("已等待 %d 秒", seconds), "data": map[string]any{"seconds": seconds}}
 	}
 }
 
@@ -664,8 +650,6 @@ func actionDisplayName(action RuleAction) string {
 		return name
 	}
 	switch action.Type {
-	case domain.AutomationActionDelay:
-		return "等待"
 	case domain.AutomationActionLocalUpload:
 		return "本地上传"
 	default:

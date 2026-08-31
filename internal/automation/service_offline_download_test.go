@@ -145,7 +145,7 @@ func TestNormalizeOfflineDownloadTrigger(t *testing.T) {
 		Name:        "离线完成后整理",
 		TriggerType: domain.AutomationTriggerOfflineDownload,
 		Actions: []RuleAction{{
-			ID: "delay", Type: domain.AutomationActionDelay, Params: map[string]any{"seconds": 1},
+			ID: "a1", Type: domain.AutomationActionLocalUpload, Params: map[string]any{"account_id": 1, "mappings": []string{"m1"}, "target_parent_id": "/"},
 		}},
 	}
 

@@ -72,10 +72,10 @@ func TestScheduleOnceQueuesDueRuleAndAdvancesNextRun(t *testing.T) {
 	now := time.Now()
 	triggerConfig, _ := json.Marshal(map[string]any{"time": "00:00"})
 	actions, _ := json.Marshal([]RuleAction{{
-		ID:        "delay",
-		Type:      domain.AutomationActionDelay,
+		ID:        "local-1",
+		Type:      domain.AutomationActionLocalUpload,
 		Condition: domain.AutomationConditionAlways,
-		Params:    map[string]any{"seconds": 1},
+		Params:    map[string]any{"account_id": 1, "mappings": []string{"test"}, "target_parent_id": "root"},
 	}})
 	rule := &domain.AutomationRule{
 		ID:            10,
@@ -224,16 +224,17 @@ func TestValidateRuleRequiresLibrarySelectionForEmbyLibraryMode(t *testing.T) {
 	t.Parallel()
 
 	service := New(Options{Rules: newAutomationRuleRepo(), Runs: &automationRunRepo{}})
+	// 仅保留 local_upload，Emby 校验已移除，此测试改为校验 local_upload 缺少账号失败
 	result, err := service.ValidateRule(context.Background(), []RuleAction{
-		{ID: "emby-1", Type: domain.AutomationActionEmbyRefresh, Params: map[string]any{"mode": "library"}},
+		{ID: "local-1", Type: domain.AutomationActionLocalUpload, Params: map[string]any{}},
 	})
 	if err != nil {
 		t.Fatalf("ValidateRule 返回错误: %v", err)
 	}
 	if result.OK {
-		t.Fatalf("期望未选择媒体库时校验失败")
+		t.Fatalf("期望未选择账号时校验失败")
 	}
-	if len(result.Issues) == 0 || !strings.Contains(result.Issues[0].Message, "请选择 Emby 媒体库") {
+	if len(result.Issues) == 0 || !strings.Contains(result.Issues[0].Message, "未选择") {
 		t.Fatalf("issues=%#v", result.Issues)
 	}
 }
@@ -241,10 +242,10 @@ func TestValidateRuleRequiresLibrarySelectionForEmbyLibraryMode(t *testing.T) {
 func webhookRule(id int64, name string) *domain.AutomationRule {
 	triggerConfig, _ := json.Marshal(map[string]any{"event": "library.updated"})
 	actions, _ := json.Marshal([]RuleAction{{
-		ID:        "delay",
-		Type:      domain.AutomationActionDelay,
+		ID:        "local-1",
+		Type:      domain.AutomationActionLocalUpload,
 		Condition: domain.AutomationConditionAlways,
-		Params:    map[string]any{"seconds": 1},
+		Params:    map[string]any{"account_id": 1, "mappings": []string{"test"}, "target_parent_id": "root"},
 	}})
 	return &domain.AutomationRule{
 		ID:            id,

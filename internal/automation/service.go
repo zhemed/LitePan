@@ -274,9 +274,7 @@ func (s *Service) ClearRuns(ctx context.Context) (int, error) {
 }
 
 func (s *Service) ListOptions(ctx context.Context) (map[string]any, error) {
-	return map[string]any{
-		"emby_configs": make([]map[string]any, 0),
-	}, nil
+	return map[string]any{}, nil
 }
 
 func (s *Service) toRuleView(row *domain.AutomationRule) RuleView {

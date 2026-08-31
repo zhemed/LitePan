@@ -5,7 +5,7 @@
         <div class="panel-head">
           <div>
             <div class="panel-title">自动联动</div>
-            <div class="panel-sub">示例：定时执行整理任务，质量达标后联动 Emby 刷库。</div>
+            <div class="panel-sub">示例：定时将本地映射上传到指定网盘目录。</div>
           </div>
           <div class="panel-head-actions">
             <AppButton type="button" size="sm" variant="secondary" @click="openRuns">
@@ -203,7 +203,7 @@
                 <div class="node-ico add"><i class="fas fa-plus"></i></div>
                 <div class="node-body">
                   <div class="node-title ph">选择要执行的任务</div>
-                  <div class="node-sub">整理 / 延迟 / Emby 全局刷库</div>
+                  <div class="node-sub">本地上传</div>
                 </div>
               </div>
             </div>
@@ -451,27 +451,7 @@
         </div>
 
         <div v-else-if="configAction" class="cfg-body">
-          <template v-if="configAction.type === 'organize'">
-            <div class="cfg-row">
-              <label>整理任务</label>
-              <AppSelect v-model="configAction.params.task_id" :options="organizeTaskOptions" placeholder="请选择整理任务" />
-            </div>
-            <div class="cfg-row">
-              <label>允许异常比例</label>
-              <div class="input-with-suffix">
-                <input v-model.number="configAction.params.max_risk_percent" type="number" class="ctrl" min="0" max="100">
-                <span>%</span>
-              </div>
-              <div class="field-tip">异常比例 =（失败数 + 异常跳过数）/ 需处理项目数；已整理、已是目标名等正常跳过不计入异常。</div>
-            </div>
-          </template>
-          <template v-else-if="configAction.type === 'delay'">
-            <div class="cfg-row">
-              <label>等待秒数</label>
-              <input v-model.number="configAction.params.seconds" type="number" class="ctrl" min="1" max="86400">
-            </div>
-          </template>
-          <template v-else-if="configAction.type === 'local_upload'">
+          <template v-if="configAction.type === 'local_upload'">
             <div class="cfg-row">
               <label>目标网盘</label>
               <AppSelect v-model="configAction.params.account_id" :options="localUploadAccountOptions" placeholder="请选择网盘账号" />
@@ -493,35 +473,6 @@
             <div class="cfg-row">
               <label>子路径（可选）</label>
               <input v-model.trim="configAction.params.source_path" class="ctrl" type="text" placeholder="留空表示整个映射，填子目录如 sub/dir">
-            </div>
-          </template>
-          <template v-else-if="configAction.type === 'emby_refresh'">
-            <div class="cfg-row">
-              <label>Emby配置</label>
-              <AppSelect
-                v-model="configAction.params.emby_id"
-                :options="embyConfigOptions"
-                placeholder="请选择 Emby 配置"
-                @update:model-value="embyId => onEmbyConfigChange(configAction, embyId)"
-              />
-            </div>
-            <div class="cfg-row">
-              <label>扫描方式</label>
-              <AppSelect v-model="configAction.params.mode" :options="embyRefreshModeOptions" @update:model-value="mode => onEmbyRefreshModeChange(configAction, mode)" />
-            </div>
-            <div v-if="configAction.params.mode === 'library'" class="cfg-row">
-              <label>媒体库</label>
-              <AppSelect
-                v-model="configAction.params.library_id"
-                :options="embyLibraryOptions"
-                :disabled="embyLibrariesLoading || !configAction.params.emby_id"
-                :placeholder="embyLibrariesLoading ? '正在加载媒体库...' : '请选择媒体库'"
-                @update:model-value="libraryId => onEmbyLibraryChange(configAction, libraryId)"
-              />
-              <div class="field-tip">媒体库列表从 Emby 实时拉取，仅在配置该动作时按需加载。</div>
-              <button class="inline-link-btn" type="button" :disabled="embyLibrariesLoading || !configAction.params.emby_id" @click="ensureEmbyLibrariesLoaded(true)">
-                {{ embyLibrariesLoading ? '加载中...' : '刷新媒体库列表' }}
-              </button>
             </div>
           </template>
         </div>
@@ -588,7 +539,6 @@ import {
   updateAutomationRule,
   validateAutomationRule
 } from '../../api/automation'
-import { fetchEmbyLibraries } from '../../api/emby'
 import { formatTime } from '../../utils/format'
 import '@/styles/admin-table.css'
 
@@ -604,12 +554,8 @@ const expandedRunIds = ref(new Set())
 const runsDrawerVisible = ref(false)
 const runsLoading = ref(false)
 const accounts = ref([])
-const emptyOptions = () => ({ organize_tasks: [], emby_configs: [] })
+const emptyOptions = () => ({})
 const options = ref(emptyOptions())
-const embyLibraries = ref([])
-const embyLibrariesLoading = ref(false)
-const embyLibrariesLoaded = ref(false)
-const embyLibrariesConfigID = ref('')
 const validationIssues = ref([])
 const validationOk = ref(false)
 const timePickerVisible = ref(false)
@@ -653,39 +599,6 @@ const form = reactive({
 })
 
 const ACTION_DEFINITIONS = {
-  cache_clear: {
-    label: '刷新目录',
-    optionLabel: '刷新目录',
-    icon: 'fas fa-broom',
-    desc: '自动清理后续任务涉及账号的目录缓存',
-    normalize: () => ({}),
-    canApply: () => true,
-    nodeTitle: () => '刷新目录',
-    previewTitle: () => '刷新目录'
-  },
-  organize: {
-    label: '整理任务',
-    optionLabel: '执行整理任务',
-    icon: 'fas fa-folder-tree',
-    desc: '生成计划并执行整理，结果会经过质量门槛判断',
-    normalize: params => ({
-      task_id: params.task_id ? String(params.task_id) : '',
-      max_risk_percent: Number(params.max_risk_percent ?? 30)
-    }),
-    canApply: action => Boolean(String(action.params.task_id || '').trim()),
-    nodeTitle: action => `整理「${findTaskLabel('organize', action.params.task_id)}」`,
-    previewTitle: action => `整理任务[${findTaskLabel('organize', action.params.task_id)}]`
-  },
-  delay: {
-    label: '延迟',
-    optionLabel: '延迟等待',
-    icon: 'fas fa-clock',
-    desc: '等待一段时间后再继续下一步',
-    normalize: params => ({ seconds: Number(params.seconds || 60) }),
-    canApply: action => Number(action.params.seconds || 0) > 0,
-    nodeTitle: action => `延迟 ${Number(action.params.seconds || 60)} 秒`,
-    previewTitle: action => `延迟${formatDelay(action.params.seconds)}`
-  },
   local_upload: {
     label: '本地上传',
     optionLabel: '本地上传',
@@ -722,23 +635,6 @@ const ACTION_DEFINITIONS = {
       const label = mappings.length ? mappings.join('、') : String(a.mapping || '')
       return `本地上传[${label}]`
     }
-  },
-  emby_refresh: {
-    label: 'Emby刷库',
-    optionLabel: 'Emby全局刷库',
-    icon: 'fas fa-server',
-    desc: '通知 Emby 扫描全部媒体库，或只扫描指定媒体库',
-    normalize: params => ({
-      emby_id: String(params.emby_id || defaultEmbyConfig()?.id || ''),
-      mode: params.mode === 'library' ? 'library' : 'global',
-      library_id: String(params.library_id || ''),
-      library_name: String(params.library_name || '')
-    }),
-    canApply: action => Boolean(findEmbyConfig(action?.params?.emby_id)?.emby_url) && (
-      action?.params?.mode !== 'library' || Boolean(String(action?.params?.library_id || '').trim())
-    ),
-    nodeTitle: action => `Emby ${embyRefreshModeLabel(action)}「${embyRefreshTargetLabel(action)}」`,
-    previewTitle: action => `Emby${embyRefreshModeLabel(action)}[${embyRefreshTargetLabel(action)}]`
   }
 }
 
@@ -759,26 +655,6 @@ const actionTypeOptions = Object.entries(ACTION_DEFINITIONS).map(([value, defini
   label: definition.optionLabel,
   desc: definition.desc
 }))
-
-const organizeTaskOptions = computed(() => options.value.organize_tasks.map(task => ({
-  value: String(task.id),
-  label: task.name || task.id
-})))
-
-const embyRefreshModeOptions = [
-  { value: 'global', label: '全局媒体库扫描' },
-  { value: 'library', label: '指定媒体库扫描' }
-]
-
-const embyConfigOptions = computed(() => (options.value.emby_configs || []).map(item => ({
-  value: item.id,
-  label: item.name
-})))
-
-const embyLibraryOptions = computed(() => embyLibraries.value.map(item => ({
-  value: item.id,
-  label: item.name
-})))
 
 const localUploadAccountOptions = computed(() => accounts.value.map(acc => ({
   value: acc.id,
@@ -1015,10 +891,6 @@ const resetForm = () => {
   form.trigger_config = normalizeAutomationTriggerConfig()
   form.status = 'running'
   form.actions = []
-  embyLibraries.value = []
-  embyLibrariesLoading.value = false
-  embyLibrariesLoaded.value = false
-  embyLibrariesConfigID.value = ''
   validationIssues.value = []
   validationOk.value = false
 }
@@ -1113,10 +985,6 @@ const openConfig = (mode, actionIndex = -1) => {
     if (targetAction?.type === 'local_upload') {
       void fetchLocalMappings()
     }
-    if (targetAction?.type === 'emby_refresh') {
-      normalizeEmbyRefreshAction(targetAction)
-      void ensureEmbyLibrariesLoaded()
-    }
   }
   configVisible.value = true
 }
@@ -1143,28 +1011,13 @@ const chooseTrigger = (type) => {
 const chooseAction = (type) => {
   const action = createAction(type)
   pickerVisible.value = false
-  if (type !== 'cache_clear') {
-    pendingConfigAction.value = action
-    pendingConfigInsertIndex.value = actionInsertIndex.value
-    openConfig('action', -1)
-    return
-  }
-  if (actionInsertIndex.value === 0 && !form.actions[0]) {
-    if (form.actions.length === 0) {
-      form.actions.push(action)
-    } else {
-      form.actions[0] = action
-    }
-  } else {
-    form.actions.splice(Math.max(1, actionInsertIndex.value), 0, action)
-  }
-  normalizeActionConditions()
-  scheduleValidation()
+  pendingConfigAction.value = action
+  pendingConfigInsertIndex.value = actionInsertIndex.value
+  openConfig('action', -1)
 }
 
 const openActionConfigFromCard = (index) => {
   if (suppressActionClick.value || draggingActionIndex.value !== null) return
-  if (form.actions[index]?.type === 'cache_clear') return
   openConfig('action', index)
 }
 
@@ -1323,7 +1176,6 @@ const applyConfig = () => {
     return
   }
   if (configMode.value === 'trigger') commitTrigger()
-  if (configAction.value?.type === 'emby_refresh') normalizeEmbyRefreshAction(configAction.value)
   if (pendingConfigAction.value) {
     const action = pendingConfigAction.value
     const insertIndex = pendingConfigInsertIndex.value
@@ -1363,79 +1215,6 @@ const confirmTimePicker = (payload) => {
 const cancelTimePicker = () => {
   timePickerVisible.value = false
   if (!configVisible.value) restoreTrigger()
-}
-
-const findEmbyLibraryName = (libraryId) => (
-  embyLibraries.value.find(item => String(item.id) === String(libraryId))?.name || ''
-)
-
-const defaultEmbyConfig = () => (
-  (options.value.emby_configs || [])[0] || null
-)
-
-const findEmbyConfig = (embyId) => (
-  (options.value.emby_configs || []).find(item => String(item.id) === String(embyId)) || null
-)
-
-const normalizeEmbyRefreshAction = (action) => {
-  if (!action || action.type !== 'emby_refresh') return
-  if (!findEmbyConfig(action.params.emby_id)) action.params.emby_id = defaultEmbyConfig()?.id || ''
-  action.params.mode = action.params.mode === 'library' ? 'library' : 'global'
-  if (action.params.mode !== 'library') {
-    action.params.library_id = ''
-    action.params.library_name = ''
-    return
-  }
-  action.params.library_id = String(action.params.library_id || '').trim()
-  action.params.library_name = findEmbyLibraryName(action.params.library_id) || String(action.params.library_name || '').trim()
-}
-
-const ensureEmbyLibrariesLoaded = async (force = false) => {
-  const action = configAction.value
-  const embyId = String(action?.params?.emby_id || '').trim()
-  if (!findEmbyConfig(embyId)?.emby_url) return
-  if (embyLibrariesLoading.value) return
-  if (embyLibrariesLoaded.value && embyLibrariesConfigID.value === embyId && !force) return
-  embyLibrariesLoading.value = true
-  try {
-    embyLibraries.value = await fetchEmbyLibraries(embyId)
-    embyLibrariesLoaded.value = true
-    embyLibrariesConfigID.value = embyId
-  } catch (error) {
-    if (force || !embyLibrariesLoaded.value) {
-      toast.error('加载 Emby 媒体库失败: ' + getApiErrorMessage(error, '请检查 Emby 配置'))
-    }
-  } finally {
-    embyLibrariesLoading.value = false
-  }
-}
-
-const onEmbyConfigChange = (action, embyId) => {
-  if (!action || action.type !== 'emby_refresh') return
-  action.params.emby_id = String(embyId || '')
-  action.params.library_id = ''
-  action.params.library_name = ''
-  embyLibraries.value = []
-  embyLibrariesLoaded.value = false
-  embyLibrariesConfigID.value = ''
-  if (action.params.mode === 'library') void ensureEmbyLibrariesLoaded()
-}
-
-const onEmbyRefreshModeChange = (action, mode) => {
-  if (!action || action.type !== 'emby_refresh') return
-  action.params.mode = mode === 'library' ? 'library' : 'global'
-  if (action.params.mode === 'library') {
-    void ensureEmbyLibrariesLoaded()
-  } else {
-    action.params.library_id = ''
-    action.params.library_name = ''
-  }
-}
-
-const onEmbyLibraryChange = (action, libraryId) => {
-  if (!action || action.type !== 'emby_refresh') return
-  action.params.library_id = String(libraryId || '')
-  action.params.library_name = findEmbyLibraryName(action.params.library_id)
 }
 
 const normalizeActions = (actions) => actions.map((action, index) => ({
@@ -1608,35 +1387,6 @@ const deleteRule = async (rule) => {
   }
 }
 
-const embyDisplayLabel = (action) => {
-  const config = findEmbyConfig(action?.params?.emby_id) || defaultEmbyConfig()
-  return config?.name || '未选择 Emby'
-}
-
-const embyRefreshModeLabel = (action) => (
-  action?.params?.mode === 'library' ? '指定媒体库扫描' : '全局媒体库扫描'
-)
-
-const embyRefreshTargetLabel = (action) => {
-  const embyName = embyDisplayLabel(action)
-  if (action?.params?.mode === 'library') {
-    const libraryName = findEmbyLibraryName(action?.params?.library_id) || String(action?.params?.library_name || '').trim() || '未选择媒体库'
-    return `${embyName} · ${libraryName}`
-  }
-  return embyName
-}
-
-const findTaskLabel = (type, id) => {
-  if (type === 'emby_refresh') {
-    return embyDisplayLabel({ params: { emby_id: id } })
-  }
-  if (!id) return '未选择'
-  if (type === 'organize') {
-    return options.value.organize_tasks.find(task => String(task.id) === String(id))?.name || '整理任务'
-  }
-  return ''
-}
-
 const triggerLabel = (rule) => {
   const config = rule.trigger_config || {}
   if (rule.trigger_type === 'interval') {
@@ -1656,12 +1406,6 @@ const actionLabel = action => actionDefinition(action.type).label
 const actionIcon = type => actionDefinition(type).icon
 const actionNodeTitle = action => actionDefinition(action.type).nodeTitle(action)
 const actionNodeSub = action => actionDefinition(action.type).desc
-
-const formatDelay = (seconds) => {
-  const value = Number(seconds || 60)
-  if (value >= 60 && value % 60 === 0) return `${value / 60}分钟`
-  return `${value}秒`
-}
 
 const previewActionTitle = action => actionDefinition(action.type).previewTitle(action)
 
@@ -2657,24 +2401,9 @@ defineExpose({
   color: var(--blue);
 }
 
-.node-ico.cache_clear {
-  background: color-mix(in srgb, var(--ok) 16%, var(--panel));
-  color: var(--ok);
-}
-
-.node-ico.delay {
-  background: color-mix(in srgb, var(--warn) 16%, var(--panel));
-  color: var(--warn);
-}
-
 .node-ico.local_upload {
   background: color-mix(in srgb, #0ea5e9 16%, var(--panel));
   color: #0ea5e9;
-}
-
-.node-ico.emby_refresh {
-  background: color-mix(in srgb, #8b5cf6 18%, var(--panel));
-  color: #8b5cf6;
 }
 
 .node-ico.add {
@@ -3125,24 +2854,9 @@ defineExpose({
   color: var(--ok);
 }
 
-.pick-ico.cache_clear {
-  background: color-mix(in srgb, var(--ok) 16%, var(--panel));
-  color: var(--ok);
-}
-
-.pick-ico.delay {
-  background: color-mix(in srgb, var(--warn) 16%, var(--panel));
-  color: var(--warn);
-}
-
 .pick-ico.local_upload {
   background: color-mix(in srgb, #0ea5e9 16%, var(--panel));
   color: #0ea5e9;
-}
-
-.pick-ico.emby_refresh {
-  background: color-mix(in srgb, #8b5cf6 18%, var(--panel));
-  color: #8b5cf6;
 }
 
 .cfg-body {
