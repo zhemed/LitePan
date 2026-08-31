@@ -1,13 +1,10 @@
 services:
   litepan:
-    image: ghcr.io/zhemed/litepan:v0.0.6
+    image: ghcr.io/zhemed/litepan:v0.0.7
     container_name: litepan
     restart: unless-stopped
     ports:
       - "5211:5211"
-      # 内置 Magnet 的 TCP/uTP/DHT 监听端口；若在后台修改，需同步调整映射
-      - "42069:42069/tcp"
-      - "42069:42069/udp"
     environment:
       - TZ=Asia/Shanghai
     volumes:
