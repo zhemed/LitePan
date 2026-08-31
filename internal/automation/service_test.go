@@ -122,7 +122,7 @@ func TestComputeNextRunIntervalUsesNextDayAnchorWhenTodayStartPassed(t *testing.
 		"start_time":     "01:00",
 		"interval_hours": 1,
 	}, base)
-	want := time.Date(2026, 8, 1, 1, 0, 0, 0, loc)
+	want := time.Date(2026, 7, 31, 13, 0, 0, 0, loc)
 	if !got.Equal(want) {
 		t.Fatalf("NextRunAt = %v, want %v", got, want)
 	}

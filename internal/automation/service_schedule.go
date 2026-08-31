@@ -153,11 +153,30 @@ func computeIntervalStartRun(cfg map[string]any, base time.Time) time.Time {
 
 func computeIntervalStartRunAt(base time.Time, cfg map[string]any) time.Time {
 	h, m := parseClock(anyString(cfg["start_time"]))
-	next := time.Date(base.Year(), base.Month(), base.Day(), h, m, 0, 0, base.Location())
-	if next.After(base) {
-		return next
+	interval := clampInt(anyInt(cfg["interval_hours"]), 1, 24*365)
+	anchor := time.Date(base.Year(), base.Month(), base.Day(), h, m, 0, 0, base.Location())
+	if anchor.After(base) {
+		return anchor
 	}
-	nextDay := next.AddDate(0, 0, 1)
+	// 从锚点按 interval 递进，找当天首个 > base 的档位；跨天则回落次日锚点
+	candidate := anchor
+	for {
+		candidate = candidate.Add(time.Duration(interval) * time.Hour)
+		if candidate.After(base) {
+			if sameLocalDay(candidate, anchor) {
+				return candidate
+			}
+			break
+		}
+		if !sameLocalDay(candidate, anchor) {
+			break
+		}
+		// 防止 interval=0 异常兜底
+		if candidate.Equal(anchor) {
+			break
+		}
+	}
+	nextDay := anchor.AddDate(0, 0, 1)
 	return time.Date(nextDay.Year(), nextDay.Month(), nextDay.Day(), h, m, 0, 0, nextDay.Location())
 }
 

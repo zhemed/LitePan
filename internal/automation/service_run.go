@@ -184,6 +184,12 @@ func (s *Service) runLocalUpload(ctx context.Context, params map[string]any) map
 					mappingNames = append(mappingNames, strings.TrimSpace(s))
 				}
 			}
+		} else if arr, ok := rawArr.([]string); ok {
+			for _, v := range arr {
+				if strings.TrimSpace(v) != "" {
+					mappingNames = append(mappingNames, strings.TrimSpace(v))
+				}
+			}
 		} else if s, ok := rawArr.(string); ok && strings.TrimSpace(s) != "" {
 			mappingNames = append(mappingNames, strings.TrimSpace(s))
 		}

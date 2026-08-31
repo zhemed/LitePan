@@ -26,6 +26,12 @@ func (s *Service) ValidateRule(ctx context.Context, actions []RuleAction) (Valid
 							mappings = append(mappings, strings.TrimSpace(s))
 						}
 					}
+				} else if arr, ok := raw.([]string); ok {
+					for _, v := range arr {
+						if strings.TrimSpace(v) != "" {
+							mappings = append(mappings, strings.TrimSpace(v))
+						}
+					}
 				} else if str, ok := raw.(string); ok && strings.TrimSpace(str) != "" {
 					mappings = append(mappings, strings.TrimSpace(str))
 				}
