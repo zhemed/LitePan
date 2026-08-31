@@ -1650,3 +1650,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 46: Remove automation keep local_upload only
+<!-- trellis-session: v=2 fp=150324121a119093 -->
+
+**Date**: 2026-08-31
+**Task**: Remove automation keep local_upload only
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+仅保留本地上传，移除其他4项 0.0.4
+
+### Main Changes
+
+- domain/service_run/validate 仅 local_upload
+- 前端仅本地上传 300行 删除emby.ts
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `54d82dc` | refactor(automation): keep only local_upload, remove other 4 actions and bump to 0.0.4 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 118MB 0.0.4
+
+### Status
+
+[OK] **Completed**
