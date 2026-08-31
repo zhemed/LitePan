@@ -37,3 +37,35 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 57: Investigate cross disk download
+<!-- trellis-session: v=2 fp=f60578c37057425d -->
+
+**Date**: 2026-09-01
+**Task**: Investigate cross disk download
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+跨盘下载可彻底移除
+
+### Main Changes
+
+- 清单81+8
+- 零耦合
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `41cc6c6` | chore(task): archive 08-31-adjust-task-concurrency-width |
+
+### Testing
+
+- [OK] grep
+
+### Status
+
+[OK] **Completed**
