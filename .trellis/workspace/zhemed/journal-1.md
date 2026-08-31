@@ -1617,3 +1617,36 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 45: Audit keep local_upload only
+<!-- trellis-session: v=2 fp=91460d7cd07791ed -->
+
+**Date**: 2026-08-31
+**Task**: Audit keep local_upload only
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+审计5项可仅留本地上传，4项可安全移除
+
+### Main Changes
+
+- 映射5项到domain/frontend
+- 判定刷新/整理/延迟/Emby可删
+- 清单 backend7+frontend10
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `66337e3` | chore(task): archive 08-31-check-and-organize-workspace |
+
+### Testing
+
+- [OK] grep vet audit.md
+
+### Status
+
+[OK] **Completed**
