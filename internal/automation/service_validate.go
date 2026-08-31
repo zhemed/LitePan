@@ -72,7 +72,7 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 	}
 	in.TriggerType = strings.TrimSpace(in.TriggerType)
 	switch in.TriggerType {
-	case domain.AutomationTriggerDaily, domain.AutomationTriggerInterval, domain.AutomationTriggerWebhook, domain.AutomationTriggerOfflineDownload:
+	case domain.AutomationTriggerDaily, domain.AutomationTriggerInterval, domain.AutomationTriggerWebhook:
 	default:
 		return in, domain.Errorf(domain.CodeValidation, "触发条件不支持")
 	}
@@ -94,13 +94,6 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 	case domain.AutomationTriggerWebhook:
 		if strings.TrimSpace(anyString(in.TriggerConfig["event"])) == "" {
 			return in, domain.Errorf(domain.CodeValidation, "请输入 Webhook 事件名称")
-		}
-	case domain.AutomationTriggerOfflineDownload:
-		if anyInt(in.TriggerConfig["account_id"]) <= 0 {
-			return in, domain.Errorf(domain.CodeValidation, "请选择离线下载账号")
-		}
-		if strings.TrimSpace(anyString(in.TriggerConfig["path"])) == "" {
-			return in, domain.Errorf(domain.CodeValidation, "请选择离线下载目录")
 		}
 	}
 	if in.Status == "" {

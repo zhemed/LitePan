@@ -14,10 +14,9 @@ const (
 	AutomationRunSuccess = "success"
 	AutomationRunFailed  = "failed"
 
-	AutomationTriggerDaily           = "daily"
-	AutomationTriggerInterval        = "interval"
-	AutomationTriggerWebhook         = "webhook"
-	AutomationTriggerOfflineDownload = "offline_download"
+	AutomationTriggerDaily    = "daily"
+	AutomationTriggerInterval = "interval"
+	AutomationTriggerWebhook  = "webhook"
 
 	AutomationActionLocalUpload = "local_upload"
 

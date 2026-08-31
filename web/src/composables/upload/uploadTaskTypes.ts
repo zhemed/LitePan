@@ -27,7 +27,6 @@ export type UploadTaskDeps = {
   selectAccount: (account: Account) => Promise<void>;
   getRootId: (config: Record<string, unknown>) => string;
   getCurrentBreadcrumbNameParts: () => string[];
-  refreshOfflineTasks: (refresh?: boolean, quiet?: boolean) => Promise<void>;
 };
 
 export type LocalUploadPayload = {

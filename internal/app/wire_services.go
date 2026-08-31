@@ -13,23 +13,21 @@ import (
 	"litepan/internal/fusemount"
 	"litepan/internal/fusereadcache"
 	"litepan/internal/logx"
-	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
 	"litepan/internal/settings"
 	"litepan/internal/upload"
 )
 
 type servicesBundle struct {
-	files            *file.Service
-	uploads          *upload.Manager
-	offlineDownloads *offlinedownload.Service
-	playback         *playback.Service
-	account          *account.Service
-	accountProfile   *accountprofile.Service
-	automation       *automation.Service
-	fuse             *fusemount.Service
-	fuseReadCache    *fusereadcache.Service
-	favorites        *favorites.Service
+	files          *file.Service
+	uploads        *upload.Manager
+	playback       *playback.Service
+	account        *account.Service
+	accountProfile *accountprofile.Service
+	automation     *automation.Service
+	fuse           *fusemount.Service
+	fuseReadCache  *fusereadcache.Service
+	favorites      *favorites.Service
 }
 
 func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *coreBundle) *servicesBundle {
@@ -42,16 +40,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	fileSvc.SetLogger(logs.For(logx.ModuleFileOp))
 	playbackSvc := playback.NewService(core.exec, core.cache)
 	fuseReadCache := wireFuseReadCacheOrNil(context.Background(), cfg, logs, st, core.bus)
-	offlineDownloadSvc := offlinedownload.New(offlinedownload.Options{
-		Exec:     core.exec,
-		Accounts: st.store.Accounts,
-		Repo:     st.store.OfflineDownloads,
-		Folders:  fileSvc,
-		Settings: st.settings,
-		DataDir:  cfg.DataDir,
-		Bus:      core.bus,
-		Log:      logs.For(logx.ModuleFileOp),
-	})
 	fusemount.ApplyConfiguredMountRoot(context.Background(), st.store.Configs)
 	fuseSvc := fusemount.New(fusemount.Options{
 		Repo:      st.store.FuseMounts,
@@ -71,7 +59,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		fuse:      fuseSvc,
 		readCache: fuseReadCache,
 		favorites: favoritesSvc,
-		offline:   offlineDownloadSvc,
 	}
 	accountSvc := account.NewService(account.Options{
 		Accounts:      st.store.Accounts,
@@ -99,7 +86,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		StartupGate: startupGate,
 	})
 	lifecycle.uploads = uploadSvc
-	offlineDownloadSvc.SetUploads(uploadSvc)
 	fuseSvc.SetUploads(uploadSvc)
 	automationSvc := automation.New(automation.Options{
 		Rules:    st.store.AutomationRules,
@@ -111,17 +97,15 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		Log:      logs.For(logx.ModuleSystem),
 	})
 	automationSvc.SetStartupGate(startupGate)
-	automationSvc.Register(core.bus)
 	return &servicesBundle{
-		files:            fileSvc,
-		uploads:          uploadSvc,
-		offlineDownloads: offlineDownloadSvc,
-		playback:         playbackSvc,
-		account:          accountSvc,
-		accountProfile:   accountProfileSvc,
-		automation:       automationSvc,
-		fuse:             fuseSvc,
-		fuseReadCache:    fuseReadCache,
-		favorites:        favoritesSvc,
+		files:          fileSvc,
+		uploads:        uploadSvc,
+		playback:       playbackSvc,
+		account:        accountSvc,
+		accountProfile: accountProfileSvc,
+		automation:     automationSvc,
+		fuse:           fuseSvc,
+		fuseReadCache:  fuseReadCache,
+		favorites:      favoritesSvc,
 	}
 }

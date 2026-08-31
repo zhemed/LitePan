@@ -430,7 +430,6 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 			FileID:    result.FileID,
 		})
 	}
-	m.publishOfflineHandoffCompleted(taskID)
 }
 
 func shouldResetResumeState(errMsg string) bool {

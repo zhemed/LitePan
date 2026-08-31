@@ -29,9 +29,6 @@ func (h *Handler) getUploadRuntime(w http.ResponseWriter, r *http.Request) {
 		"concurrency_min": uploadConcurrencyMin,
 		"concurrency_max": uploadConcurrencyMax,
 	}
-	if h.offlineDownloads != nil {
-		payload["builtin_temp_dir"] = h.offlineDownloads.BuiltinTempDir()
-	}
 	writeOK(w, payload)
 }
 
@@ -75,8 +72,5 @@ func (h *Handler) applyUploadConcurrencyHotReload(ctx context.Context, value *in
 func (h *Handler) applyTaskRuntimeFromSettings(ctx context.Context, in map[string]string) {
 	if _, ok := in[settings.KeyUploadTaskConcurrency]; ok && h.uploads != nil {
 		h.uploads.RefreshConcurrencyLimit(ctx)
-	}
-	if h.offlineDownloads != nil {
-		h.offlineDownloads.RefreshRuntimeSettings(in)
 	}
 }

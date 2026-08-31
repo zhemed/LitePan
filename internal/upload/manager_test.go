@@ -712,15 +712,9 @@ func waitUploadStatus(t *testing.T, m *Manager, taskID string, statuses ...strin
 
 func TestOfflineHandoffBatchKeepsFailedFileAndCleansTreeAfterRetry(t *testing.T) {
 	driver := &toggleUploadDriver{fail: map[string]bool{"b.mkv": true}}
-	bus := eventbus.New(nil)
-	t.Cleanup(func() { _ = bus.Close(context.Background()) })
-	completed := make(chan eventbus.OfflineDownloadCompleted, 2)
-	eventbus.Subscribe(bus, func(_ context.Context, event eventbus.OfflineDownloadCompleted) {
-		completed <- event
-	})
 	m := NewManager(Options{
 		Exec: driverexec.New(fakeProvider{drv: driver}, nil), Accounts: fakeUploadAccounts{},
-		Bus: bus, DataDir: t.TempDir(),
+		DataDir: t.TempDir(),
 	})
 
 	root := filepath.Join(t.TempDir(), "builtin_offline", "group-1")
@@ -759,11 +753,6 @@ func TestOfflineHandoffBatchKeepsFailedFileAndCleansTreeAfterRetry(t *testing.T)
 	if _, err := os.Stat(nested); err != nil {
 		t.Fatalf("失败文件必须保留供重试: %v", err)
 	}
-	select {
-	case event := <-completed:
-		t.Fatalf("同组仍有失败上传时不应发布完成事件: %#v", event)
-	case <-time.After(100 * time.Millisecond):
-	}
 
 	driver.setFailed("b.mkv", false)
 	if _, ok := m.Resume(context.Background(), tasks[1].TaskID); !ok {
@@ -772,19 +761,6 @@ func TestOfflineHandoffBatchKeepsFailedFileAndCleansTreeAfterRetry(t *testing.T)
 	waitUploadStatus(t, m, tasks[1].TaskID, StatusSuccess)
 	if _, err := os.Stat(root); !os.IsNotExist(err) {
 		t.Fatalf("同组全部上传成功后任务根目录应清空: %v", err)
-	}
-	select {
-	case event := <-completed:
-		if event.TaskID != "group-1" || event.AccountID != 1 || event.TargetDisplayPath != "/电影/合集" {
-			t.Fatalf("离线交棒完成事件不正确: %#v", event)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("同组全部完成后没有发布离线下载完成事件")
-	}
-	select {
-	case event := <-completed:
-		t.Fatalf("同一交棒组不应重复发布完成事件: %#v", event)
-	case <-time.After(100 * time.Millisecond):
 	}
 }
 

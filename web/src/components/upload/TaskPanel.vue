@@ -113,7 +113,7 @@
         <template v-else>
           <div v-if="visibleRows.length > 0" class="table-head">
             <div>文件名</div>
-        <div>{{ taskPanelCategory === "offline" ? "下载器" : "来源" }}</div>
+            <div>来源</div>
             <div>状态</div>
             <div>{{ tailColumnLabel }}</div>
           </div>
@@ -137,7 +137,7 @@
                   />
                   <div class="file-name">{{ row.name }}</div>
                 </div>
-                <div class="source-cell">{{ taskPanelCategory === "offline" ? row.provider || row.source : row.source }}</div>
+                <div class="source-cell">{{ row.source }}</div>
                 <div class="status-cell" :class="row.statusClass">
                   <span v-if="showStatusPulse(row)" class="status-pulse" :class="statusPulseClass(row)" aria-hidden="true"></span>
                   <span class="status-text">{{ row.status }}</span>
@@ -187,13 +187,11 @@ import SvgIcon from "@/components/icons/SvgIcon.vue";
 import UploadProgressInner from "@/components/upload/UploadProgressInner.vue";
 import UploadTaskSettingsPanel from "@/components/upload/UploadTaskSettingsPanel.vue";
 import { getUploadTaskStableKey } from "@/composables/upload/uploadTaskFormatters";
-import { toast } from "@/composables/useToast";
 import { formatSize } from "@/utils/format";
 import type { UploadTask } from "@/types/upload";
 import type { useUploadTasks } from "@/composables/useUploadTasks";
-import type { useOfflineDownloads } from "@/composables/useOfflineDownloads";
 
-type CategoryKey = "upload" | "relay" | "offline";
+type CategoryKey = "upload" | "relay";
 type StateKey = "active" | "done" | "failed";
 type RelayStateKey = "active" | "failed";
 
@@ -222,11 +220,9 @@ type PanelRow = {
 
 const props = defineProps<{
   uploadApi: ReturnType<typeof useUploadTasks>;
-  offline: ReturnType<typeof useOfflineDownloads>;
 }>();
 
 const api = props.uploadApi;
-const offline = props.offline;
 
 const {
   displayUploadTasks,
@@ -269,7 +265,6 @@ const panelExpanded = ref(false);
 const selectedTaskIds = ref<Set<string>>(new Set());
 const uploadStateFilter = ref<StateKey>("active");
 const relayStateFilter = ref<RelayStateKey>("active");
-const offlineStateFilter = ref<StateKey>("active");
 const panelRoot = ref<HTMLElement | null>(null);
 
 function useFullscreenPanelLayout() {
@@ -315,7 +310,6 @@ const uploadTasks = computed<UploadTask[]>(() =>
   ),
 );
 const relayTasks = computed<UploadTask[]>(() => api.relayTasks.value || []);
-const offlineTasks = computed<any[]>(() => offline.tasks?.value || []);
 
 function uploadStateOf(task: UploadTask): StateKey {
   const status = uploadDisplayStatus(task);
@@ -327,12 +321,6 @@ function uploadStateOf(task: UploadTask): StateKey {
 function relayStateOf(task: UploadTask): StateKey {
   const status = relayDisplayStatus(task);
   if (status === "failed" || status === "canceled") return "failed";
-  return "active";
-}
-
-function offlineStateOf(task: any): StateKey {
-  if (task.status === "success") return "done";
-  if (task.status === "failed") return "failed";
   return "active";
 }
 
@@ -521,48 +509,17 @@ function buildRelayRow(task: UploadTask): PanelRow {
   };
 }
 
-function buildOfflineRow(task: any): PanelRow {
-  const badge = getUploadTaskDriverBadge(task);
-  const speedText = offline.speedText(task);
-  const detailText = offline.detailText(task);
-  return {
-    id: task.task_id,
-    kind: "offline",
-    raw: task,
-    name: task.name,
-    source: offline.sourceLabel(task),
-    provider: offline.providerLabel(task),
-    status: offline.statusText(task),
-    statusDetail: detailText,
-    statusClass: task.status === "success" ? "success" : task.status === "failed" ? "error" : "downloading",
-    tail: speedText,
-    tailActive: speedText !== "-",
-    progress: Number(task.progress || 0),
-    progressClass: task.status === "failed" ? "error" : "downloading",
-    showProgress: ["pending", "running", "retrying"].includes(task.status),
-    actionLabel: task.status === "success" && task.provider_kind !== "builtin" ? "打开" : undefined,
-    sortOrder: offlineTaskOrder(task),
-    badgeLogo: badge.logo || "",
-    badgeName: String(badge.name || "任务").slice(0, 2),
-    badgeColor: task.provider_kind === "builtin" ? "#4f7cff" : (badge.color || "#5d6673"),
-    searchText: [task.name, task.source, task.target_display_path, task.error, offline.providerLabel(task), detailText].join(" "),
-  };
-}
-
 const uploadRows = computed(() => uploadTasks.value.map(buildUploadRow));
 const relayRows = computed(() => relayTasks.value.map(buildRelayRow));
-const offlineRows = computed(() => offlineTasks.value.map(buildOfflineRow));
 
 function stateFilterOf(category: CategoryKey) {
   if (category === "upload") return uploadStateFilter.value;
-  if (category === "relay") return relayStateFilter.value;
-  return offlineStateFilter.value;
+  return relayStateFilter.value;
 }
 
 const baseRows = computed(() => {
   if (taskPanelCategory.value === "upload") return uploadRows.value;
-  if (taskPanelCategory.value === "relay") return relayRows.value;
-  return offlineRows.value;
+  return relayRows.value;
 });
 
 const currentRows = computed(() =>
@@ -571,9 +528,6 @@ const currentRows = computed(() =>
       const filter = stateFilterOf(taskPanelCategory.value);
       if (taskPanelCategory.value === "upload" && uploadStateOf(row.raw) !== filter) return false;
       if (taskPanelCategory.value === "relay" && relayStateOf(row.raw) !== filter) return false;
-      if (taskPanelCategory.value === "offline") {
-        if (offlineStateOf(row.raw) !== filter) return false;
-      }
       return true;
     })
     .sort((a, b) => a.sortOrder - b.sortOrder),
@@ -618,10 +572,7 @@ const selectedToggleTasks = computed(() =>
     }),
 );
 
-const canToggleSelected = computed(() => {
-  if (!selectedToggleTasks.value.length) return false;
-  return taskPanelCategory.value !== "offline";
-});
+const canToggleSelected = computed(() => selectedToggleTasks.value.length > 0);
 
 const selectedToggleLabel = computed(() => {
   if (!selectedToggleTasks.value.length) return "暂停";
@@ -631,8 +582,6 @@ const selectedToggleLabel = computed(() => {
 const tailColumnLabel = computed(() => {
   if (taskPanelCategory.value === "upload" && uploadStateFilter.value === "done") return "操作";
   if (taskPanelCategory.value === "upload" && uploadStateFilter.value === "failed") return "操作";
-  if (taskPanelCategory.value === "offline" && offlineStateFilter.value === "done") return "操作";
-  if (taskPanelCategory.value === "offline") return "速度";
   return "速度";
 });
 
@@ -640,26 +589,17 @@ const emptyText = computed(() => {
   if (taskPanelCategory.value === "upload") {
     return uploadStateFilter.value === "done" ? "暂无已完成上传任务" : uploadStateFilter.value === "failed" ? "暂无失败上传任务" : "暂无进行中的上传任务";
   }
-  if (taskPanelCategory.value === "relay") {
-    return relayStateFilter.value === "failed" ? "暂无失败跨盘任务" : "暂无进行中的跨盘任务";
-  }
-  return offlineStateFilter.value === "done" ? "暂无已完成离线任务" : offlineStateFilter.value === "failed" ? "暂无失败离线任务" : "暂无进行中的离线任务";
+  return relayStateFilter.value === "failed" ? "暂无失败跨盘任务" : "暂无进行中的跨盘任务";
 });
 
-const showLoading = computed(() =>
-  (taskPanelCategory.value === "upload" && uploadTaskPanelLoading?.value) ||
-  (taskPanelCategory.value === "offline" && offline.loading?.value),
-);
-const loadingText = computed(() =>
-  taskPanelCategory.value === "upload" ? uploadTaskPanelLoadingText?.value || "正在加载上传任务..." : "正在加载离线任务...",
-);
+const showLoading = computed(() => taskPanelCategory.value === "upload" && uploadTaskPanelLoading?.value);
+const loadingText = computed(() => uploadTaskPanelLoadingText?.value || "正在加载上传任务...");
 
 function countByState(category: CategoryKey, state: StateKey) {
-  const rows = category === "upload" ? uploadRows.value : category === "relay" ? relayRows.value : offlineRows.value;
+  const rows = category === "upload" ? uploadRows.value : relayRows.value;
   return rows.filter((row) => {
     if (category === "upload") return uploadStateOf(row.raw) === state;
-    if (category === "relay") return relayStateOf(row.raw) === state;
-    return offlineStateOf(row.raw) === state;
+    return relayStateOf(row.raw) === state;
   }).length;
 }
 
@@ -685,17 +625,6 @@ const navCategories = computed(() => [
       { key: "failed", label: "失　败", count: countByState("relay", "failed"), active: relayStateFilter.value === "failed", onClick: () => { relayStateFilter.value = "failed"; } },
     ],
   },
-  {
-    key: "offline" as const,
-    label: "离线任务",
-    icon: "cloud",
-    count: countByState("offline", "active"),
-    states: [
-      { key: "active", label: "进行中", count: countByState("offline", "active"), active: offlineStateFilter.value === "active", onClick: () => { offlineStateFilter.value = "active"; } },
-      { key: "done", label: "已完成", count: countByState("offline", "done"), active: offlineStateFilter.value === "done", onClick: () => { offlineStateFilter.value = "done"; } },
-      { key: "failed", label: "失　败", count: countByState("offline", "failed"), active: offlineStateFilter.value === "failed", onClick: () => { offlineStateFilter.value = "failed"; } },
-    ],
-  },
 ]);
 
 const detailPrimary = computed(() => {
@@ -708,9 +637,6 @@ const detailPrimary = computed(() => {
 const detailSecondary = computed(() => {
   const row = detailRow.value;
   if (!row) return "";
-  if (row.kind === "offline") {
-    return row.tail && row.tail !== "---" ? row.tail : "";
-  }
   return row.tailActive && row.tail !== "---" ? row.tail : "";
 });
 
@@ -741,17 +667,6 @@ const detailExtra = computed(() => {
     }
     return details.join(" · ");
   }
-  if (row.kind === "offline") {
-    const task = row.raw;
-    const downloaded = Number(task?.downloaded_bytes || 0);
-    const total = Number(task?.size || 0);
-    if (task?.provider_kind === "builtin" && total > 0) {
-      details.push(`${formatSize(downloaded)} / ${formatSize(total)}`);
-    } else if (total > 0) {
-      details.push(`大小 ${formatSize(total)}`);
-    }
-    return details.join(" · ");
-  }
   return details.join(" · ");
 });
 
@@ -773,9 +688,6 @@ function showStatusPulse(row: PanelRow) {
   if (row.kind === "relay") {
     return row.statusClass === "pending" || row.statusClass === "downloading";
   }
-  if (row.kind === "offline") {
-    return ["pending", "running", "retrying"].includes(String(row.raw?.status || ""));
-  }
   return false;
 }
 
@@ -794,27 +706,9 @@ function toggleSelectAll() {
   selectedTaskIds.value = new Set(visibleRows.value.map((row) => row.id));
 }
 
-function canDeleteOfflineTask(task: any) {
-  if (task?.provider_kind === "builtin") return true;
-  const status = String(task?.status || "");
-  const active = ["pending", "running", "retrying"].includes(status);
-  return !active || Boolean(task?.remote_delete);
-}
-
-const deletableSelectedRows = computed(() => {
-  if (taskPanelCategory.value !== "offline") return selectedRows.value;
-  return selectedRows.value.filter((row) => canDeleteOfflineTask(row.raw));
-});
-
+const deletableSelectedRows = computed(() => selectedRows.value);
 const canDeleteSelected = computed(() => deletableSelectedRows.value.length > 0);
-const deleteButtonLabel = computed(() => {
-  if (taskPanelCategory.value !== "offline") return "删除";
-  const total = selectedRows.value.length;
-  const deletable = deletableSelectedRows.value.length;
-  if (!total || deletable === total) return "删除";
-  if (deletable === 0) return "删除";
-  return `删除(${deletable}/${total})`;
-});
+const deleteButtonLabel = computed(() => "删除");
 
 async function handleSelectedToggle() {
   const tasks = [...selectedToggleTasks.value];
@@ -838,16 +732,6 @@ async function handleSelectedDelete() {
     await handleDeleteUploadTasks(rows.map((row) => row.raw as UploadTask));
   } else if (taskPanelCategory.value === "relay") {
     await handleDeleteRelayTasks(rows.map((row) => row.id));
-  } else {
-    const deletableRows = rows.filter((row) => canDeleteOfflineTask(row.raw));
-    if (!deletableRows.length) {
-      toast.info("当前选中的离线任务里，没有可删除或可取消的项目");
-      return;
-    }
-    await offline.deleteTasks(deletableRows.map((row) => row.raw));
-    if (deletableRows.length < rows.length) {
-      toast.info(`已跳过 ${rows.length - deletableRows.length} 个当前网盘不支持取消的进行中离线任务`);
-    }
   }
   selectedTaskIds.value = new Set();
 }
@@ -861,12 +745,6 @@ async function handleRowAction(row: PanelRow) {
     }
     await handleUploadTaskPrimaryAction(task);
     return;
-  }
-  if (row.kind === "offline" && typeof offline.handlePrimaryAction === "function") {
-    const opened = await offline.handlePrimaryAction(row.raw);
-    if (opened) {
-      closeUploadTaskPanel();
-    }
   }
 }
 
@@ -931,12 +809,6 @@ function relayTaskOrder(task: any) {
   return rank * 1_000_000_000_000 + (order > 0 ? order : created);
 }
 
-function offlineTaskOrder(task: any) {
-  const rank = offlineStatusRank(task.status);
-  const created = Number(task.created_at || task.updated_at || 0);
-  return rank * 1_000_000_000_000 + created;
-}
-
 function uploadStatusRank(task: UploadTask) {
   const status = uploadDisplayStatus(task);
   if (status === "running") return 0;
@@ -959,14 +831,6 @@ function relayStatusRank(task: any) {
   if (status === "failed") return 4;
   if (status === "canceled") return 5;
   return 6;
-}
-
-function offlineStatusRank(status: string) {
-  if (status === "running") return 0;
-  if (status === "pending" || status === "retrying") return 1;
-  if (status === "failed") return 2;
-  if (status === "success") return 3;
-  return 9;
 }
 
 onMounted(() => {

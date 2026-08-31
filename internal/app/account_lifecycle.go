@@ -7,15 +7,13 @@ import (
 	"litepan/internal/favorites"
 	"litepan/internal/fusemount"
 	"litepan/internal/fusereadcache"
-	"litepan/internal/offlinedownload"
-		"litepan/internal/upload"
+	"litepan/internal/upload"
 )
 
 type accountLifecycle struct {
 	fuse      *fusemount.Service
 	readCache *fusereadcache.Service
 	favorites *favorites.Service
-	offline   *offlinedownload.Service
 	uploads   *upload.Manager
 }
 
@@ -48,11 +46,6 @@ func (a accountLifecycle) OnAccountDeleted(ctx context.Context, accountID int64)
 	if a.favorites != nil {
 		if err := a.favorites.Delete(ctx, accountID); err != nil {
 			return fmt.Errorf("清理收藏夹失败: %w", err)
-		}
-	}
-	if a.offline != nil {
-		if _, err := a.offline.RemoveTasksByAccount(ctx, accountID); err != nil {
-			return fmt.Errorf("清理离线下载任务失败: %w", err)
 		}
 	}
 	if a.uploads != nil {

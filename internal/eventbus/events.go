@@ -30,16 +30,6 @@ type FileMutated struct {
 	OldParentID string
 }
 
-// OfflineDownloadCompleted 离线下载任务首次进入成功状态。
-type OfflineDownloadCompleted struct {
-	TaskID            string
-	AccountID         int64
-	TargetParentID    string
-	TargetDisplayPath string
-	FileID            string
-	FileName          string
-}
-
 // NotificationCreated 新通知产生。
 type NotificationCreated struct {
 	Level     string

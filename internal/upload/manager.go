@@ -62,7 +62,6 @@ type Manager struct {
 	clientTaskIndex        map[string]string
 	tempRegistry           *TempRegistry
 	targetDirCache         *uploadTargetDirCache
-	completedOfflineGroups map[string]struct{}
 	runCtx                 context.Context
 	runCancel              context.CancelFunc
 	stopping               bool
@@ -88,9 +87,8 @@ func NewManager(opts Options) *Manager {
 		limit:                  defaultLimit,
 		subs:                   make(map[chan []byte]struct{}),
 		clientTaskIndex:        make(map[string]string),
-		targetDirCache:         newUploadTargetDirCache(),
-		completedOfflineGroups: make(map[string]struct{}),
-		runCtx:                 runCtx,
+		targetDirCache: newUploadTargetDirCache(),
+		runCtx:         runCtx,
 		runCancel:              runCancel,
 	}
 	m.runCond.L = &m.mu
@@ -543,69 +541,4 @@ func (m *Manager) RemoveTasksByAccount(ctx context.Context, accountID int64) (in
 	return removed, nil
 }
 
-func (m *Manager) publishOfflineHandoffCompleted(taskID string) {
-	if m.bus == nil {
-		return
-	}
-	m.mu.Lock()
-	current, ok := m.tasks[taskID]
-	if !ok || current.SourceType != SourceTypeOfflineHandoff {
-		m.mu.Unlock()
-		return
-	}
-	groupID, grouped := offlineHandoffGroupID(current.ClientTaskID)
-	groupKey := "task:" + current.TaskID
-	eventTaskID := current.TaskID
-	eventTask := current
-	if grouped {
-		groupKey = "group:" + groupID
-		eventTaskID = groupID
-		matched := 0
-		for _, candidate := range m.tasks {
-			candidateGroup, ok := offlineHandoffGroupID(candidate.ClientTaskID)
-			if !ok || candidateGroup != groupID {
-				continue
-			}
-			matched++
-			if candidate.Status != StatusSuccess && candidate.Status != StatusSkipped {
-				m.mu.Unlock()
-				return
-			}
-			if displayPathDepth(candidate.TargetDisplayPath) < displayPathDepth(eventTask.TargetDisplayPath) {
-				eventTask = candidate
-			}
-		}
-		if matched == 0 {
-			m.mu.Unlock()
-			return
-		}
-	}
-	if _, published := m.completedOfflineGroups[groupKey]; published {
-		m.mu.Unlock()
-		return
-	}
-	m.completedOfflineGroups[groupKey] = struct{}{}
-	fileID, _ := current.Result["file_id"].(string)
-	fileName, _ := current.Result["file_name"].(string)
-	if fileName == "" {
-		fileName = current.FileName
-	}
-	event := eventbus.OfflineDownloadCompleted{
-		TaskID:            eventTaskID,
-		AccountID:         current.AccountID,
-		TargetParentID:    eventTask.TargetPath,
-		TargetDisplayPath: eventTask.TargetDisplayPath,
-		FileID:            fileID,
-		FileName:          fileName,
-	}
-	m.mu.Unlock()
-	m.bus.Publish(context.Background(), event)
-}
 
-func displayPathDepth(value string) int {
-	value = strings.Trim(strings.TrimSpace(value), "/")
-	if value == "" {
-		return 0
-	}
-	return strings.Count(value, "/") + 1
-}

@@ -13,17 +13,12 @@ export type UploadActionsCtx = {
 };
 
 export function useUploadPanelActions(ctx: UploadActionsCtx) {
-  const { deps, store, stream } = ctx;
+  const { store, stream } = ctx;
 
-  async function openUploadTaskPanel(preferredCategory: "" | "relay" | "offline" = "") {
+  async function openUploadTaskPanel(preferredCategory: "" | "relay" = "") {
     store.uploadTaskPanelOpen.value = true;
-    await Promise.all([
-      stream.fetchUploadTasks(),
-      deps.refreshOfflineTasks(true, true),
-    ]);
-    if (preferredCategory === "offline") {
-      store.taskPanelCategory.value = "offline";
-    } else if (
+    await stream.fetchUploadTasks();
+    if (
       preferredCategory === "relay" ||
       (store.activeRelayCount.value > 0 && store.activeUploadTasks.value.length === 0)
     ) {

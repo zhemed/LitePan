@@ -18,9 +18,8 @@ import (
 	"litepan/internal/driver"
 		"litepan/internal/eventbus"
 	"litepan/internal/file"
-		"litepan/internal/fusemount"
+	"litepan/internal/fusemount"
 	"litepan/internal/logx"
-	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
 	"litepan/internal/settings"
 	"litepan/internal/store"
@@ -43,10 +42,9 @@ type App struct {
 	drivers          *driver.Manager
 	auth             *auth.Service
 	sched            *auth.Scheduler
-	files            *file.Service
-	uploads          *upload.Manager
-	offlineDownloads *offlinedownload.Service
-	playback         *playback.Service
+	files    *file.Service
+	uploads  *upload.Manager
+	playback *playback.Service
 	automation       *automation.Service
 	fuse             *fusemount.Service
 	httpSrv          *http.Server
@@ -121,10 +119,9 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		drivers:          core.drivers,
 		auth:             core.auth,
 		sched:            core.sched,
-		files:            svc.files,
-		uploads:          svc.uploads,
-		offlineDownloads: svc.offlineDownloads,
-		playback:         svc.playback,
+		files:    svc.files,
+		uploads:  svc.uploads,
+		playback: svc.playback,
 		automation:       svc.automation,
 		fuse:             svc.fuse,
 		httpSrv:          httpSrv,
@@ -150,9 +147,6 @@ func (a *App) Run(ctx context.Context) error {
 	if a.uploads != nil {
 		a.uploads.StartTempCleanup(ctx)
 	}
-	if a.offlineDownloads != nil {
-		a.offlineDownloads.Start(ctx)
-	}
 	errCh := make(chan error, 1)
 	go func() {
 		a.log.Info("HTTP 服务已监听", "addr", a.cfg.ListenAddr)
@@ -174,11 +168,10 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 const (
-	shutdownHTTPBudget    = 8 * time.Second
-	shutdownFuseBudget    = 12 * time.Second
-	shutdownBusBudget     = 3 * time.Second
-	shutdownOfflineBudget = 20 * time.Second
-	shutdownUploadBudget  = 20 * time.Second
+	shutdownHTTPBudget  = 8 * time.Second
+	shutdownFuseBudget  = 12 * time.Second
+	shutdownBusBudget   = 3 * time.Second
+	shutdownUploadBudget = 20 * time.Second
 )
 
 // Shutdown 按依赖反序优雅关闭：先停 HTTP，再卸载 FUSE，最后关 DB。
@@ -201,13 +194,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	if a.offlineDownloads != nil {
-		offlineCtx, cancelOffline := context.WithTimeout(ctx, shutdownOfflineBudget)
-		if err := a.offlineDownloads.Stop(offlineCtx); err != nil {
-			a.log.Warn("内置离线下载停止异常", "err", err)
-		}
-		cancelOffline()
-	}
 	if a.fuse != nil {
 		fuseCtx, cancelFuse := context.WithTimeout(ctx, shutdownFuseBudget)
 		a.fuse.Stop(fuseCtx)

@@ -12,7 +12,6 @@ const emit = defineEmits<{
   "create-folder": [];
   "upload-file": [];
   "upload-folder": [];
-  "offline-download": [];
   "open-upload-tasks": [];
   "toggle-favorites": [];
 }>();
@@ -32,7 +31,6 @@ const props = defineProps<{
   uploadTaskLabel?: string;
   uploadTaskCount?: number;
   favoritesOpen?: boolean;
-  offlineDownloadSupported?: boolean;
   compactHome?: boolean;
 }>();
 
@@ -42,9 +40,6 @@ const createItems = computed<DropdownMenuItem[]>(() => {
     { key: "upload-file", label: "上传文件", icon: "file", type: "action" },
     { key: "upload-folder", label: "上传文件夹", icon: "folder-open", type: "action" },
   ];
-  if (props.offlineDownloadSupported) {
-    items.push({ key: "offline-download", label: "离线下载", icon: "cloud", type: "action" });
-  }
   return items;
 });
 
@@ -52,7 +47,6 @@ function onCreateSelect(key: string) {
   if (key === "create-folder") emit("create-folder");
   else if (key === "upload-file") emit("upload-file");
   else if (key === "upload-folder") emit("upload-folder");
-  else emit("offline-download");
 }
 </script>
 

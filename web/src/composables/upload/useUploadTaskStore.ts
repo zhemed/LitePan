@@ -14,7 +14,7 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   const uploadTasks = ref<UploadTask[]>([]);
   const localUploadTasks = ref<UploadTask[]>([]);
   const uploadTaskPanelOpen = ref(false);
-  const taskPanelCategory = ref<"upload" | "relay" | "offline">("upload");
+  const taskPanelCategory = ref<"upload" | "relay">("upload");
   const uploadTaskPanelLoading = ref(false);
   const uploadTaskPanelLoadingText = ref("正在准备上传任务...");
   const uploadTaskOrderMap = ref<Record<string, number>>({});

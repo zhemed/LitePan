@@ -11,11 +11,9 @@ import { showConfirm } from "@/composables/useConfirm";
 import { useUploadTasks } from "@/composables/useUploadTasks";
 import { useUploadEntryController } from "@/composables/useUploadEntryController";
 import CloudLocalUploadPanel from "@/components/file/CloudLocalUploadPanel.vue";
-import { useOfflineDownloads } from "@/composables/useOfflineDownloads";
 import { toast } from "@/composables/useToast";
 import { filesApi } from "@/api/files";
 import type { Account, BrowserFavoriteItem, FileItem, FileNameAlignPreviewResult } from "@/api/types";
-import type { OfflineDownloadTask } from "@/types/offline-download";
 import { getApiErrorMessage } from "@/api/client";
 import { useHomeFooterStatus } from "@/composables/useHomeFooterStatus";
 import { fileKind } from "@/utils/fileIcon";
@@ -34,7 +32,6 @@ import NameAlignModal from "./NameAlignModal.vue";
 import AppModal from "@/components/base/AppModal.vue";
 import AppInput from "@/components/base/AppInput.vue";
 import TaskPanel from "@/components/upload/TaskPanel.vue";
-import OfflineDownloadModal from "./OfflineDownloadModal.vue";
 
 type FocusableInput = {
   focus: () => void;
@@ -150,12 +147,6 @@ const fileActions = useFileActions({
 
 
 
-const offline = useOfflineDownloads({
-  selectedAccountId: currentAccountId,
-  currentParentId,
-  refreshFiles: () => store.loadFiles({ forceRefresh: true, silent: true }),
-  openDirectory: (accountId, crumbs, opts) => store.openDirectory(accountId, crumbs, opts),
-});
 const uploadApi = useUploadTasks({
   selectedAccountId: currentAccountId,
   selectedAccountName,
@@ -176,7 +167,6 @@ const uploadApi = useUploadTasks({
   selectAccount: (account: Account) => store.selectAccount(account.id),
   getRootId,
   getCurrentBreadcrumbNameParts,
-  refreshOfflineTasks: (refresh = true, quiet = false) => offline.fetchTasks(refresh, quiet),
 });
 const uploadEntry = useUploadEntryController({
   ensureUploadNoticeConfirmed: uploadApi.ensureUploadNoticeConfirmed,
@@ -186,39 +176,24 @@ const uploadEntry = useUploadEntryController({
   handleTerminalUploadFolderChange: uploadApi.handleUploadFolderChange,
 });
 const { uploadTaskPanelOpen } = uploadApi;
-const transferTaskText = computed(() => {
-  if (uploadApi.activeUploadTasks.value.length > 0 || uploadApi.activeRelayCount.value > 0) {
-    return uploadApi.uploadTaskLabel.value;
-  }
-  if (offline.activeTasks.value.length > 0) return `离线中 ${offline.activeTasks.value.length}`;
-  if (uploadApi.displayUploadTasks.value.length > 0) return uploadApi.uploadTaskLabel.value;
-  if (offline.failedTasks.value.length > 0) return `离线失败 ${offline.failedTasks.value.length}`;
-  if (offline.successfulTasks.value.length > 0) return `离线完成 ${offline.successfulTasks.value.length}`;
-  return uploadApi.uploadTaskLabel.value;
-});
+const transferTaskText = computed(() => uploadApi.uploadTaskLabel.value);
 
 const uploadTaskActive = computed(
-  () => uploadApi.activeUploadTasks.value.length > 0 || uploadApi.activeRelayCount.value > 0 || offline.activeTasks.value.length > 0,
+  () => uploadApi.activeUploadTasks.value.length > 0 || uploadApi.activeRelayCount.value > 0,
 );
 const uploadTaskFailed = computed(
   () =>
     uploadApi.displayUploadTasks.value.some((task) => task.status === "failed") ||
-    uploadApi.failedRelayTasks.value.length > 0 ||
-    offline.failedTasks.value.length > 0,
+    uploadApi.failedRelayTasks.value.length > 0,
 );
 const uploadTaskSuccess = computed(() =>
-  uploadApi.displayUploadTasks.value.some((task) => task.status === "success") || offline.successfulTasks.value.length > 0,
+  uploadApi.displayUploadTasks.value.some((task) => task.status === "success"),
 );
 const transferTaskCount = computed(() => {
   const active =
-    uploadApi.activeUploadTasks.value.length +
-    uploadApi.activeRelayCount.value +
-    offline.activeTasks.value.length;
+    uploadApi.activeUploadTasks.value.length + uploadApi.activeRelayCount.value;
   if (active > 0) return active;
-  return (
-    uploadApi.displayUploadTasks.value.filter((task) => task.status === "failed").length +
-    offline.failedTasks.value.length
-  );
+  return uploadApi.displayUploadTasks.value.filter((task) => task.status === "failed").length;
 });
 const showFavorites = computed(() => isAdmin.value && favoritesOpen.value);
 const currentCrumbIds = computed(() => breadcrumb.value.map((item) => item.id));
@@ -499,7 +474,7 @@ async function restoreTaskPanelFromRoute() {
     return;
   }
   try {
-    const preferredCategory = rawPanel === "relay" || rawPanel === "offline" ? rawPanel : "";
+    const preferredCategory = rawPanel === "relay" ? rawPanel : "";
     await uploadApi.openUploadTaskPanel(preferredCategory);
   } finally {
     await router.replace({ path: route.path, query: nextQuery });
@@ -507,18 +482,7 @@ async function restoreTaskPanelFromRoute() {
 }
 
 async function openTaskPanel() {
-  const preferOffline =
-    offline.tasks.value.length > 0 &&
-    uploadApi.displayUploadTasks.value.length === 0 &&
-    uploadApi.activeRelayTasks.value.length === 0 &&
-    uploadApi.failedRelayTasks.value.length === 0;
-  await uploadApi.openUploadTaskPanel(preferOffline ? "offline" : "");
-}
-
-function handleOfflineTasksCreated(tasks: OfflineDownloadTask[]) {
-  offline.registerTasks(tasks);
-  uploadApi.taskPanelCategory.value = "offline";
-  void uploadApi.openUploadTaskPanel("offline");
+  await uploadApi.openUploadTaskPanel("");
 }
 
 const initialLocation = !hasPendingBrowserLocationReset() ? loadSavedBrowserLocation() : null;
@@ -775,10 +739,6 @@ watch([currentAccountId, breadcrumb], () => {
   persistBrowserLocation();
 }, { deep: true });
 
-watch([currentAccountId, isAdmin], ([, admin]) => {
-  void offline.loadCapability(admin ? currentAccountId.value : null);
-}, { immediate: true });
-
 watch(browseAccessMode, async (mode, prevMode) => {
   if (!browserContextReady.value || mode === "pending" || mode === prevMode) return;
   await store.loadAccounts({ reconcile: true });
@@ -819,9 +779,7 @@ onMounted(async () => {
     favoritesTransitionReady.value = true;
   });
   if (isAdmin.value) {
-    void Promise.allSettled([
-      uploadApi.fetchUploadTasks(),
-      offline.fetchTasks(false, true),    ]);
+    void uploadApi.fetchUploadTasks();
   }
   browserContextReady.value = true;
   void restoreTaskPanelFromRoute();
@@ -905,14 +863,12 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
         :upload-task-label="transferTaskText"
         :upload-task-count="transferTaskCount"
         :favorites-open="favoritesOpen"
-        :offline-download-supported="offline.capability.value?.supported"
         :compact-home="compactHomeEnabled"
         @refresh="store.refreshFiles"
         @update:view="setView"
         @create-folder="startCreateFolder"
         @upload-file="uploadEntry.handleUploadFile"
         @upload-folder="uploadEntry.handleUploadFolder"
-        @offline-download="offline.openModal"
         @open-upload-tasks="openTaskPanel"
         @toggle-favorites="store.toggleFavoritesOpen"
       >
@@ -1087,19 +1043,7 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
       @pick-folder="uploadFolderInput?.click()"
     />
 
-    <OfflineDownloadModal
-      :open="offline.modalOpen.value"
-      :account-id="currentAccountId"
-      :account-name="selectedAccountName"
-      :capability="offline.capability.value"
-      :current-parent-id="currentParentId"
-      :current-display-path="getCurrentDisplayPath()"
-      :breadcrumb="breadcrumb"
-      @close="offline.closeModal"
-      @created="handleOfflineTasksCreated"
-    />
-
-    <TaskPanel v-if="uploadTaskPanelOpen" :upload-api="uploadApi" :offline="offline" />
+    <TaskPanel v-if="uploadTaskPanelOpen" :upload-api="uploadApi" />
 
     <FilePreviewHost
       v-if="activePreview && currentAccountId != null"

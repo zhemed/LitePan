@@ -31,7 +31,6 @@ import (
 	"litepan/internal/fusemount"
 	"litepan/internal/logx"
 	"litepan/internal/notification"
-	"litepan/internal/offlinedownload"
 	"litepan/internal/playback"
 	"litepan/internal/settings"
 	"litepan/internal/upload"
@@ -50,11 +49,10 @@ type Deps struct {
 	Settings          *settings.Service
 	Cache             *cache.Service
 	ListHitTracker    *cache.HitTracker
-	Files             *file.Service
-	Favorites         *favorites.Service
-	Uploads           *upload.Manager
-	OfflineDownloads  *offlinedownload.Service
-	Playback          *playback.Service
+	Files      *file.Service
+	Favorites  *favorites.Service
+	Uploads    *upload.Manager
+	Playback   *playback.Service
 	Automation        *automation.Service
 	Fuse              *fusemount.Service
 	ApiKeys           *apikey.Service
@@ -77,11 +75,10 @@ type Handler struct {
 	settings          *settings.Service
 	cache             *cache.Service
 	listHits          *cache.HitTracker
-	files             *file.Service
-	favorites         *favorites.Service
-	uploads           *upload.Manager
-	offlineDownloads  *offlinedownload.Service
-	playback          *playback.Service
+	files     *file.Service
+	favorites *favorites.Service
+	uploads   *upload.Manager
+	playback  *playback.Service
 	automation        *automation.Service
 	fuse              *fusemount.Service
 	apiKeys           *apikey.Service
@@ -113,10 +110,9 @@ func NewRouter(d Deps) http.Handler {
 		cache:             d.Cache,
 		listHits:          d.ListHitTracker,
 		files:             d.Files,
-		favorites:         d.Favorites,
-		uploads:           d.Uploads,
-		offlineDownloads:  d.OfflineDownloads,
-		playback:          d.Playback,
+		favorites: d.Favorites,
+		uploads:   d.Uploads,
+		playback:  d.Playback,
 		automation:        d.Automation,
 		fuse:              d.Fuse,
 		apiKeys:           d.ApiKeys,
@@ -271,16 +267,6 @@ func NewRouter(d Deps) http.Handler {
 				r.Post("/upload/tasks/{taskID}/resume", h.resumeUploadTask)
 				r.Delete("/upload/tasks/{taskID}", h.deleteUploadTask)
 				r.Post("/upload/tasks/batch-delete", h.batchDeleteUploadTasks)
-				r.Route("/offline-download", func(r chi.Router) {
-					r.Get("/capabilities", h.offlineDownloadCapabilities)
-					r.Post("/urls", h.addOfflineURLs)
-					r.Post("/torrent/prepare", h.prepareOfflineTorrent)
-					r.Post("/torrent", h.addOfflineTorrent)
-					r.Get("/tasks", h.listOfflineDownloadTasks)
-					r.Post("/tasks/refresh", h.refreshOfflineDownloadTasks)
-					r.Post("/tasks/batch-delete", h.batchDeleteOfflineDownloadTasks)
-					r.Delete("/tasks/{taskID}", h.deleteOfflineDownloadTask)
-				})
 			})
 		})
 	})

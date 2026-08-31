@@ -91,7 +91,6 @@ func (db *DB) SanitizePortableBackup(ctx context.Context) error {
 	}
 	statements := []string{
 		`DELETE FROM upload_tasks`,
-		`DELETE FROM offline_download_tasks`,
 		`DELETE FROM notifications`,
 		`DELETE FROM automation_runs`,
 		`UPDATE media_organize_tasks SET status='idle', last_run_at=NULL, last_run_result=''`,
