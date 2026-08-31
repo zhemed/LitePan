@@ -69,3 +69,35 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 58: Remove cross disk download
+<!-- trellis-session: v=2 fp=5dff022b453c4fba -->
+
+**Date**: 2026-09-01
+**Task**: Remove cross disk download
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+移除跨盘下载 0.0.10
+
+### Main Changes
+
+- 8后端+3前端
+- cross_transfer 81+8
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9004274` | refactor: remove cross disk download and bump to 0.0.10 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 105MB
+
+### Status
+
+[OK] **Completed**
