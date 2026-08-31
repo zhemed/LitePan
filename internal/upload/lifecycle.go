@@ -29,11 +29,7 @@ func (m *Manager) Pause(_ context.Context, taskID string) (*Task, bool) {
 	st.Status = StatusPaused
 	st.resumePriority = false
 	st.SpeedBytesPerSecond = 0
-	if st.SourceType == SourceTypeCrossTransfer && st.Phase == PhaseDownloading {
-		st.Message = "源盘下载已暂停"
-	} else {
-		st.Message = "上传已暂停"
-	}
+	st.Message = "上传已暂停"
 	st.Error = ""
 	st.UpdatedAt = timeutil.UnixFloat(time.Now())
 	cancel := st.cancel
@@ -117,10 +113,6 @@ func (m *Manager) Resume(ctx context.Context, taskID string) (*Task, bool) {
 		st.Progress = progress
 		st.UploadedBytes = uploaded
 		st.Message = "准备继续上传"
-	} else if st.SourceType == SourceTypeCrossTransfer && st.Phase == PhaseDownloading {
-		st.Progress = progressForBytes(st.DownloadedBytes, st.TotalBytes)
-		st.UploadedBytes = 0
-		st.Message = "准备继续源盘下载"
 	} else {
 		st.Progress = 0
 		st.UploadedBytes = 0

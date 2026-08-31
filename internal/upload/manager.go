@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -53,7 +52,6 @@ type Manager struct {
 	queueOrder             int
 	limit                  int
 	runningUploads         int
-	runningDownloads       int
 	runCond                sync.Cond
 	subs                   map[chan []byte]struct{}
 	broadcastPending       bool
@@ -298,25 +296,17 @@ func (m *Manager) newTaskStateLocked(p CreateParams) *taskState {
 	}
 	phase := p.Phase
 	if phase == "" {
-		if sourceType == SourceTypeCrossTransfer {
-			phase = PhaseDownloading
-		} else {
-			phase = PhaseUploading
-		}
+		phase = PhaseUploading
 	}
 	now := time.Now()
 	m.queueOrder++
 	order := m.queueOrder
 	id := newTaskID()
 	localPath := p.LocalPath
-	if localPath == "" && sourceType == SourceTypeCrossTransfer {
-		localPath = filepath.Join(m.TempDir(), id+filepath.Ext(name))
-	}
 	cleanupLocalMode := p.CleanupLocalMode
 	cleanupLocalPath := p.CleanupLocalPath
 	if cleanupLocalMode == "" && localPath != "" {
-		switch sourceType {
-		case SourceTypeManual, SourceTypeCrossTransfer:
+		if sourceType == SourceTypeManual {
 			cleanupLocalMode = CleanupLocalFileOnSuccess
 		}
 	}
@@ -324,10 +314,7 @@ func (m *Manager) newTaskStateLocked(p CreateParams) *taskState {
 		cleanupLocalPath = localPath
 	}
 	message := "等待上传"
-	switch sourceType {
-	case SourceTypeCrossTransfer:
-		message = "等待源盘下载"
-	case SourceTypeOfflineHandoff:
+	if sourceType == SourceTypeOfflineHandoff {
 		message = "等待离线文件上传"
 	}
 	st := &taskState{
@@ -519,10 +506,7 @@ func (m *Manager) RemoveTasksByAccount(ctx context.Context, accountID int64) (in
 	m.mu.Lock()
 	ids := make([]string, 0)
 	for id, st := range m.tasks {
-		usesTarget := st.AccountID == accountID
-		usesSource := st.SourceType == SourceTypeCrossTransfer &&
-			st.SourceAccountID == accountID && st.Phase == PhaseDownloading
-		if usesTarget || usesSource {
+		if st.AccountID == accountID {
 			ids = append(ids, id)
 		}
 	}

@@ -191,9 +191,8 @@ import { formatSize } from "@/utils/format";
 import type { UploadTask } from "@/types/upload";
 import type { useUploadTasks } from "@/composables/useUploadTasks";
 
-type CategoryKey = "upload" | "relay";
+type CategoryKey = "upload";
 type StateKey = "active" | "done" | "failed";
-type RelayStateKey = "active" | "failed";
 
 type PanelRow = {
   id: string;
@@ -239,10 +238,6 @@ const {
   closeUploadTaskPanel,
   refreshUploadTaskServerConcurrency,
   formatUploadPart,
-  getRelayTaskDriverBadge,
-  handleDeleteRelayTasks,
-  formatRelaySpeed,
-  formatRelayPart,
 } = api;
 
 const taskPanelCategory = computed({
@@ -264,7 +259,6 @@ const settingsOpen = ref(false);
 const panelExpanded = ref(false);
 const selectedTaskIds = ref<Set<string>>(new Set());
 const uploadStateFilter = ref<StateKey>("active");
-const relayStateFilter = ref<RelayStateKey>("active");
 const panelRoot = ref<HTMLElement | null>(null);
 
 function useFullscreenPanelLayout() {
@@ -304,22 +298,11 @@ function onDocumentClick(event: MouseEvent) {
   settingsOpen.value = false;
 }
 
-const uploadTasks = computed<UploadTask[]>(() =>
-  (displayUploadTasks?.value || []).filter(
-    (task: UploadTask) => !(task.source_type === "cross_transfer" && task.phase === "downloading"),
-  ),
-);
-const relayTasks = computed<UploadTask[]>(() => api.relayTasks.value || []);
+const uploadTasks = computed<UploadTask[]>(() => (displayUploadTasks?.value || []) as UploadTask[]);
 
 function uploadStateOf(task: UploadTask): StateKey {
   const status = uploadDisplayStatus(task);
   if (status === "success" || status === "skipped") return "done";
-  if (status === "failed" || status === "canceled") return "failed";
-  return "active";
-}
-
-function relayStateOf(task: UploadTask): StateKey {
-  const status = relayDisplayStatus(task);
   if (status === "failed" || status === "canceled") return "failed";
   return "active";
 }
@@ -378,15 +361,6 @@ function uploadStageLabel(message: string) {
   return "";
 }
 
-function relayStatusLabel(task: UploadTask, status = String(task.status || "")) {
-  if (status === "running") return `跨盘下载中（${clampProgress(task.progress || 0).toFixed(1)}%）`;
-  if (status === "pending") return "等待下载";
-  if (status === "paused") return "已暂停";
-  if (status === "failed") return "下载失败";
-  if (status === "canceled") return "已取消";
-  return "等待下载";
-}
-
 function uploadDisplayStatus(task: UploadTask) {
   return String(typeof getUploadTaskDisplayStatus === "function" ? getUploadTaskDisplayStatus(task) : task.status || "");
 }
@@ -396,24 +370,6 @@ function uploadResumePending(task: UploadTask) {
   const phaseLabel = typeof getUploadTaskPhaseLabel === "function" ? getUploadTaskPhaseLabel(task) : "";
   if (phaseLabel === "等待继续") return true;
   return String(task.message || "").includes("准备继续");
-}
-
-function relayDisplayStatus(task: UploadTask) {
-  return uploadDisplayStatus(task);
-}
-
-function relayResumePending(task: UploadTask) {
-  return uploadResumePending(task);
-}
-
-function relayStatusClass(task: UploadTask) {
-  const status = relayDisplayStatus(task);
-  if (status === "running") return "downloading";
-  if (status === "pending") return "pending";
-  if (status === "paused") return "paused";
-  if (status === "failed") return "failed";
-  if (status === "canceled") return "canceled";
-  return "downloaded";
 }
 
 function stripChunkDetail(message: string) {
@@ -429,16 +385,6 @@ function uploadStatusDetail(task: UploadTask) {
   const message = stripChunkDetail(String(task.message || "").trim());
   if (message && !details.includes(message)) details.push(message);
   const part = details.length === 0 && typeof formatUploadPart === "function" ? formatUploadPart(task) : "";
-  if (part && !details.includes(part)) details.push(part);
-  return details.join(" · ");
-}
-
-function relayStatusDetail(task: UploadTask) {
-  const details: string[] = [];
-  if (task.error) details.push(String(task.error));
-  const message = stripChunkDetail(String(task.message || "").trim());
-  if (message && !details.includes(message)) details.push(message);
-  const part = details.length === 0 && typeof formatRelayPart === "function" ? formatRelayPart(task) : "";
   if (part && !details.includes(part)) details.push(part);
   return details.join(" · ");
 }
@@ -459,9 +405,7 @@ function buildUploadRow(task: UploadTask): PanelRow {
     raw: task,
     name: task.file_name,
     source:
-      task.source_type === "cross_transfer"
-        ? "跨盘接棒"
-        : task.source_type === "offline_handoff"
+      task.source_type === "offline_handoff"
           ? "离线接棒"
           : task.source_type === "server_local"
             ? "服务器上传"
@@ -483,53 +427,17 @@ function buildUploadRow(task: UploadTask): PanelRow {
   };
 }
 
-function buildRelayRow(task: UploadTask): PanelRow {
-  const badge = getRelayTaskDriverBadge(task);
-  const speed = formatRelaySpeed(task) || "---";
-  const status = relayDisplayStatus(task);
-  return {
-    id: task.task_id,
-    kind: "relay",
-    raw: task,
-    name: task.file_name,
-    source: task.source_account_name || "源盘",
-    status: relayStatusLabel(task, status),
-    statusDetail: relayStatusDetail(task),
-    statusClass: relayStatusClass(task),
-    tail: speed,
-    tailActive: speed !== "---",
-    progress: Number(task.progress || 0),
-    progressClass: "downloading",
-    showProgress: ["pending", "running", "paused"].includes(status) && Number(task.progress || 0) > 0,
-    sortOrder: relayTaskOrder(task),
-    badgeLogo: badge.logo || "",
-    badgeName: String(badge.name || "网盘").slice(0, 2),
-    badgeColor: badge.color || "#7b8697",
-    searchText: [task.file_name, task.source_account_name, task.account_name, task.target_display_path, task.message, task.error].join(" "),
-  };
-}
-
 const uploadRows = computed(() => uploadTasks.value.map(buildUploadRow));
-const relayRows = computed(() => relayTasks.value.map(buildRelayRow));
 
-function stateFilterOf(category: CategoryKey) {
-  if (category === "upload") return uploadStateFilter.value;
-  return relayStateFilter.value;
+function stateFilterOf(_category: CategoryKey) {
+  return uploadStateFilter.value;
 }
 
-const baseRows = computed(() => {
-  if (taskPanelCategory.value === "upload") return uploadRows.value;
-  return relayRows.value;
-});
+const baseRows = computed(() => uploadRows.value);
 
 const currentRows = computed(() =>
   [...baseRows.value]
-    .filter((row) => {
-      const filter = stateFilterOf(taskPanelCategory.value);
-      if (taskPanelCategory.value === "upload" && uploadStateOf(row.raw) !== filter) return false;
-      if (taskPanelCategory.value === "relay" && relayStateOf(row.raw) !== filter) return false;
-      return true;
-    })
+    .filter((row) => uploadStateOf(row.raw) === stateFilterOf(taskPanelCategory.value))
     .sort((a, b) => a.sortOrder - b.sortOrder),
 );
 
@@ -551,16 +459,7 @@ const detailBarVisible = computed(() => Boolean(detailRow.value));
 
 function resolveUploadTaskForRow(row: PanelRow): UploadTask | null {
   if (row.kind === "upload") return row.raw as UploadTask;
-  if (row.kind === "relay") {
-    return row.raw as UploadTask;
-  }
   return null;
-}
-
-function focusUploadTask(task: UploadTask) {
-  taskPanelCategory.value = "upload";
-  uploadStateFilter.value = uploadStateOf(task);
-  selectedTaskIds.value = new Set([getUploadTaskStableKey(task)]);
 }
 
 const selectedToggleTasks = computed(() =>
@@ -586,21 +485,15 @@ const tailColumnLabel = computed(() => {
 });
 
 const emptyText = computed(() => {
-  if (taskPanelCategory.value === "upload") {
-    return uploadStateFilter.value === "done" ? "暂无已完成上传任务" : uploadStateFilter.value === "failed" ? "暂无失败上传任务" : "暂无进行中的上传任务";
-  }
-  return relayStateFilter.value === "failed" ? "暂无失败跨盘任务" : "暂无进行中的跨盘任务";
+  return uploadStateFilter.value === "done" ? "暂无已完成上传任务" : uploadStateFilter.value === "failed" ? "暂无失败上传任务" : "暂无进行中的上传任务";
 });
 
 const showLoading = computed(() => taskPanelCategory.value === "upload" && uploadTaskPanelLoading?.value);
 const loadingText = computed(() => uploadTaskPanelLoadingText?.value || "正在加载上传任务...");
 
-function countByState(category: CategoryKey, state: StateKey) {
-  const rows = category === "upload" ? uploadRows.value : relayRows.value;
-  return rows.filter((row) => {
-    if (category === "upload") return uploadStateOf(row.raw) === state;
-    return relayStateOf(row.raw) === state;
-  }).length;
+function countByState(_category: CategoryKey, state: StateKey) {
+  const rows = uploadRows.value;
+  return rows.filter((row) => uploadStateOf(row.raw) === state).length;
 }
 
 const navCategories = computed(() => [
@@ -614,17 +507,7 @@ const navCategories = computed(() => [
       { key: "done", label: "已完成", count: countByState("upload", "done"), active: uploadStateFilter.value === "done", onClick: () => { uploadStateFilter.value = "done"; } },
       { key: "failed", label: "失　败", count: countByState("upload", "failed"), active: uploadStateFilter.value === "failed", onClick: () => { uploadStateFilter.value = "failed"; } },
     ],
-  },
-  {
-    key: "relay" as const,
-    label: "跨盘下载",
-    icon: "relay",
-    count: countByState("relay", "active"),
-    states: [
-      { key: "active", label: "进行中", count: countByState("relay", "active"), active: relayStateFilter.value === "active", onClick: () => { relayStateFilter.value = "active"; } },
-      { key: "failed", label: "失　败", count: countByState("relay", "failed"), active: relayStateFilter.value === "failed", onClick: () => { relayStateFilter.value = "failed"; } },
-    ],
-  },
+  }
 ]);
 
 const detailPrimary = computed(() => {
@@ -655,18 +538,6 @@ const detailExtra = computed(() => {
     }
     return details.join(" · ");
   }
-  if (row.kind === "relay") {
-    const targetPath = String(row.raw?.target_display_path || "").trim();
-    if (targetPath) details.push(`目标 ${targetPath}`);
-    const part = typeof formatRelayPart === "function" ? formatRelayPart(row.raw) : "";
-    if (part) details.push(part);
-    const downloaded = Number(row.raw?.downloaded_bytes || 0);
-    const total = Number(row.raw?.total_bytes || 0);
-    if (total > 0 && downloaded > 0) {
-      details.push(`${formatSize(downloaded)} / ${formatSize(total)}`);
-    }
-    return details.join(" · ");
-  }
   return details.join(" · ");
 });
 
@@ -684,9 +555,6 @@ function handleRowClick(event: MouseEvent, rowId: string) {
 function showStatusPulse(row: PanelRow) {
   if (row.kind === "upload") {
     return row.statusClass === "pending" || row.statusClass === "running";
-  }
-  if (row.kind === "relay") {
-    return row.statusClass === "pending" || row.statusClass === "downloading";
   }
   return false;
 }
@@ -728,21 +596,13 @@ async function handleSelectedToggle() {
 async function handleSelectedDelete() {
   const rows = [...selectedRows.value];
   if (!rows.length) return;
-  if (taskPanelCategory.value === "upload") {
-    await handleDeleteUploadTasks(rows.map((row) => row.raw as UploadTask));
-  } else if (taskPanelCategory.value === "relay") {
-    await handleDeleteRelayTasks(rows.map((row) => row.id));
-  }
+  await handleDeleteUploadTasks(rows.map((row) => row.raw as UploadTask));
   selectedTaskIds.value = new Set();
 }
 
 async function handleRowAction(row: PanelRow) {
   const task = resolveUploadTaskForRow(row);
   if (task) {
-    if (row.kind === "relay" && row.raw?.phase !== "downloading") {
-      focusUploadTask(task);
-      return;
-    }
     await handleUploadTaskPrimaryAction(task);
     return;
   }
@@ -753,19 +613,12 @@ function clampProgress(value: number) {
 }
 
 function uploadTransferredBytes(task: UploadTask) {
-  if (task.source_type === "cross_transfer") {
-    if (task.phase === "downloading") {
-      return Number(task.downloaded_bytes || 0);
-    }
-    return Number(task.uploaded_bytes || 0);
-  }
   return Number(task.uploaded_bytes || 0);
 }
 
 function useSmoothUploadProgress(row: PanelRow) {
   if (row.kind !== "upload") return false;
   const task = row.raw as UploadTask;
-  if (task.source_type === "cross_transfer") return false;
   return Number(task.total_bytes || 0) > 0 && ["pending", "running", "paused"].includes(task.status);
 }
 
@@ -795,20 +648,6 @@ function taskOrder(task: UploadTask) {
   return rank * 1_000_000_000_000 + (order > 0 ? order : created);
 }
 
-function relayTaskOrder(task: any) {
-  const rank = relayStatusRank(task);
-  const order = Number(task.queue_order || 0);
-  const created = Number(task.created_at || 0);
-  const updated = Number(task.updated_at || created || 0);
-  if (relayResumePending(task)) {
-    return rank * 1_000_000_000_000 - updated;
-  }
-  if (relayDisplayStatus(task) === "paused") {
-    return rank * 1_000_000_000_000 + updated;
-  }
-  return rank * 1_000_000_000_000 + (order > 0 ? order : created);
-}
-
 function uploadStatusRank(task: UploadTask) {
   const status = uploadDisplayStatus(task);
   if (status === "running") return 0;
@@ -820,17 +659,6 @@ function uploadStatusRank(task: UploadTask) {
   if (status === "success") return 6;
   if (status === "skipped") return 7;
   return 9;
-}
-
-function relayStatusRank(task: any) {
-  const status = relayDisplayStatus(task);
-  if (status === "running") return 0;
-  if (relayResumePending(task)) return 1;
-  if (status === "paused") return 2;
-  if (status === "pending") return 3;
-  if (status === "failed") return 4;
-  if (status === "canceled") return 5;
-  return 6;
 }
 
 onMounted(() => {

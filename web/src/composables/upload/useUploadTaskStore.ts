@@ -14,7 +14,7 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   const uploadTasks = ref<UploadTask[]>([]);
   const localUploadTasks = ref<UploadTask[]>([]);
   const uploadTaskPanelOpen = ref(false);
-  const taskPanelCategory = ref<"upload" | "relay">("upload");
+  const taskPanelCategory = ref<"upload">("upload");
   const uploadTaskPanelLoading = ref(false);
   const uploadTaskPanelLoadingText = ref("正在准备上传任务...");
   const uploadTaskOrderMap = ref<Record<string, number>>({});
@@ -83,33 +83,14 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     });
   });
 
-  const relayTasks = computed(() =>
-    displayUploadTasks.value.filter(
-      (task) => task.source_type === "cross_transfer" && task.phase === "downloading",
-    ),
-  );
-
-  const activeRelayTasks = computed(() =>
-    relayTasks.value.filter((task) => ["pending", "running", "paused"].includes(task.status)),
-  );
-
-  const failedRelayTasks = computed(() =>
-    relayTasks.value.filter((task) => ["failed", "canceled"].includes(task.status)),
-  );
-
-  const activeRelayCount = computed(() => activeRelayTasks.value.length);
-
   const activeUploadTasks = computed(() =>
     displayUploadTasks.value.filter(
-      (task) =>
-        !(task.source_type === "cross_transfer" && task.phase === "downloading") &&
-        (task.status === "pending" || task.status === "running"),
+      (task) => task.status === "pending" || task.status === "running",
     ),
   );
   const uploadTaskBadgeText = computed(() => {
     const running = activeUploadTasks.value.length;
     if (running > 0) return `上传中 ${running}`;
-    if (activeRelayCount.value > 0) return `跨盘中 ${activeRelayCount.value}`;
     const failed = displayUploadTasks.value.filter((t) => t.status === "failed").length;
     if (failed > 0) return `失败 ${failed}`;
     const paused = displayUploadTasks.value.filter((t) => t.status === "paused").length;
@@ -257,14 +238,10 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     localDispatchingTaskIds,
     pendingRemoteResumeTaskIds,
     hiddenUploadTaskKeys,
-    relayTasks,
     pendingDirRefreshBatches,
     registerDirRefreshBatch,
     markDirRefreshBatchCreated,
     resolveDirRefreshBatch,
-    activeRelayTasks,
-    failedRelayTasks,
-    activeRelayCount,
     displayUploadTasks,
     activeUploadTasks,
     uploadTaskLabel,

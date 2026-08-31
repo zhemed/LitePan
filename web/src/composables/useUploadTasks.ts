@@ -1,6 +1,4 @@
 import {
-  formatRelayPart,
-  formatRelaySpeed,
   formatUploadPart,
   getUploadTaskDriverBadge,
   getUploadTaskDisplayStatus,
@@ -104,20 +102,6 @@ export function useUploadTasks(deps: UploadTaskDeps) {
     task: Parameters<typeof getUploadTaskDriverBadge>[0],
   ) => getUploadTaskDriverBadge(task, deps.accounts.value);
 
-  const getRelayTaskDriverBadge = (task: {
-    source_driver_type?: string;
-    source_account_id?: number;
-    source_account_name?: string;
-  }) =>
-    getUploadTaskDriverBadge(
-      {
-        driver_type: task.source_driver_type,
-        account_id: task.source_account_id ?? 0,
-        account_name: task.source_account_name,
-      },
-      deps.accounts.value,
-    );
-
   return {
     uploadTaskPanelOpen: store.uploadTaskPanelOpen,
     taskPanelCategory: store.taskPanelCategory,
@@ -156,14 +140,6 @@ export function useUploadTasks(deps: UploadTaskDeps) {
     handleUploadFolderChange,
     fetchUploadTasks: stream.fetchUploadTasks,
     refreshUploadTaskServerConcurrency: stream.refreshUploadTaskServerConcurrency,
-    getRelayTaskDriverBadge,
-    handleDeleteRelayTasks: actions.handleDeleteRelayTasks,
-    formatRelaySpeed,
-    formatRelayPart,
-    activeRelayTasks: store.activeRelayTasks,
-    failedRelayTasks: store.failedRelayTasks,
-    activeRelayCount: store.activeRelayCount,
-    relayTasks: store.relayTasks,
     cleanupUploadTasks: stream.cleanupUploadTasks,
   };
 }

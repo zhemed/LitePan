@@ -100,13 +100,7 @@ func uploadNeedsLocalFile(st *taskState) bool {
 	case StatusSuccess, StatusSkipped:
 		return false
 	}
-	if st.SourceType != SourceTypeCrossTransfer {
-		return true
-	}
-	if st.Phase == PhaseUploading {
-		return true
-	}
-	return len(st.resumeData) > 0 || st.UploadedBytes > 0
+	return true
 }
 
 func recordFromState(st *taskState) *domain.UploadTaskRecord {
@@ -217,17 +211,12 @@ func stateFromRecord(row *domain.UploadTaskRecord) *taskState {
 		st.CleanupLocalPath = st.localPath
 	}
 	if st.CleanupLocalMode == "" && st.localPath != "" {
-		switch st.SourceType {
-		case SourceTypeManual, SourceTypeCrossTransfer:
+		if st.SourceType == SourceTypeManual {
 			st.CleanupLocalMode = CleanupLocalFileOnSuccess
 		}
 	}
 	if st.Phase == "" {
-		if st.SourceType == SourceTypeCrossTransfer {
-			st.Phase = PhaseDownloading
-		} else {
-			st.Phase = PhaseUploading
-		}
+		st.Phase = PhaseUploading
 	}
 	return st
 }

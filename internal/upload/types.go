@@ -58,7 +58,6 @@ const (
 
 const (
 	SourceTypeManual         = "manual"
-	SourceTypeCrossTransfer  = "cross_transfer"
 	SourceTypeOfflineHandoff = "offline_handoff"
 	// 服务器本地上传，删除任务时保留用户源文件。
 	SourceTypeServerLocal = "server_local"

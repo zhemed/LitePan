@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"litepan/internal/domain"
 	"litepan/pkg/speedsmoother"
 )
 
@@ -182,76 +181,4 @@ func TestUpdateProgressSlicePhaseDoesNotSpike(t *testing.T) {
 	}
 }
 
-func TestUpdateDownloadProgressDebouncesPersist(t *testing.T) {
-	repo := &failingUploadTaskRepo{rows: make(map[string]*domain.UploadTaskRecord)}
-	m := NewManager(Options{Repo: repo, DataDir: t.TempDir()})
-	const id = "task-download"
-	m.mu.Lock()
-	m.tasks[id] = &taskState{
-		Task: Task{
-			TaskID:     id,
-			Status:     StatusRunning,
-			Phase:      PhaseDownloading,
-			TotalBytes: 1000,
-		},
-		runDone: make(chan struct{}),
-	}
-	m.mu.Unlock()
 
-	m.updateDownloadProgress(id, 100, 1000, "正在从源盘下载", 10)
-	m.updateDownloadProgress(id, 200, 1000, "正在从源盘下载", 20)
-
-	repo.mu.Lock()
-	if repo.upserts != 1 {
-		repo.mu.Unlock()
-		t.Fatalf("upserts=%d, want 1", repo.upserts)
-	}
-	if got := repo.rows[id]; got == nil || got.DownloadedBytes != 100 {
-		repo.mu.Unlock()
-		t.Fatalf("persisted downloaded=%v, want 100", got)
-	}
-	repo.mu.Unlock()
-
-	got, ok := m.Get(context.Background(), id)
-	if !ok {
-		t.Fatal("task not found")
-	}
-	if got.DownloadedBytes != 200 || got.Progress != 20 {
-		t.Fatalf("memory progress=%d downloaded=%d", got.Progress, got.DownloadedBytes)
-	}
-
-	m.mu.Lock()
-	m.tasks[id].lastEmit = time.Now().Add(-downloadPersistInterval)
-	m.mu.Unlock()
-	m.updateDownloadProgress(id, 300, 1000, "正在从源盘下载", 30)
-
-	repo.mu.Lock()
-	if repo.upserts != 2 {
-		repo.mu.Unlock()
-		t.Fatalf("upserts=%d, want 2 after debounce window", repo.upserts)
-	}
-	if got := repo.rows[id]; got == nil || got.DownloadedBytes != 300 {
-		repo.mu.Unlock()
-		t.Fatalf("persisted downloaded=%v, want 300", got)
-	}
-	repo.mu.Unlock()
-
-	m.updateDownloadProgress(id, 400, 1000, "正在从源盘下载", 40)
-	m.finishCrossTransferDownloadError(context.Background(), id, "boom")
-
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if repo.upserts != 3 {
-		t.Fatalf("upserts=%d, want 3 after final state persist", repo.upserts)
-	}
-	rec := repo.rows[id]
-	if rec == nil {
-		t.Fatal("persisted record missing")
-	}
-	if rec.Status != StatusFailed {
-		t.Fatalf("status=%q want failed", rec.Status)
-	}
-	if rec.DownloadedBytes != 400 {
-		t.Fatalf("downloaded=%d want 400", rec.DownloadedBytes)
-	}
-}

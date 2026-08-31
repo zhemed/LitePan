@@ -18,13 +18,11 @@ type VisibleDeleteTarget = {
 export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => void) {
   const { deps, store, stream, dispatcher } = ctx;
 
-  function getPendingResumeMessage(task: UploadTask) {
-    if (task.source_type === "cross_transfer" && task.phase === "downloading") return "等待下载";
+  function getPendingResumeMessage(_task: UploadTask) {
     return "等待上传";
   }
 
-  function getPausedMessage(task: UploadTask) {
-    if (task.source_type === "cross_transfer" && task.phase === "downloading") return "已暂停";
+  function getPausedMessage(_task: UploadTask) {
     return "上传已暂停";
   }
 
@@ -346,27 +344,3 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
   };
 }
 
-export function useUploadRelayActions(ctx: UploadActionsCtx) {
-  async function handleDeleteRelayTasks(ids: string[]) {
-    if (!ids.length) return;
-    try {
-      const relayTaskIds = new Set(ctx.store.relayTasks.value.map((task) => String(task.task_id)));
-      const taskIds = ids.map(String).filter((id) => relayTaskIds.has(id));
-      if (!taskIds.length) return;
-      const result = await uploadApi.batchDelete(taskIds, false);
-      for (const taskId of result.deleted_task_ids || []) {
-        ctx.store.removeRemoteUploadTask(String(taskId));
-      }
-      void ctx.stream.fetchUploadTasks();
-      if ((result.failed_task_ids || []).length > 0) {
-        toast.warning(`已删除 ${result.deleted_task_ids.length} 个跨盘任务，${result.failed_task_ids.length} 个失败`);
-        return;
-      }
-      toast.success("跨盘任务已删除");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "删除跨盘任务失败");
-    }
-  }
-
-  return { handleDeleteRelayTasks };
-}

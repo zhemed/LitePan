@@ -1,7 +1,7 @@
 import type { LocalUploadDispatcher } from "@/composables/upload/useLocalUploadDispatcher";
 import type { UploadTaskStream } from "@/composables/upload/useUploadTaskStream";
 import type { UploadTaskStore } from "@/composables/upload/useUploadTaskStore";
-import { useUploadBatchActions, useUploadRelayActions } from "@/composables/upload/useUploadBatchActions";
+import { useUploadBatchActions } from "@/composables/upload/useUploadBatchActions";
 import { useUploadFileInput } from "@/composables/upload/useUploadFileInput";
 import { useUploadFolderPlanner } from "@/composables/upload/useUploadFolderPlanner";
 import {
@@ -21,13 +21,11 @@ export function useUploadTaskActions(
   const fileInput = useUploadFileInput(ctx);
   const folderPlanner = useUploadFolderPlanner(ctx);
   const batch = useUploadBatchActions(ctx, panel.closeUploadTaskPanel);
-  const relay = useUploadRelayActions(ctx);
 
   return {
     ...panel,
     ...fileInput,
     ...folderPlanner,
     ...batch,
-    ...relay,
   };
 }

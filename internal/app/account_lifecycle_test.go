@@ -87,13 +87,13 @@ func TestAccountLifecycleDeleteRemovesRelatedUploadTasks(t *testing.T) {
 		},
 		{
 			TaskID: "source-download", AccountID: 22, AccountName: "保留目标盘", DriverType: "mock",
-			FileName: "source-download.bin", SourceType: upload.SourceTypeCrossTransfer, SourceAccountID: 11,
-			Status: upload.StatusFailed, Phase: upload.PhaseDownloading, LocalPath: paths["source-download"],
+			FileName: "source-download.bin", SourceType: upload.SourceTypeManual, SourceAccountID: 11,
+			Status: upload.StatusFailed, Phase: upload.PhaseUploading, LocalPath: paths["source-download"],
 			CleanupLocalMode: upload.CleanupLocalFileOnSuccess, CleanupLocalPath: paths["source-download"], CreatedAt: 2, UpdatedAt: 2,
 		},
 		{
 			TaskID: "source-upload", AccountID: 22, AccountName: "保留目标盘", DriverType: "mock",
-			FileName: "source-upload.bin", SourceType: upload.SourceTypeCrossTransfer, SourceAccountID: 11,
+			FileName: "source-upload.bin", SourceType: upload.SourceTypeManual, SourceAccountID: 11,
 			Status: upload.StatusFailed, Phase: upload.PhaseUploading, LocalPath: paths["source-upload"],
 			CleanupLocalMode: upload.CleanupLocalFileOnSuccess, CleanupLocalPath: paths["source-upload"], CreatedAt: 3, UpdatedAt: 3,
 		},
@@ -109,15 +109,25 @@ func TestAccountLifecycleDeleteRemovesRelatedUploadTasks(t *testing.T) {
 		t.Fatal(err)
 	}
 	remaining := uploads.List(ctx, 0)
-	if len(remaining) != 1 || remaining[0].TaskID != "source-upload" {
+	if len(remaining) != 2 {
 		t.Fatalf("账号删除后的上传任务不正确: %#v", remaining)
 	}
-	for _, key := range []string{"target", "source-download"} {
-		if _, err := os.Stat(paths[key]); !os.IsNotExist(err) {
-			t.Fatalf("关联任务本地文件 %s 未清理: %v", key, err)
-		}
+	ids := map[string]struct{}{}
+	for _, task := range remaining {
+		ids[task.TaskID] = struct{}{}
 	}
-	if _, err := os.Stat(paths["source-upload"]); err != nil {
-		t.Fatalf("已进入目标盘上传阶段的任务不应因源账号删除而清理: %v", err)
+	if _, ok := ids["source-download"]; !ok {
+		t.Fatalf("source-download 任务应保留: %#v", remaining)
+	}
+	if _, ok := ids["source-upload"]; !ok {
+		t.Fatalf("source-upload 任务应保留: %#v", remaining)
+	}
+	if _, err := os.Stat(paths["target"]); !os.IsNotExist(err) {
+		t.Fatalf("关联任务本地文件 target 未清理: %v", err)
+	}
+	for _, key := range []string{"source-download", "source-upload"} {
+		if _, err := os.Stat(paths[key]); err != nil {
+			t.Fatalf("非目标账号的任务不应因源账号删除而清理 %s: %v", key, err)
+		}
 	}
 }

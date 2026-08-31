@@ -170,16 +170,6 @@ export function getSystemUploadJunkReason(relativePath: string) {
   return "";
 }
 
-export function formatRelaySpeed(task: { speed_bytes_per_second?: number }) {
-  return formatUploadSpeed(task.speed_bytes_per_second);
-}
-
-export function formatRelayPart(task: { message?: string; phase?: string }) {
-  if (task.phase !== "downloading" && task.phase !== "uploading") return "";
-  const m = String(task.message || "").match(/分片[（(]\s*(\d+)\s*\/\s*(\d+)\s*[)）]/);
-  return m ? `分片 ${m[1]}/${m[2]}` : "";
-}
-
 export function getUploadTaskOpenPath(task: UploadTask) {
   return String(task.result?.parent_id || task.result?.parent_path || task.target_path || "");
 }

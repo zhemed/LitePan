@@ -15,17 +15,10 @@ export type UploadActionsCtx = {
 export function useUploadPanelActions(ctx: UploadActionsCtx) {
   const { store, stream } = ctx;
 
-  async function openUploadTaskPanel(preferredCategory: "" | "relay" = "") {
+  async function openUploadTaskPanel() {
     store.uploadTaskPanelOpen.value = true;
     await stream.fetchUploadTasks();
-    if (
-      preferredCategory === "relay" ||
-      (store.activeRelayCount.value > 0 && store.activeUploadTasks.value.length === 0)
-    ) {
-      store.taskPanelCategory.value = "relay";
-    } else {
-      store.taskPanelCategory.value = "upload";
-    }
+    store.taskPanelCategory.value = "upload";
     stream.connectUploadTaskStream();
     if (typeof EventSource === "undefined") {
       stream.startUploadTaskPolling();

@@ -14,7 +14,6 @@ type queueSlotKind int
 const (
 	queueSlotNone queueSlotKind = iota
 	queueSlotUpload
-	queueSlotDownload
 )
 
 func (m *Manager) RefreshConcurrencyLimit(ctx context.Context) int {
@@ -33,16 +32,11 @@ func (m *Manager) RefreshConcurrencyLimit(ctx context.Context) int {
 }
 
 func (m *Manager) taskSlotKindLocked(st *taskState) queueSlotKind {
-	if st != nil && st.SourceType == SourceTypeCrossTransfer && st.Phase == PhaseDownloading {
-		return queueSlotDownload
-	}
 	return queueSlotUpload
 }
 
 func (m *Manager) canAcquireSlotLocked(kind queueSlotKind) bool {
 	switch kind {
-	case queueSlotDownload:
-		return m.runningDownloads < m.limit
 	case queueSlotUpload:
 		return m.runningUploads < m.limit
 	default:
@@ -51,25 +45,15 @@ func (m *Manager) canAcquireSlotLocked(kind queueSlotKind) bool {
 }
 
 func (m *Manager) acquireSlotLocked(kind queueSlotKind) {
-	switch kind {
-	case queueSlotDownload:
-		m.runningDownloads++
-	case queueSlotUpload:
+	if kind == queueSlotUpload {
 		m.runningUploads++
 	}
 }
 
 func (m *Manager) releaseSlot(kind queueSlotKind) {
 	m.mu.Lock()
-	switch kind {
-	case queueSlotDownload:
-		if m.runningDownloads > 0 {
-			m.runningDownloads--
-		}
-	case queueSlotUpload:
-		if m.runningUploads > 0 {
-			m.runningUploads--
-		}
+	if kind == queueSlotUpload && m.runningUploads > 0 {
+		m.runningUploads--
 	}
 	m.mu.Unlock()
 	m.runCond.Broadcast()
@@ -80,13 +64,7 @@ func pendingMessage(st *taskState) string {
 		return "等待上传"
 	}
 	if st.resumePriority {
-		if st.SourceType == SourceTypeCrossTransfer && st.Phase == PhaseDownloading {
-			return "准备继续源盘下载"
-		}
 		return "准备继续上传"
-	}
-	if st.SourceType == SourceTypeCrossTransfer && st.Phase == PhaseDownloading {
-		return "等待源盘下载"
 	}
 	if len(st.resumeData) > 0 {
 		return "准备继续上传"
@@ -197,21 +175,10 @@ func (m *Manager) runTask(taskID string) {
 		return
 	}
 
-	for {
-		slotKind, ok := m.acquireRunSlot(taskID, done, cancel)
-		if !ok {
-			return
-		}
-		if slotKind == queueSlotDownload {
-			shouldContinue := m.executeCrossTransferDownload(runCtx, taskID)
-			m.releaseSlot(slotKind)
-			if !shouldContinue {
-				return
-			}
-			continue
-		}
-		m.executeUpload(runCtx, taskID)
-		m.releaseSlot(slotKind)
+	slotKind, ok := m.acquireRunSlot(taskID, done, cancel)
+	if !ok {
 		return
 	}
+	m.executeUpload(runCtx, taskID)
+	m.releaseSlot(slotKind)
 }

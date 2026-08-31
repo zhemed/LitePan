@@ -145,8 +145,6 @@ const fileActions = useFileActions({
   reloadFiles: (opts) => store.loadFiles({ ...opts, silent: true }),
 });
 
-
-
 const uploadApi = useUploadTasks({
   selectedAccountId: currentAccountId,
   selectedAccountName,
@@ -179,19 +177,18 @@ const { uploadTaskPanelOpen } = uploadApi;
 const transferTaskText = computed(() => uploadApi.uploadTaskLabel.value);
 
 const uploadTaskActive = computed(
-  () => uploadApi.activeUploadTasks.value.length > 0 || uploadApi.activeRelayCount.value > 0,
+  () => uploadApi.activeUploadTasks.value.length > 0,
 );
 const uploadTaskFailed = computed(
   () =>
     uploadApi.displayUploadTasks.value.some((task) => task.status === "failed") ||
-    uploadApi.failedRelayTasks.value.length > 0,
+    false,
 );
 const uploadTaskSuccess = computed(() =>
   uploadApi.displayUploadTasks.value.some((task) => task.status === "success"),
 );
 const transferTaskCount = computed(() => {
-  const active =
-    uploadApi.activeUploadTasks.value.length + uploadApi.activeRelayCount.value;
+  const active = uploadApi.activeUploadTasks.value.length;
   if (active > 0) return active;
   return uploadApi.displayUploadTasks.value.filter((task) => task.status === "failed").length;
 });
@@ -474,15 +471,14 @@ async function restoreTaskPanelFromRoute() {
     return;
   }
   try {
-    const preferredCategory = rawPanel === "relay" ? rawPanel : "";
-    await uploadApi.openUploadTaskPanel(preferredCategory);
+    await uploadApi.openUploadTaskPanel();
   } finally {
     await router.replace({ path: route.path, query: nextQuery });
   }
 }
 
 async function openTaskPanel() {
-  await uploadApi.openUploadTaskPanel("");
+  await uploadApi.openUploadTaskPanel();
 }
 
 const initialLocation = !hasPendingBrowserLocationReset() ? loadSavedBrowserLocation() : null;
