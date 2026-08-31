@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 49
+- **Total Sessions**: 50
 - **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1780 | Active |
+| `journal-1.md` | ~1812 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 50 | 2026-08-31 | Investigate offline download removal | `7439a18` | `main` |
 | 49 | 2026-08-31 | Investigate local mapping hardcode | `7439a18` | `main` |
 | 48 | 2026-08-31 | Fix interval next run | `7439a18` | `main` |
 | 47 | 2026-08-31 | Check interval scheduling | `01a1557` | `main` |

@@ -1778,3 +1778,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 50: Investigate offline download removal
+<!-- trellis-session: v=2 fp=f2806fa7ebfa3d36 -->
+
+**Date**: 2026-08-31
+**Task**: Investigate offline download removal
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+离线下载可彻底移除
+
+### Main Changes
+
+- 清单106+40处
+- 零耦合 local_upload
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7439a18` | fix(schedule): interval next run in same day and bump to 0.0.5 |
+
+### Testing
+
+- [OK] grep
+
+### Status
+
+[OK] **Completed**
