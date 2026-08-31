@@ -1810,3 +1810,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 51: Remove offline download completely
+<!-- trellis-session: v=2 fp=d662b65e38c96d9a -->
+
+**Date**: 2026-08-31
+**Task**: Remove offline download completely
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+彻底移除离线下载 0.0.6
+
+### Main Changes
+
+- 14后端+7前端
+- FileToolbar offline
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `feea7b0` | refactor: remove offline download completely and bump to 0.0.6 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 105MB
+
+### Status
+
+[OK] **Completed**
