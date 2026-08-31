@@ -1714,3 +1714,35 @@ LitePan-own锁定不改，提取9个自有commits的自定义到 _extracted
 ### Status
 
 [OK] **Completed**
+
+
+## Session 48: Fix interval next run
+<!-- trellis-session: v=2 fp=533b811fb24d88e2 -->
+
+**Date**: 2026-08-31
+**Task**: Fix interval next run
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+修复间隔首次次日 0.0.5
+
+### Main Changes
+
+- computeIntervalStartRunAt 同日递进
+- fix mappings []string
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7439a18` | fix(schedule): interval next run in same day and bump to 0.0.5 |
+
+### Testing
+
+- [OK] go test vet 0 docker 118MB 0.0.5
+
+### Status
+
+[OK] **Completed**
