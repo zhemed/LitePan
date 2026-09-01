@@ -229,3 +229,35 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 63: Remove webhook completely
+<!-- trellis-session: v=2 fp=7a7469a43b2cb579 -->
+
+**Date**: 2026-09-01
+**Task**: Remove webhook completely
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+移除Webhook 0.0.11
+
+### Main Changes
+
+- 8+4 files
+- trigger daily|interval only
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5f72e15` | refactor: remove webhook trigger completely and bump to 0.0.11 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 105MB
+
+### Status
+
+[OK] **Completed**
