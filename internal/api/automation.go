@@ -1,8 +1,7 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
+		"net/http"
 	"strconv"
 
 	"litepan/internal/automation"
@@ -187,57 +186,3 @@ func (h *Handler) automationOptions(w http.ResponseWriter, r *http.Request) {
 	writeOK(w, data)
 }
 
-func (h *Handler) automationWebhook(w http.ResponseWriter, r *http.Request) {
-	if !ensureServiceReady(w, h.automation != nil) {
-		return
-	}
-	event, err := decodeWebhookEvent(r)
-	if err != nil {
-		writeErr(w, err)
-		return
-	}
-	data, err := h.automation.TriggerWebhook(r.Context(), automationAuthHeader(r), event)
-	if err != nil {
-		writeErr(w, err)
-		return
-	}
-	writeOK(w, data)
-}
-
-func decodeWebhookEvent(r *http.Request) (automation.WebhookEvent, error) {
-	var payload map[string]json.RawMessage
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		return automation.WebhookEvent{}, domain.Errorf(domain.CodeValidation, "请求体解析失败：%v", err)
-	}
-	var event automation.WebhookEvent
-	if raw, ok := payload["event"]; ok {
-		if err := json.Unmarshal(raw, &event.Event); err != nil {
-			return automation.WebhookEvent{}, domain.Errorf(domain.CodeValidation, "event 字段解析失败：%v", err)
-		}
-	}
-	if raw, ok := payload["source"]; ok {
-		if err := json.Unmarshal(raw, &event.Source); err != nil {
-			return automation.WebhookEvent{}, domain.Errorf(domain.CodeValidation, "source 字段解析失败：%v", err)
-		}
-	}
-	if raw, ok := payload["path"]; ok {
-		if err := json.Unmarshal(raw, &event.Path); err != nil {
-			return automation.WebhookEvent{}, domain.Errorf(domain.CodeValidation, "path 字段解析失败：%v", err)
-		}
-	}
-	if raw, ok := payload["delayTime"]; ok {
-		_ = json.Unmarshal(raw, &event.DelayTime)
-	}
-	return event, nil
-}
-
-func automationAuthHeader(r *http.Request) string {
-	auth := r.Header.Get("Authorization")
-	if auth != "" {
-		return auth
-	}
-	if key := r.Header.Get("X-API-Key"); key != "" {
-		return "Bearer " + key
-	}
-	return ""
-}

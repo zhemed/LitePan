@@ -8,7 +8,7 @@
 
 **115 · 天翼 · 本机 · 一个界面 · 118M**
 
-`Go 1.26.6` · `Vue 3.5.41` · `ghcr.io/zhemed/litepan:v0.0.10`
+`Go 1.26.6` · `Vue 3.5.41` · `ghcr.io/zhemed/litepan:v0.0.11`
 
 <br>
 
@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/zhemed/LitePan/main/install-docker.
 ```yaml
 services:
   litepan:
-    image: ghcr.io/zhemed/litepan:v0.0.10
+    image: ghcr.io/zhemed/litepan:v0.0.11
     container_name: litepan
     restart: always
     network_mode: host

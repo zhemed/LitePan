@@ -72,7 +72,7 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 	}
 	in.TriggerType = strings.TrimSpace(in.TriggerType)
 	switch in.TriggerType {
-	case domain.AutomationTriggerDaily, domain.AutomationTriggerInterval, domain.AutomationTriggerWebhook:
+	case domain.AutomationTriggerDaily, domain.AutomationTriggerInterval:
 	default:
 		return in, domain.Errorf(domain.CodeValidation, "触发条件不支持")
 	}
@@ -90,10 +90,6 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 		}
 		if anyInt(in.TriggerConfig["interval_hours"]) <= 0 {
 			return in, domain.Errorf(domain.CodeValidation, "间隔小时必须大于 0")
-		}
-	case domain.AutomationTriggerWebhook:
-		if strings.TrimSpace(anyString(in.TriggerConfig["event"])) == "" {
-			return in, domain.Errorf(domain.CodeValidation, "请输入 Webhook 事件名称")
 		}
 	}
 	if in.Status == "" {

@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"litepan/internal/apikey"
 	"litepan/internal/domain"
 )
 
@@ -21,49 +20,6 @@ func TestSubmitRunQueuesWhileStartupGateBlocked(t *testing.T) {
 		t.Fatalf("认证闸门放行前规则应只入队: result=%+v running=%d pending=%d",
 			result, service.runningRuleID, len(service.pendingRuns))
 	}
-}
-
-func TestTriggerWebhookQueuesEveryMatchedRule(t *testing.T) {
-	t.Parallel()
-
-	const rawKey = "lpk_api_webhook_test"
-	rules := newAutomationRuleRepo(
-		webhookRule(1, "规则一"),
-		webhookRule(2, "规则二"),
-	)
-	runs := &automationRunRepo{}
-	keys := apikey.New(apikey.Options{Repo: &apiKeyRepo{key: &domain.ApiKey{
-		ID:      1,
-		KeyHash: apikey.Hash(rawKey),
-		KeyType: domain.ApiKeyTypeTask,
-		Status:  domain.ApiKeyStatusActive,
-	}}})
-	service := New(Options{Rules: rules, Runs: runs, ApiKeys: keys})
-
-	result, err := service.TriggerWebhook(
-		context.Background(),
-		"Bearer "+rawKey,
-		WebhookEvent{Event: "library.updated", Source: "test", Path: "/media"},
-	)
-	if err != nil {
-		t.Fatalf("触发 Webhook 失败: %v", err)
-	}
-	triggered, ok := result["triggered"].([]map[string]any)
-	if !ok {
-		t.Fatalf("triggered 类型异常: %#v", result["triggered"])
-	}
-	if len(triggered) != 2 {
-		t.Fatalf("期望两条匹配规则都被接收，实际 %d 条: %#v", len(triggered), triggered)
-	}
-
-	deadline := time.Now().Add(4 * time.Second)
-	for time.Now().Before(deadline) {
-		if runs.count() == 2 {
-			return
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
-	t.Fatalf("期望两条规则依次执行，实际创建 %d 条运行记录", runs.count())
 }
 
 func TestScheduleOnceQueuesDueRuleAndAdvancesNextRun(t *testing.T) {
@@ -236,24 +192,6 @@ func TestValidateRuleRequiresLibrarySelectionForEmbyLibraryMode(t *testing.T) {
 	}
 	if len(result.Issues) == 0 || !strings.Contains(result.Issues[0].Message, "未选择") {
 		t.Fatalf("issues=%#v", result.Issues)
-	}
-}
-
-func webhookRule(id int64, name string) *domain.AutomationRule {
-	triggerConfig, _ := json.Marshal(map[string]any{"event": "library.updated"})
-	actions, _ := json.Marshal([]RuleAction{{
-		ID:        "local-1",
-		Type:      domain.AutomationActionLocalUpload,
-		Condition: domain.AutomationConditionAlways,
-		Params:    map[string]any{"account_id": 1, "mappings": []string{"test"}, "target_parent_id": "root"},
-	}})
-	return &domain.AutomationRule{
-		ID:            id,
-		Name:          name,
-		TriggerType:   domain.AutomationTriggerWebhook,
-		TriggerConfig: triggerConfig,
-		Actions:       actions,
-		Status:        domain.AutomationStatusRunning,
 	}
 }
 

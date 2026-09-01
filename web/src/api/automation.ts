@@ -1,6 +1,6 @@
 import { http } from "./client";
 
-export type AutomationTriggerType = "daily" | "interval" | "webhook";
+export type AutomationTriggerType = "daily" | "interval";
 export type AutomationStatus = "running" | "paused";
 export type AutomationCondition = "always" | "prev_success" | "prev_failed";
 export type AutomationActionType = "local_upload";

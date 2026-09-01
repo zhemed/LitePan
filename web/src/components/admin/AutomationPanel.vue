@@ -169,7 +169,7 @@
               <div class="node-ico trigger"><i class="fas fa-clock"></i></div>
               <div class="node-body">
                 <div class="node-title ph">添加触发条件</div>
-                <div class="node-sub">时间 / 间隔 / 第三方通知</div>
+                <div class="node-sub">时间 / 间隔</div>
               </div>
             </div>
           </div>
@@ -375,14 +375,6 @@
             </span>
             <i class="fas fa-chevron-right"></i>
           </button>
-          <button class="pick-option" type="button" @click="chooseTrigger('external_event')">
-            <span class="pick-ico external_event"><i class="fas fa-plug"></i></span>
-            <span>
-              <b>第三方通知</b>
-              <em>外部程序调用 Webhook 接口通知 LitePan</em>
-            </span>
-            <i class="fas fa-chevron-right"></i>
-          </button>
         </div>
         <div v-else class="pick-list">
           <button v-for="item in actionTypeOptions" :key="item.value" class="pick-option" type="button" @click="chooseAction(item.value)">
@@ -400,24 +392,6 @@
     <AppPlainModal :open="configVisible" :title="configTitle" size="sm" body-flush @close="closeConfig">
       <div class="automation-scope">
         <div v-if="configMode === 'trigger'" class="cfg-body">
-          <template v-if="form.trigger_type === 'external_event'">
-            <div class="cfg-row">
-              <label>通知名称</label>
-              <input v-model.trim="form.trigger_config.event" class="ctrl" type="text" placeholder="例如：download_completed">
-            </div>
-            <div class="cfg-row">
-              <label>通知来源（可选）</label>
-              <input v-model.trim="form.trigger_config.source" class="ctrl" type="text" placeholder="例如：CloudSaver，不填表示任意来源">
-            </div>
-            <div class="api-example">
-              <div class="api-example-title">调用方式</div>
-              <div class="api-example-text">把下面内容填到外部程序的 Webhook / HTTP 通知里。</div>
-              <code>POST http://你的LitePan地址:5211/api/open/automation/events</code>
-              <code>Authorization: Bearer lpk_api_xxx</code>
-              <pre>{{ externalEventJsonExample }}</pre>
-            </div>
-          </template>
-          <template v-else>
           <div class="cfg-row">
             <label>{{ form.trigger_type === 'daily' ? '每天触发时间' : '首次触发时间' }}</label>
             <button class="time-btn" type="button" @click="openTimePicker">
@@ -429,7 +403,6 @@
             <label>间隔小时</label>
             <input v-model.number="form.trigger_config.interval_hours" class="ctrl" type="number" min="1" max="8760">
           </div>
-          </template>
         </div>
 
         <div v-else-if="configAction" class="cfg-body">
@@ -687,9 +660,6 @@ const triggerNodeTitle = computed(() => {
       ? `${form.trigger_config.start_time} 起，每 ${form.trigger_config.interval_hours || 24} 小时`
       : '本次触发时间 + 间隔'
   }
-  if (form.trigger_type === 'external_event') {
-    return form.trigger_config.event ? `收到通知：${form.trigger_config.event}` : '第三方通知'
-  }
   return form.trigger_config.time ? `每天 ${form.trigger_config.time}` : '每天定时'
 })
 
@@ -698,45 +668,19 @@ const triggerNodeSub = computed(() => (
     ? '时间 / 间隔触发'
     : form.trigger_type === 'interval'
     ? '从指定时间开始按间隔轮询执行'
-    : form.trigger_type === 'external_event'
-    ? externalEventSubtitle.value
     : '每天到点自动启动联动'
 ))
-
-const externalEventSubtitle = computed(() => {
-  const parts = ['外部程序发来同名通知时触发']
-  if (form.trigger_config.source) parts.push(`来源：${form.trigger_config.source}`)
-  return parts.join(' · ')
-})
-
-const externalEventNameForExample = computed(() => String(form.trigger_config.event || '').trim() || 'download_completed')
-const externalEventSourceForExample = computed(() => String(form.trigger_config.source || '').trim())
-const externalEventPayloadForExample = computed(() => {
-  const payload = {
-    event: externalEventNameForExample.value,
-    message: `${externalEventNameForExample.value}，请执行联动`
-  }
-  if (externalEventSourceForExample.value) {
-    payload.source = externalEventSourceForExample.value
-  }
-  return payload
-})
-const externalEventJsonExample = computed(() => JSON.stringify(externalEventPayloadForExample.value, null, 2))
 
 const hasValidationError = computed(() => validationIssues.value.some(issue => issue.level === 'error'))
 const triggerReady = computed(() => {
   if (form.trigger_type === 'daily') return Boolean(form.trigger_config.time)
   if (form.trigger_type === 'interval') return Boolean(form.trigger_config.start_time) && Number(form.trigger_config.interval_hours || 0) > 0
-  if (form.trigger_type === 'external_event') return Boolean(String(form.trigger_config.event || '').trim())
   return false
 })
 const primaryActionReady = computed(() => Boolean(form.actions[0]))
 const canSave = computed(() => form.name.trim() && triggerReady.value && primaryActionReady.value && !hasValidationError.value)
 const configAction = computed(() => pendingConfigAction.value || form.actions[configActionIndex.value] || null)
 const configCanApply = computed(() => {
-  if (configMode.value === 'trigger' && form.trigger_type === 'external_event') {
-    return Boolean(String(form.trigger_config.event || '').trim())
-  }
   if (configMode.value === 'action' && configAction.value) {
     return actionDefinition(configAction.value.type).canApply(configAction.value)
   }
@@ -745,7 +689,6 @@ const configCanApply = computed(() => {
 const configTitle = computed(() => {
   if (configMode.value === 'trigger') {
     if (form.trigger_type === 'daily') return '每天定时'
-    if (form.trigger_type === 'external_event') return '第三方通知'
     return '本次触发时间 + 间隔'
   }
   return configAction.value ? actionLabel(configAction.value) : '配置动作'
@@ -847,7 +790,7 @@ const openBuilder = async (rule = null) => {
   resetForm()
   if (rule) {
     form.name = rule.name || ''
-    form.trigger_type = rule.trigger_type === 'webhook' ? 'external_event' : (rule.trigger_type || '')
+    form.trigger_type = rule.trigger_type || ''
     form.trigger_config = normalizeAutomationTriggerConfig(rule.trigger_config)
     form.status = rule.status || 'running'
     form.actions = normalizeActions(rule.actions || [])
@@ -870,9 +813,6 @@ const setTriggerType = (type) => {
     form.trigger_config.start_time = ''
   } else if (type === 'interval') {
     form.trigger_config.time = ''
-  } else if (type === 'external_event') {
-    form.trigger_config.time = ''
-    form.trigger_config.start_time = ''
   }
 }
 
@@ -1097,9 +1037,7 @@ const cancelActionPointerDrag = () => {
 
 const applyConfig = () => {
   if (!configCanApply.value) {
-    if (configMode.value === 'trigger' && form.trigger_type === 'external_event') {
-      toast.warning('请输入通知名称')
-    } else if (configMode.value === 'action') {
+    if (configMode.value === 'action') {
       toast.warning('请完善动作配置')
     }
     return
@@ -1191,7 +1129,7 @@ const normalizeActionConditions = () => {
 
 const buildPayload = () => ({
   name: form.name.trim(),
-  trigger_type: form.trigger_type === 'external_event' ? 'webhook' : form.trigger_type,
+  trigger_type: form.trigger_type,
   trigger_config: serializeAutomationTriggerConfig(form.trigger_config),
   status: form.status,
   actions: form.actions.filter(Boolean).map((action, index) => ({
@@ -1321,9 +1259,6 @@ const triggerLabel = (rule) => {
   if (rule.trigger_type === 'interval') {
     return `${config.start_time || '00:00'} 起，每 ${config.interval_hours || 24} 小时`
   }
-  if (rule.trigger_type === 'external_event' || rule.trigger_type === 'webhook') {
-    return `收到通知：${config.event || '-'}`
-  }
   return `每天 ${config.time || '00:00'}`
 }
 
@@ -1445,7 +1380,6 @@ const runStatusText = (status) => {
 
 const runSourceLabel = (source) => {
   if (source === 'manual') return '手动'
-  if (source === 'external_event' || source === 'webhook') return '第三方'
   return '定时'
 }
 
@@ -2771,11 +2705,6 @@ defineExpose({
 .pick-ico.interval {
   background: color-mix(in srgb, #6366f1 16%, var(--panel));
   color: #6366f1;
-}
-
-.pick-ico.external_event {
-  background: color-mix(in srgb, var(--ok) 16%, var(--panel));
-  color: var(--ok);
 }
 
 .pick-ico.local_upload {

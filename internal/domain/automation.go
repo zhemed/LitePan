@@ -16,7 +16,6 @@ const (
 
 	AutomationTriggerDaily    = "daily"
 	AutomationTriggerInterval = "interval"
-	AutomationTriggerWebhook  = "webhook"
 
 	AutomationActionLocalUpload = "local_upload"
 

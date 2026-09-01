@@ -102,14 +102,6 @@ type ValidationIssue struct {
 	ActionType  string `json:"action_type,omitempty"`
 }
 
-type WebhookEvent struct {
-	Event  string `json:"event"`
-	Source string `json:"source"`
-	Path   string `json:"path"`
-	// CloudSaver 的 webhook 请求会携带 delayTime,必须接受该字段以保证触发兼容,当前不参与执行逻辑
-	DelayTime int `json:"delayTime,omitempty"`
-}
-
 type queuedRun struct {
 	ruleID        int64
 	triggerSource string
@@ -188,7 +180,7 @@ func (s *Service) CreateRule(ctx context.Context, in RuleInput) (RuleView, error
 		LastRunStatus:  "",
 		LastRunMessage: "",
 	}
-	if row.TriggerType == domain.AutomationTriggerWebhook || row.Status != domain.AutomationStatusRunning {
+	if row.Status != domain.AutomationStatusRunning {
 		row.NextRunAt = time.Time{}
 	}
 	id, err := s.rules.Create(ctx, row)
@@ -213,7 +205,7 @@ func (s *Service) UpdateRule(ctx context.Context, id int64, in RuleInput) (RuleV
 	existing.Actions = mustJSON(norm.Actions)
 	existing.Status = norm.Status
 	existing.NextRunAt = computeNextRun(norm.TriggerType, norm.TriggerConfig, time.Now())
-	if existing.TriggerType == domain.AutomationTriggerWebhook || existing.Status != domain.AutomationStatusRunning {
+	if existing.Status != domain.AutomationStatusRunning {
 		existing.NextRunAt = time.Time{}
 	}
 	if err := s.rules.Update(ctx, existing); err != nil {
@@ -237,9 +229,6 @@ func (s *Service) ToggleRule(ctx context.Context, id int64) (RuleView, error) {
 	} else {
 		row.Status = domain.AutomationStatusRunning
 		row.NextRunAt = computeNextRun(row.TriggerType, decodeMap(row.TriggerConfig), time.Now())
-		if row.TriggerType == domain.AutomationTriggerWebhook {
-			row.NextRunAt = time.Time{}
-		}
 	}
 	if err := s.rules.Update(ctx, row); err != nil {
 		return RuleView{}, err

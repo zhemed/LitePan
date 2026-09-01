@@ -143,9 +143,6 @@ func NewRouter(d Deps) http.Handler {
 			r.Get("/system-config", h.publicSystemConfig)
 			r.Get("/cache/hit-rate", h.publicCacheHitRate)
 		})
-		r.Route("/open", func(r chi.Router) {
-			r.Post("/automation/events", h.automationWebhook)
-		})
 		r.Group(func(r chi.Router) {
 			r.Use(h.requireAdmin)
 			r.Get("/logs", h.listLogs)

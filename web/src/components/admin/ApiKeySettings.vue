@@ -252,7 +252,7 @@ defineExpose({ openCreate });
 <template>
   <SettingsCard title="秘钥列表" :accent="props.accent">
     <p class="api-keys__meta">
-      秘钥供后续自动联动 Webhook 等外部调用使用。
+      秘钥供后续自动联动等外部调用使用。
       <span class="api-keys__meta-count">秘钥 {{ keyCount }}/{{ maxKeys }}</span>
     </p>
 
@@ -314,7 +314,7 @@ defineExpose({ openCreate });
       <div class="api-keys__form">
         <div class="api-keys__form-row">
           <FormField label="名称 / 用途">
-            <AppInput v-model="form.name" placeholder="例如：自动联动 Webhook" />
+            <AppInput v-model="form.name" placeholder="例如：自动联动" />
           </FormField>
           <FormField label="类型">
             <AppSelect v-model="form.key_type" :options="keyTypeOptions" />
