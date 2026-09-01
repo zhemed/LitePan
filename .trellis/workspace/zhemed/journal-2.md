@@ -165,3 +165,35 @@ GitHub与本地0差距
 ### Status
 
 [OK] **Completed**
+
+
+## Session 61: Deploy latest and verify
+<!-- trellis-session: v=2 fp=9d25a353d3b925a3 -->
+
+**Date**: 2026-09-01
+**Task**: Deploy latest and verify
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+拉取latest 0.0.10部署验证
+
+### Main Changes
+
+- docker pull latest 18bf16f
+- docker run latest health ok
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1a77f58` | chore(task): archive 09-01-rollback-to-65b868b |
+
+### Testing
+
+- [OK] docker ps latest/curl health
+
+### Status
+
+[OK] **Completed**
