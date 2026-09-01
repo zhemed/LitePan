@@ -293,3 +293,35 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 65: Investigate trigger cleanup
+<!-- trellis-session: v=2 fp=3d031fa257cc2844 -->
+
+**Date**: 2026-09-01
+**Task**: Investigate trigger cleanup
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+触发条件已干净，部署未同步
+
+### Main Changes
+
+- 代码 0 第三方
+- 容器 0.0.9 -> 0.0.11
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5f72e15` | refactor: remove webhook trigger completely and bump to 0.0.11 |
+
+### Testing
+
+- [OK] grep vet
+
+### Status
+
+[OK] **Completed**
