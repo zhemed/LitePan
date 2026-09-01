@@ -261,3 +261,35 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 64: Build latest locally
+<!-- trellis-session: v=2 fp=ebe6aa59c6d79781 -->
+
+**Date**: 2026-09-01
+**Task**: Build latest locally
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+本地构建0.0.11验证
+
+### Main Changes
+
+- go vet 0 type-check 0
+- docker 105MB local 0.0.11-local health 200
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5f72e15` | refactor: remove webhook trigger completely and bump to 0.0.11 |
+
+### Testing
+
+- [OK] go build 27M web build 102
+
+### Status
+
+[OK] **Completed**
