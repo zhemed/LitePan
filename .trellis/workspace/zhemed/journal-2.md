@@ -197,3 +197,35 @@ GitHub与本地0差距
 ### Status
 
 [OK] **Completed**
+
+
+## Session 62: Investigate webhook removal
+<!-- trellis-session: v=2 fp=dd87da947f6f7c0e -->
+
+**Date**: 2026-09-01
+**Task**: Investigate webhook removal
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Webhook可彻底移除
+
+### Main Changes
+
+- 清单8+4
+- 零耦合
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1a77f58` | chore(task): archive 09-01-rollback-to-65b868b |
+
+### Testing
+
+- [OK] grep
+
+### Status
+
+[OK] **Completed**
