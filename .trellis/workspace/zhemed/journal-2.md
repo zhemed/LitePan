@@ -101,3 +101,35 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 59: Rollback to 65b868b
+<!-- trellis-session: v=2 fp=dfd9140b0c1aa6f5 -->
+
+**Date**: 2026-09-01
+**Task**: Rollback to 65b868b
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+回滚远端错误至65b868b
+
+### Main Changes
+
+- git reset --hard 65b868b
+- git push --force
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `65b868b` | chore(task): archive 09-01-remove-cross-disk-download |
+
+### Testing
+
+- [OK] git log 65b868b
+
+### Status
+
+[OK] **Completed**
