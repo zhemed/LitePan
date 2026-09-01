@@ -325,3 +325,35 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 66: Interval hours to minutes
+<!-- trellis-session: v=2 fp=da10f840f175f590 -->
+
+**Date**: 2026-09-01
+**Task**: Interval hours to minutes
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+间隔小时改分钟 0.0.12
+
+### Main Changes
+
+- backend minutes compat
+- 前端 间隔分钟
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `03e90f7` | refactor: interval hours -> minutes and bump to 0.0.12 |
+
+### Testing
+
+- [OK] vet 0 type-check 0 docker 105MB
+
+### Status
+
+[OK] **Completed**
