@@ -74,7 +74,9 @@ export interface AutomationOptions {
 export interface AutomationTriggerConfig {
   time: string;
   start_time: string;
-  interval_hours: number;
+  interval_minutes: number;
+  // 兼容旧字段，读取时若 interval_minutes 缺失则由 interval_hours*60 填充
+  interval_hours?: number;
   event: string;
   source: string;
   path_prefix: string;
@@ -88,10 +90,14 @@ export interface AutomationTriggerConfig {
 export function normalizeAutomationTriggerConfig(
   config: Record<string, unknown> = {},
 ): AutomationTriggerConfig {
+  const rawMinutes = Number((config as any).interval_minutes);
+  const rawHours = Number((config as any).interval_hours);
+  const intervalMinutes = Number.isFinite(rawMinutes) && rawMinutes > 0 ? rawMinutes : rawHours > 0 ? rawHours * 60 : 60;
   return {
     time: String(config.time ?? ""),
     start_time: String(config.start_time ?? ""),
-    interval_hours: Number(config.interval_hours || 72),
+    interval_minutes: intervalMinutes,
+    interval_hours: undefined,
     event: String(config.event ?? ""),
     source: String(config.source ?? ""),
     path_prefix: String(config.path_prefix ?? ""),
@@ -106,10 +112,16 @@ export function normalizeAutomationTriggerConfig(
 export function serializeAutomationTriggerConfig(
   config: AutomationTriggerConfig,
 ): Record<string, unknown> {
+  let intervalMinutes = Number((config as any).interval_minutes);
+  if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
+    const h = Number((config as any).interval_hours);
+    if (Number.isFinite(h) && h > 0) intervalMinutes = h * 60;
+    else intervalMinutes = 60;
+  }
   return {
     time: config.time || "",
     start_time: config.start_time || "",
-    interval_hours: Number(config.interval_hours || 72),
+    interval_minutes: intervalMinutes,
     event: String(config.event || "").trim(),
     source: String(config.source || "").trim(),
     path_prefix: String(config.path_prefix || "").trim(),

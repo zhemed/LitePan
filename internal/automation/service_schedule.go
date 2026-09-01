@@ -153,15 +153,21 @@ func computeIntervalStartRun(cfg map[string]any, base time.Time) time.Time {
 
 func computeIntervalStartRunAt(base time.Time, cfg map[string]any) time.Time {
 	h, m := parseClock(anyString(cfg["start_time"]))
-	interval := clampInt(anyInt(cfg["interval_hours"]), 1, 24*365)
+	intervalMinutes := anyInt(cfg["interval_minutes"])
+	if intervalMinutes <= 0 {
+		if h := anyInt(cfg["interval_hours"]); h > 0 {
+			intervalMinutes = h * 60
+		}
+	}
+	interval := clampInt(intervalMinutes, 1, 24*365*60)
 	anchor := time.Date(base.Year(), base.Month(), base.Day(), h, m, 0, 0, base.Location())
 	if anchor.After(base) {
 		return anchor
 	}
-	// 从锚点按 interval 递进，找当天首个 > base 的档位；跨天则回落次日锚点
+	// 从锚点按 interval 分钟递进，找当天首个 > base 的档位；跨天则回落次日锚点
 	candidate := anchor
 	for {
-		candidate = candidate.Add(time.Duration(interval) * time.Hour)
+		candidate = candidate.Add(time.Duration(interval) * time.Minute)
 		if candidate.After(base) {
 			if sameLocalDay(candidate, anchor) {
 				return candidate
@@ -187,8 +193,14 @@ func advanceIntervalRun(cfg map[string]any, current time.Time) time.Time {
 
 func advanceIntervalRunAt(current time.Time, cfg map[string]any) time.Time {
 	h, m := parseClock(anyString(cfg["start_time"]))
-	interval := clampInt(anyInt(cfg["interval_hours"]), 1, 24*365)
-	candidate := current.Add(time.Duration(interval) * time.Hour)
+	intervalMinutes := anyInt(cfg["interval_minutes"])
+	if intervalMinutes <= 0 {
+		if h := anyInt(cfg["interval_hours"]); h > 0 {
+			intervalMinutes = h * 60
+		}
+	}
+	interval := clampInt(intervalMinutes, 1, 24*365*60)
+	candidate := current.Add(time.Duration(interval) * time.Minute)
 	if sameLocalDay(candidate, current) {
 		return candidate
 	}

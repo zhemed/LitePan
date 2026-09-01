@@ -88,8 +88,16 @@ func (s *Service) normalizeInput(ctx context.Context, in RuleInput) (RuleInput, 
 		if strings.TrimSpace(anyString(in.TriggerConfig["start_time"])) == "" {
 			return in, domain.Errorf(domain.CodeValidation, "请选择首次触发时间")
 		}
-		if anyInt(in.TriggerConfig["interval_hours"]) <= 0 {
-			return in, domain.Errorf(domain.CodeValidation, "间隔小时必须大于 0")
+		intervalMinutes := anyInt(in.TriggerConfig["interval_minutes"])
+		if intervalMinutes <= 0 {
+			if h := anyInt(in.TriggerConfig["interval_hours"]); h > 0 {
+				intervalMinutes = h * 60
+				in.TriggerConfig["interval_minutes"] = intervalMinutes
+				delete(in.TriggerConfig, "interval_hours")
+			}
+		}
+		if intervalMinutes <= 0 {
+			return in, domain.Errorf(domain.CodeValidation, "间隔分钟必须大于 0")
 		}
 	}
 	if in.Status == "" {

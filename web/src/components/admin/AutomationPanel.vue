@@ -400,8 +400,8 @@
             </button>
           </div>
           <div v-if="form.trigger_type === 'interval'" class="cfg-row">
-            <label>间隔小时</label>
-            <input v-model.number="form.trigger_config.interval_hours" class="ctrl" type="number" min="1" max="8760">
+            <label>间隔分钟</label>
+            <input v-model.number="form.trigger_config.interval_minutes" class="ctrl" type="number" min="1" max="525600">
           </div>
         </div>
 
@@ -657,7 +657,7 @@ const triggerNodeTitle = computed(() => {
   if (!form.trigger_type) return '添加触发条件'
   if (form.trigger_type === 'interval') {
     return form.trigger_config.start_time
-      ? `${form.trigger_config.start_time} 起，每 ${form.trigger_config.interval_hours || 24} 小时`
+      ? `${form.trigger_config.start_time} 起，每 ${form.trigger_config.interval_minutes || 60} 分钟`
       : '本次触发时间 + 间隔'
   }
   return form.trigger_config.time ? `每天 ${form.trigger_config.time}` : '每天定时'
@@ -674,7 +674,7 @@ const triggerNodeSub = computed(() => (
 const hasValidationError = computed(() => validationIssues.value.some(issue => issue.level === 'error'))
 const triggerReady = computed(() => {
   if (form.trigger_type === 'daily') return Boolean(form.trigger_config.time)
-  if (form.trigger_type === 'interval') return Boolean(form.trigger_config.start_time) && Number(form.trigger_config.interval_hours || 0) > 0
+  if (form.trigger_type === 'interval') return Boolean(form.trigger_config.start_time) && Number(form.trigger_config.interval_minutes || 0) > 0
   return false
 })
 const primaryActionReady = computed(() => Boolean(form.actions[0]))
@@ -1257,7 +1257,7 @@ const deleteRule = async (rule) => {
 const triggerLabel = (rule) => {
   const config = rule.trigger_config || {}
   if (rule.trigger_type === 'interval') {
-    return `${config.start_time || '00:00'} 起，每 ${config.interval_hours || 24} 小时`
+    return `${config.start_time || '00:00'} 起，每 ${config.interval_minutes || 60} 分钟`
   }
   return `每天 ${config.time || '00:00'}`
 }

@@ -76,7 +76,7 @@ func TestComputeNextRunIntervalUsesNextDayAnchorWhenTodayStartPassed(t *testing.
 
 	got := computeNextRun(domain.AutomationTriggerInterval, map[string]any{
 		"start_time":     "01:00",
-		"interval_hours": 1,
+		"interval_minutes": 60,
 	}, base)
 	want := time.Date(2026, 7, 31, 13, 0, 0, 0, loc)
 	if !got.Equal(want) {
@@ -85,7 +85,7 @@ func TestComputeNextRunIntervalUsesNextDayAnchorWhenTodayStartPassed(t *testing.
 
 	got = computeNextRun(domain.AutomationTriggerInterval, map[string]any{
 		"start_time":     "13:00",
-		"interval_hours": 1,
+		"interval_minutes": 60,
 	}, base)
 	want = time.Date(2026, 7, 31, 13, 0, 0, 0, loc)
 	if !got.Equal(want) {
@@ -99,7 +99,7 @@ func TestAdvanceNextRunIntervalKeepsSameDaySlotsThenResetsToNextAnchor(t *testin
 	loc := time.FixedZone("UTC+8", 8*3600)
 	cfg := map[string]any{
 		"start_time":     "13:00",
-		"interval_hours": 5,
+		"interval_minutes": 300,
 	}
 
 	got := advanceNextRun(domain.AutomationTriggerInterval, cfg, time.Date(2026, 7, 31, 13, 0, 0, 0, loc))
@@ -119,7 +119,7 @@ func TestAdvanceNextRunIntervalUsesLocalDayBoundaryForPersistedUTCTime(t *testin
 	loc := time.FixedZone("UTC+8", 8*3600)
 	cfg := map[string]any{
 		"start_time":     "12:42",
-		"interval_hours": 1,
+		"interval_minutes": 60,
 	}
 
 	currentUTC := time.Date(2026, 7, 31, 23, 42, 0, 0, time.UTC)
