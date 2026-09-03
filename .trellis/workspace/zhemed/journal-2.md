@@ -357,3 +357,32 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 67: 调查上传任务重试次数与重试规则
+<!-- trellis-session: v=2 fp=dfd28a8a695b7148 -->
+
+**Date**: 2026-09-03
+**Task**: 调查上传任务重试次数与重试规则
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+任务级无自动重试；驱动分片级2~3次写死重试；认证刷新1次；前端手动重试
+
+### Main Changes
+
+- 新增 report.md 78行证据链
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] grep retry/backoff/attempt 全仓扫描
+
+### Status
+
+[OK] **Completed**
