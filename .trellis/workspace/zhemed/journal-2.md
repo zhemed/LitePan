@@ -540,3 +540,38 @@ c7a424c白名单30文件发0.0.14（剔除2绑已删模块测试）；de83b46拆
 ### Next Steps
 
 - 用户真机验证：认证刷新/文件夹上传UI清单见两份report
+
+
+## Session 73: 验证0.0.14认证与0.0.15上传链通过，发现并修复batch落库缺口发0.0.16
+<!-- trellis-session: v=2 fp=13de643245339532 -->
+
+**Date**: 2026-09-05
+**Task**: 验证0.0.14认证与0.0.15上传链通过，发现并修复batch落库缺口发0.0.16
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+口令登录验证：189手动刷新遇上游429，新分类RATE_LIMITED+cooldown+自动重试生效，无误报，数据通路正常。文件夹上传3文件成功但batch列空，根因为manager hydration行落在B-road hunk，手工移植12行发0.0.16，复测落库与云盘结构全对。测试痕迹全清（云盘目录入回收站）。
+
+### Main Changes
+
+- 验证任务归档，当前线上0.0.16
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `65db496` | fix: 补齐A路batch落库 hydration 并 bump to 0.0.16 |
+
+### Testing
+
+- [OK] API端到端：登录/刷新/browse/上传/删任务/删云目录/恢复配置
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 115有号后可补测；B-road按需
