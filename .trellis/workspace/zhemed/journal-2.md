@@ -436,3 +436,39 @@ fetch origin 后对比：本地b77c1f7领先178，上游374affd领先20（08-30~
 ### Next Steps
 
 - 用户确认后建合入任务执行cherry-pick与验证
+
+
+## Session 70: 合入上游353b830目录错位修复并发布0.0.13
+<!-- trellis-session: v=2 fp=43ff3fd97e560866 -->
+
+**Date**: 2026-09-05
+**Task**: 合入上游353b830目录错位修复并发布0.0.13
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+cherry-pick上游353b830（CloudLocalUploadPanel目录错位8行修复），vue-tsc/go vet均为0，vite构建102文件，docker 105MB推送0.0.13/v0.0.13/latest，中途发现远端多出09-03任务归档2提交，以merge汇合（解index.md冲突保留双方sessions），本地容器已换latest并健康。
+
+### Main Changes
+
+- cherry-pick 353b8308，README/compose bump到v0.0.13，重建前端产物
+- GHCR三标签推送sha256:b369a2e，git tag v0.0.13，github/main同步
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5b0351b` | fix: 合入上游353b830从服务器上传目录错位修复 and bump to 0.0.13 |
+
+### Testing
+
+- [OK] vue-tsc 0错误，go vet干净，go build 21MB，容器health ok且运行新镜像6d205b58
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 候选c7a424c认证修复与de83b46批次化待单独评估

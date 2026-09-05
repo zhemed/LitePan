@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 69
+- **Total Sessions**: 70
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~438 | Active |
+| `journal-2.md` | ~474 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 70 | 2026-09-05 | 合入上游353b830目录错位修复并发布0.0.13 | `5b0351b` | `main` |
 | 69 | 2026-09-05 | 评估353b830可安全合入：apply-check通过风险低 | - | `main` |
 | 68 | 2026-09-05 | 检查上游Ponphil更新：领先20提交，不建议整体同步 | - | `main` |
 | 67 | 2026-09-03 | 调查上传任务重试次数与重试规则 | - | `main` |
