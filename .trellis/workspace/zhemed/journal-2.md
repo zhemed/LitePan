@@ -641,3 +641,38 @@ c7a424c白名单30文件发0.0.14（剔除2绑已删模块测试）；de83b46拆
 ### Next Steps
 
 - 用户定夺执行B1（可附带5行加固）
+
+
+## Session 76: 一次合入B-road发0.0.17，冒烟全过
+<!-- trellis-session: v=2 fp=3a6c3e85a4b0a9b5 -->
+
+**Date**: 2026-09-05
+**Task**: 一次合入B-road发0.0.17，冒烟全过
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+B1B2B3一次合入：14文件直合+manager struct/router/单测/TaskPanel等手工移植，跳过ServerLocal透传与中继引用。vue-tsc/go全过，真传3文件冒烟（batch落库、pause空更新、SSE snapshot、delete），树算法1万任务8.3ms。痕迹全清。
+
+### Main Changes
+
+- 子任务与父任务归档，线上0.0.17
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `74230af` | feat: 一次合入作者B-road并 bump to 0.0.17 |
+
+### Testing
+
+- [OK] 自动化+API冒烟+树算法实测；万级与UI深测留待业务
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 真实业务验证批量折叠展示
