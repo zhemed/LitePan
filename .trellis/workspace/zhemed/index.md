@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 73
+- **Total Sessions**: 74
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~577 | Active |
+| `journal-2.md` | ~610 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 74 | 2026-09-05 | 调查B-road：值得做拆B1先合B2B3后合 | - | `main` |
 | 73 | 2026-09-05 | 验证0.0.14认证与0.0.15上传链通过，发现并修复batch落库缺口发0.0.16 | `65db496` | `main` |
 | 72 | 2026-09-05 | 执行剩余上游合入完成：0.0.14认证+0.0.15文件夹上传 | `d972292` | `main` |
 | 71 | 2026-09-05 | 调查剩余上游提交：c7a424c可挑拣合入风险中，de83b46需拆AB路 | - | `main` |

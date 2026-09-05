@@ -575,3 +575,36 @@ c7a424c白名单30文件发0.0.14（剔除2绑已删模块测试）；de83b46拆
 ### Next Steps
 
 - 115有号后可补测；B-road按需
+
+
+## Session 74: 调查B-road：值得做拆B1先合B2B3后合
+<!-- trellis-session: v=2 fp=7e0ab8ec98a56f92 -->
+
+**Date**: 2026-09-05
+**Task**: 调查B-road：值得做拆B1先合B2B3后合
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+基于新基线重算：后端sse等7文件PASS，manager拆6hunk（struct+init手工、hydration已等价合入），worker两处小移植，TaskPanel需681行基手工重写；PASS≠可编译排除panelActions/taskStream悬空引用；B1向后兼容可独立先合，B2+B3绑UI实测。
+
+### Main Changes
+
+- 调查报告归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] apply-check逐文件+hunk级+本地符号交叉验证
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户定夺：执行B1和/或B2+B3
