@@ -33,7 +33,7 @@ type AuthCoordinator interface {
 	Register(accountID int64)
 	Unregister(accountID int64) bool
 	TriggerRecalculation(reason string)
-	RecoverAccount(ctx context.Context, accountID int64)
+	RecoverAccount(ctx context.Context, accountID int64) error
 }
 
 // AccountLifecycle 账号禁用时暂停、启用时恢复、删除前清理各模块关联任务与挂载。
@@ -218,16 +218,19 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (View, error) 
 	if err := s.accounts.Update(ctx, a); err != nil {
 		return View{}, err
 	}
-	if authChanged {
-		if err := s.upsertAuthFromFields(ctx, id, existingAuth, authFields, driverType, true); err != nil {
+	if authChanged || (s.auth == nil && existingAuth != nil) {
+		if err := s.upsertAuthFromFields(ctx, id, existingAuth, authFields, driverType, authChanged); err != nil {
 			return View{}, err
-		}
-		if s.auth != nil {
-			s.auth.RecoverAccount(ctx, id)
 		}
 	}
 	s.dropDriver(ctx, id)
 	s.invalidateAccountCaches(id)
+	// 连接测试已通过，凭据未变化也要恢复；先清理旧实例，再通知后台任务。
+	if s.auth != nil && (existingAuth != nil || authChanged) {
+		if err := s.auth.RecoverAccount(ctx, id); err != nil {
+			return View{}, err
+		}
+	}
 	activeChanged := existing.IsActive != a.IsActive
 	switch {
 	case !a.IsActive:
@@ -319,12 +322,16 @@ func (s *Service) upsertAuthFromFields(ctx context.Context, accountID int64, exi
 	}
 	st := auth.ApplyUpdate(existing, fields)
 	st.AccountID = accountID
-	if reseedSchedule && auth.HasCredentials(st) {
+	// 已有账号由认证服务清理负面状态并发恢复事件，不能在这里提前抹掉旧状态。
+	if s.auth == nil {
 		st.Status = domain.AuthActive
 		st.ActiveAttempts = 0
 		st.PassiveAttempts = 0
 		st.LastError = ""
+		st.LastFailureKind = ""
 		st.NextRetryAt = time.Time{}
+	}
+	if reseedSchedule && auth.HasCredentials(st) {
 		st.TokenExpires = time.Time{}
 		st.CookieExpires = time.Time{}
 		st.LastRefreshAt = time.Time{}

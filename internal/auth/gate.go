@@ -25,16 +25,9 @@ func (g *Gate) Check(ctx context.Context, accountID int64) error {
 	}
 	now := g.svc.now()
 	switch st.Status {
-	case domain.AuthFailed:
-		return authBlocked(st, now)
-	case domain.AuthTokenExpired:
-		if err := g.HandlePassiveError(ctx, accountID); err != nil {
-			return authBlocked(st, now)
-		}
-		return nil
-	case domain.AuthCooldown:
-		if !st.NextRetryAt.IsZero() && now.Before(st.NextRetryAt) {
-			return authBlocked(st, now)
+	case domain.AuthFailed, domain.AuthTokenExpired, domain.AuthCooldown:
+		if err := authBlocked(st, now); err != nil {
+			return err
 		}
 		return g.HandlePassiveError(ctx, accountID)
 	default:
@@ -47,27 +40,7 @@ func (g *Gate) HandlePassiveError(ctx context.Context, accountID int64) error {
 	if g == nil || g.svc == nil {
 		return nil
 	}
-	unlock := g.svc.locks.Lock(accountID)
-	defer unlock()
-
-	st, err := g.svc.loadState(ctx, accountID)
-	if err != nil {
-		return err
-	}
-	now := g.svc.now()
-	if st.Status == domain.AuthActive && !st.LastRefreshAt.IsZero() {
-		if now.Sub(st.LastRefreshAt) < passiveReuseWindow {
-			return nil
-		}
-	}
-	if st.Status == domain.AuthCooldown && !st.NextRetryAt.IsZero() && now.Before(st.NextRetryAt) {
-		return authBlocked(st, now)
-	}
-	if st.Status == domain.AuthFailed || st.Status == domain.AuthTokenExpired {
-		return authBlocked(st, now)
-	}
-
-	outcome, rerr := g.svc.refreshUnlocked(ctx, accountID, driver.CallerPassive)
+	outcome, rerr := g.svc.Refresh(ctx, accountID, driver.CallerPassive)
 	if outcome == driver.RefreshSuccess {
 		return nil
 	}
@@ -75,4 +48,21 @@ func (g *Gate) HandlePassiveError(ctx context.Context, accountID int64) error {
 		return rerr
 	}
 	return domain.Errf(domain.CodeAuthExpired)
+}
+
+// 重试后仍认证失败，不能继续把账号视为正常；并发失败只登记首个。
+func (g *Gate) HandleRetryFailure(ctx context.Context, accountID int64, cause error) {
+	if g == nil || g.svc == nil || !IsAuthError(cause) {
+		return
+	}
+	ctx, unlock, err := g.svc.lockAccount(ctx, accountID)
+	if err != nil {
+		return
+	}
+	defer unlock()
+	st, err := g.svc.loadState(ctx, accountID)
+	if err != nil || st.Status != domain.AuthActive {
+		return
+	}
+	g.svc.recordRefreshFailure(ctx, accountID, st, driver.RefreshRetryable, driver.CallerPassive, cause)
 }

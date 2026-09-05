@@ -35,7 +35,7 @@ func classifyRefreshError(err error) driver.RefreshOutcome {
 		strings.Contains(msg, "不能都为空") {
 		return driver.RefreshFatal
 	}
-	return driver.RefreshRetryable
+	return driver.ClassifyOAuthRefreshError(err)
 }
 
 func errorCode(err error) int64 {
@@ -94,6 +94,10 @@ type refreshData struct {
 }
 
 func (d *Driver) doRefresh(ctx context.Context) (string, error) {
+	return d.RefreshToken(ctx, d.currentToken, d.exchangeToken, classifyRefreshError)
+}
+
+func (d *Driver) exchangeToken(ctx context.Context) (string, error) {
 	d.mu.Lock()
 	refresh := d.refresh
 	d.mu.Unlock()
@@ -106,7 +110,7 @@ func (d *Driver) doRefresh(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if data.AccessToken == "" {
-		return "", domain.Errorf(domain.CodeAuthExpired, "115 刷新响应缺少 access_token")
+		return "", domain.Errorf(domain.CodeDriverError, "115 刷新响应缺少 access_token")
 	}
 	d.mu.Lock()
 	d.token = data.AccessToken

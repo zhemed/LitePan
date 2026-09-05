@@ -4,7 +4,6 @@ import "time"
 
 const (
 	activeFailedThreshold  = 5
-	passiveFailedThreshold = 10
 	passiveCooldown        = 60 * time.Second
 	failedRetryCooldown    = 24 * time.Hour
 	passiveReuseWindow     = 20 * time.Second

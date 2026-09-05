@@ -14,6 +14,7 @@ import (
 )
 
 type Driver struct {
+	driver.AuthRefreshControl
 	add       Addition
 	client    *http.Client
 	oauthBase string

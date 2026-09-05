@@ -12,5 +12,8 @@ func classifyFailureKind(outcome driver.RefreshOutcome, cause error) domain.Auth
 	if domain.IsNetworkError(cause) {
 		return domain.AuthFailureNetwork
 	}
-	return domain.AuthFailureAuth
+	if domain.IsAuthExpiredError(cause) {
+		return domain.AuthFailureAuth
+	}
+	return domain.AuthFailureUpstream
 }

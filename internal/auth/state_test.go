@@ -247,7 +247,7 @@ func TestCheckBlocksNetworkCooldown(t *testing.T) {
 		LastError:       "dial tcp: i/o timeout",
 	}
 	err := svc.Gate().Check(context.Background(), 1)
-	if ae, ok := domain.AsAppError(err); !ok || ae.Code != domain.CodeAuthExpired {
+	if ae, ok := domain.AsAppError(err); !ok || ae.Code != domain.CodeDriverError {
 		t.Fatalf("network cooldown should block automatic refresh: %v", err)
 	}
 	if drv.calls != 0 {
@@ -365,5 +365,63 @@ func TestRefreshTreatsDriverErrorAsRetryable(t *testing.T) {
 	outcome, err := svc.Refresh(context.Background(), 1, driver.CallerActive)
 	if err == nil || outcome != driver.RefreshRetryable {
 		t.Fatalf("expected retryable error, got outcome=%s err=%v", outcome, err)
+	}
+}
+
+// 手动保存/恢复入口不伪装"刚刷新过"：连接测试通过但未真正换 Token 时，
+// 不得把 LastRefreshAt 推进到 now，否则调度器会以为刚刷新过、复用窗口
+// 内连续返回成功而空转（100 轮无实际刷新）。
+func TestRecoverAccountWithoutRefreshDoesNotFakeRefreshTime(t *testing.T) {
+	now := time.Date(2026, 6, 25, 12, 0, 0, 0, time.UTC)
+	svc, repo, drv, bus := newTestService(now, driver.RefreshSuccess)
+	defer bus.Close(context.Background())
+	// 凭据未变、状态仍健康，但 TokenExpires 已过期 → 调度器认为"该刷新了"。
+	repo.states[1] = &domain.AuthState{
+		AccountID:     1,
+		Status:        domain.AuthActive,
+		AccessToken:   "tok",
+		TokenExpires:  now.Add(-time.Minute),
+		LastRefreshAt: now.Add(-2 * time.Hour),
+	}
+	if err := svc.RecoverAccount(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := repo.Get(context.Background(), 1)
+	if !st.LastRefreshAt.Equal(now.Add(-2 * time.Hour)) {
+		t.Fatalf("未真实刷新不应推进 LastRefreshAt：%v", st.LastRefreshAt)
+	}
+	// 调度器连续 100 轮：应发生一次真实刷新（推进 TokenExpires），而非 0 次空转。
+	for i := 0; i < 100; i++ {
+		if _, err := svc.Refresh(context.Background(), 1, driver.CallerActive); err != nil {
+			t.Fatalf("第 %d 轮：%v", i, err)
+		}
+	}
+	if drv.calls != 1 {
+		t.Fatalf("期望到期后真实刷新 1 次结束空转，实际驱动刷新 %d 次", drv.calls)
+	}
+	st, _ = repo.Get(context.Background(), 1)
+	if !st.TokenExpires.After(now) {
+		t.Fatalf("真实刷新应推进 TokenExpires：%+v", st)
+	}
+}
+
+// 复用窗口只能用于"刚完成的真实刷新"：LastRefreshAt 很近但 TokenExpires 已过期时，
+// 说明那次"成功"没有真正推进凭据可用期，不应复用以掩盖该发生的刷新。
+func TestReuseWindowDoesNotMaskExpiredSchedule(t *testing.T) {
+	now := time.Date(2026, 6, 25, 12, 0, 0, 0, time.UTC)
+	svc, repo, drv, bus := newTestService(now, driver.RefreshSuccess)
+	defer bus.Close(context.Background())
+	repo.states[1] = &domain.AuthState{
+		AccountID:     1,
+		Status:        domain.AuthActive,
+		AccessToken:   "tok",
+		TokenExpires:  now.Add(-time.Minute),
+		LastRefreshAt: now.Add(-5 * time.Second), // 看似刚刷过
+	}
+	if _, err := svc.Refresh(context.Background(), 1, driver.CallerActive); err != nil {
+		t.Fatal(err)
+	}
+	if drv.calls != 1 {
+		t.Fatalf("TokenExpires 已过期的账号不应被复用窗口吞掉真实刷新，calls=%d", drv.calls)
 	}
 }
