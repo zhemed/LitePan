@@ -505,3 +505,38 @@ c7a424c：26源文件全PASS，接口RecoverAccount三触点全覆盖，排除7�
 ### Next Steps
 
 - 用户定夺：先执行c7a424c挑拣合入和/或A路文件夹上传
+
+
+## Session 72: 执行剩余上游合入完成：0.0.14认证+0.0.15文件夹上传
+<!-- trellis-session: v=2 fp=646d04fbf5641791 -->
+
+**Date**: 2026-09-05
+**Task**: 执行剩余上游合入完成：0.0.14认证+0.0.15文件夹上传
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+c7a424c白名单30文件发0.0.14（剔除2绑已删模块测试）；de83b46拆A/B路，A路17白名单+tasks去toggle行+store11hunk发0.0.15，migration0022在线生效。B路（任务树/SSE）未动。全量测试仅基线已知file失败。
+
+### Main Changes
+
+- 两子任务+父任务归档，GHCR/github/容器三同步到0.0.15
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d972292` | feat: 合入上游de83b46的A路文件夹上传链 and bump to 0.0.15 |
+
+### Testing
+
+- [OK] vue-tsc0、go build/vet0、定向test全过、容器health ok、新镜像ID核对一致
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户真机验证：认证刷新/文件夹上传UI清单见两份report
