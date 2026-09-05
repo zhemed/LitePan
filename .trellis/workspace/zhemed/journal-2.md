@@ -364,6 +364,11 @@ Webhook可彻底移除
 
 **Date**: 2026-09-05
 **Task**: 检查上游Ponphil更新：领先20提交，不建议整体同步
+## Session 67: 调查上传任务重试次数与重试规则
+<!-- trellis-session: v=2 fp=dfd28a8a695b7148 -->
+
+**Date**: 2026-09-03
+**Task**: 调查上传任务重试次数与重试规则
 **Package**: backend
 **Branch**: `main`
 
@@ -375,6 +380,11 @@ fetch origin 后对比：本地b77c1f7领先178，上游374affd领先20（08-30~
 
 - git fetch origin，比对 HEAD...origin/main = 178/20，分叉点 4c160d9
 - 20提交逐个分类：3个相关、17个忽略，源码diff 171文件+7893/-1472
+任务级无自动重试；驱动分片级2~3次写死重试；认证刷新1次；前端手动重试
+
+### Main Changes
+
+- 新增 report.md 78行证据链
 
 ### Git Commits
 
@@ -383,6 +393,7 @@ fetch origin 后对比：本地b77c1f7领先178，上游374affd领先20（08-30~
 ### Testing
 
 - [OK] git status 确认除任务目录外工作区干净，无代码改动
+- [OK] grep retry/backoff/attempt 全仓扫描
 
 ### Status
 
