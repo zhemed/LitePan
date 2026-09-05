@@ -1,0 +1,29 @@
+{
+  "id": "exec-remaining-upstream-merge",
+  "name": "exec-remaining-upstream-merge",
+  "title": "执行剩余上游合入并分批发版",
+  "description": "父任务：先合入c7a424c认证修复发0.0.14，再合入A路文件夹上传链发0.0.15",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": "backend",
+  "priority": "P2",
+  "creator": "zhemed",
+  "assignee": "zhemed",
+  "createdAt": "2026-09-05",
+  "completedAt": "2026-09-05",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-05-merge-c7a424c-auth-fix",
+    "09-05-merge-folder-upload-chain"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
