@@ -709,3 +709,38 @@ fetch确认无新增20提交。所需12项实证全过（0.0.13~0.0.17）。文�
 ### Next Steps
 
 - 是否建小任务补store_test遗漏
+
+
+## Session 78: 补合入遗漏batch单测，无发版
+<!-- trellis-session: v=2 fp=5f6d7feb96fd3fbe -->
+
+**Date**: 2026-09-05
+**Task**: 补合入遗漏batch单测，无发版
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+移植TestUploadTaskBatchFieldsPersist（25行纯测试），单测通过，vet干净，仅一文件变更，已推main。无版本/tag/镜像变动，线上保持0.0.17。
+
+### Main Changes
+
+- 遗漏任务归档
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b48bb90` | test: 补合入de83b46遗漏的TestUploadTaskBatchFieldsPersist |
+
+### Testing
+
+- [OK] go test单用例+vet
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 4微补丁默认不做；下次发版自动带上此测试
