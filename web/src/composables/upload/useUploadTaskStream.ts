@@ -17,7 +17,7 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
     return error instanceof ApiError && error.status === 401 && error.errorType === "ADMIN_AUTH_REQUIRED";
   }
 
-  function refreshCurrentDirectoryForNewSuccess(tasks: UploadTask[]) {
+  function refreshCurrentDirectoryForNewSuccess(tasks: UploadTask[], fullSnapshot = true) {
     const currentSuccessKeys = new Set<string>();
     let hasNewSuccess = false;
     for (const task of tasks) {
@@ -30,14 +30,18 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
         hasNewSuccess = true;
       }
     }
-    for (const key of refreshedSuccessfulTaskKeys) {
-      if (!currentSuccessKeys.has(key)) refreshedSuccessfulTaskKeys.delete(key);
+    if (fullSnapshot) {
+      for (const key of refreshedSuccessfulTaskKeys) {
+        if (!currentSuccessKeys.has(key)) refreshedSuccessfulTaskKeys.delete(key);
+      }
     }
     // 文件夹上传：等该批次所有任务结束（成功/跳过/失败）后再刷新一次当前目录，
     // 避免在任务创建/上传中途过早消费刷新标记。
     const batches = store.pendingDirRefreshBatches?.value || {};
     for (const [key, info] of Object.entries(batches)) {
-      const members = tasks.filter((t) => String(t.client_task_id || "").startsWith(key + "-"));
+      const members = store.uploadTasks.value.filter((t) =>
+        String(t.batch_id || "") === key || String(t.client_task_id || "").startsWith(key + "-"),
+      );
       if (members.length === 0) continue;
       // 任务出现即说明远端目录已创建，先刷新一次让用户看到文件夹
       if (!info.creationRefreshed) {
@@ -69,14 +73,20 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
 
   async function fetchUploadTasks() {
     try {
-      store.uploadTasks.value = await uploadApi.listTasks();
+      const tasks = await uploadApi.listTasks();
+      store.replaceRemoteUploadTasks(tasks);
       uploadAuthDenied = false;
-      store.uploadTasks.value.forEach(store.ensureUploadTaskDisplayOrder);
-      store.pruneLocalUploadTasksByStableKeys(store.uploadTasks.value.map((task) => getUploadTaskStableKey(task)));
-      refreshCurrentDirectoryForNewSuccess(store.uploadTasks.value);
+      tasks.forEach(store.ensureUploadTaskDisplayOrder);
+      store.pruneLocalUploadTasksByStableKeys(tasks.map((task) => getUploadTaskStableKey(task)));
+      refreshCurrentDirectoryForNewSuccess(tasks);
       if (!store.uploadTaskPanelOpen.value) {
-        if (store.activeUploadTasks.value.length > 0 || Date.now() < keepPollingUntil) startUploadTaskPolling();
-        else stopUploadTaskPolling();
+        if (hasActiveTransferTasks() || Date.now() < keepPollingUntil) {
+          if (typeof EventSource === "undefined") startUploadTaskPolling();
+          else connectUploadTaskStream();
+        } else {
+          disconnectUploadTaskStream();
+          stopUploadTaskPolling();
+        }
       }
       await hooks.startScheduler();
     } catch (e) {
@@ -91,14 +101,15 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
   }
 
   function startUploadTaskPolling() {
-    if (uploadTaskPollingTimer || uploadAuthDenied) return;
-    uploadTaskPollingTimer = setInterval(() => void fetchUploadTasks(), 400);
+    if (uploadTaskPollingTimer || uploadTaskEventSource || uploadAuthDenied) return;
+    uploadTaskPollingTimer = setInterval(() => void fetchUploadTasks(), 2000);
   }
 
   // bumpKeepPolling 在上传受理后保持一段时间的轮询，避免任务尚未创建出来时轮询被停止。
   function bumpKeepPolling(ms = 60000) {
     keepPollingUntil = Date.now() + ms;
-    startUploadTaskPolling();
+    if (typeof EventSource === "undefined") startUploadTaskPolling();
+    else connectUploadTaskStream();
   }
 
   function stopUploadTaskPolling() {
@@ -109,7 +120,7 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
   }
 
   function connectUploadTaskStream() {
-    if (!store.uploadTaskPanelOpen.value || uploadTaskEventSource || uploadAuthDenied) return;
+    if (uploadTaskEventSource || uploadAuthDenied) return;
     if (typeof EventSource === "undefined") {
       startUploadTaskPolling();
       return;
@@ -118,11 +129,26 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
     uploadTaskEventSource = es;
     es.addEventListener("tasks", (ev) => {
       try {
-        const payload = JSON.parse(ev.data || "{}") as { tasks?: UploadTask[] };
-        store.uploadTasks.value = payload.tasks || [];
-        store.uploadTasks.value.forEach(store.ensureUploadTaskDisplayOrder);
-        store.pruneLocalUploadTasksByStableKeys(store.uploadTasks.value.map((task) => getUploadTaskStableKey(task)));
-        refreshCurrentDirectoryForNewSuccess(store.uploadTasks.value);
+        const payload = JSON.parse(ev.data || "{}") as {
+          kind?: "snapshot" | "delta";
+          tasks?: UploadTask[];
+          deleted_task_ids?: string[];
+        };
+        const tasks = payload.tasks || [];
+        if (payload.kind === "delta") {
+          store.upsertRemoteUploadTasks(tasks);
+          store.removeRemoteUploadTasks(payload.deleted_task_ids || []);
+          store.pruneLocalUploadTasksByStableKeys(tasks.map((task) => getUploadTaskStableKey(task)));
+          refreshCurrentDirectoryForNewSuccess(tasks, false);
+        } else {
+          store.replaceRemoteUploadTasks(tasks);
+          tasks.forEach(store.ensureUploadTaskDisplayOrder);
+          store.pruneLocalUploadTasksByStableKeys(tasks.map((task) => getUploadTaskStableKey(task)));
+          refreshCurrentDirectoryForNewSuccess(tasks);
+        }
+        if (!store.uploadTaskPanelOpen.value && !hasActiveTransferTasks() && Date.now() >= keepPollingUntil) {
+          disconnectUploadTaskStream();
+        }
       } catch (e) {
         console.error(e);
       }
@@ -149,6 +175,11 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
     }
     uploadTaskEventSource?.close();
     uploadTaskEventSource = null;
+  }
+
+  function hasActiveTransferTasks() {
+    // 本地已移除中继任务，仅看传输任务（上游另计 activeRelayCount）。
+    return store.activeUploadTasks.value.length > 0;
   }
 
   function cleanupUploadTasks() {

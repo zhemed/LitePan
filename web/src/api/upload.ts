@@ -17,6 +17,11 @@ export interface UploadRuntimeConfig {
   builtin_temp_dir?: string;
 }
 
+export interface BatchControlUploadResult {
+  updated_task_ids: string[];
+  missing_task_ids: string[];
+}
+
 export const uploadApi = {
   getRuntime() {
     return fetch("/api/files/upload/runtime").then((r) => parseJSON<UploadRuntimeConfig>(r));
@@ -47,6 +52,14 @@ export const uploadApi = {
     );
   },
 
+  batchPause(taskIds: string[]) {
+    return fetch("/api/files/upload/tasks/batch-pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_ids: taskIds }),
+    }).then((r) => parseJSON<BatchControlUploadResult>(r));
+  },
+
   deleteTask(taskId: string, deleteUploadedFile = false) {
     const qs = deleteUploadedFile ? "?delete_uploaded_file=true" : "";
     return fetch(`/api/files/upload/tasks/${taskId}${qs}`, { method: "DELETE" }).then((r) =>
@@ -54,11 +67,15 @@ export const uploadApi = {
     );
   },
 
-  batchDelete(taskIds: string[], deleteUploadedFile = false) {
+  batchDelete(taskIds: string[], deleteUploadedFile = false, deleteBatchRoots = false) {
     return fetch("/api/files/upload/tasks/batch-delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ task_ids: taskIds, delete_uploaded_file: deleteUploadedFile }),
+      body: JSON.stringify({
+        task_ids: taskIds,
+        delete_uploaded_file: deleteUploadedFile,
+        delete_batch_roots: deleteBatchRoots,
+      }),
     }).then((r) => parseJSON<BatchDeleteUploadResult>(r));
   },
 

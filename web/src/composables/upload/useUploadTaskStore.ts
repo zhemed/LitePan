@@ -72,18 +72,13 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     const preferred = Number(task.queue_order || 0);
     const next = preferred > 0 ? preferred : uploadTaskOrderCounter + 1;
     uploadTaskOrderCounter = Math.max(uploadTaskOrderCounter, next);
-    uploadTaskOrderMap.value = { ...uploadTaskOrderMap.value, [key]: next };
+    uploadTaskOrderMap.value[key] = next;
   }
 
   const displayUploadTasks = computed(() => {
-    const merged = [...localUploadTasks.value, ...uploadTasks.value].filter(
+    return [...localUploadTasks.value, ...uploadTasks.value].filter(
       (t) => !hiddenUploadTaskKeys.has(getUploadTaskStableKey(t)),
     );
-    return [...merged].sort((a, b) => {
-      const oa = uploadTaskOrderMap.value[getUploadTaskStableKey(a)] ?? Number.MAX_SAFE_INTEGER;
-      const ob = uploadTaskOrderMap.value[getUploadTaskStableKey(b)] ?? Number.MAX_SAFE_INTEGER;
-      return oa - ob;
-    });
   });
 
   const activeUploadTasks = computed(() =>

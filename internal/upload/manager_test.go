@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,21 +15,49 @@ import (
 	"litepan/internal/domain"
 	"litepan/internal/driver"
 	"litepan/internal/eventbus"
+	"litepan/internal/file"
 )
 
-type fakeDeleterDriver struct{ deleted [][]string }
+type fakeDeleterDriver struct {
+	deleted [][]string
+	listed  map[string][]domain.FileItem
+}
 
 func (d *fakeDeleterDriver) Config() driver.Config      { return driver.Config{Name: "x"} }
 func (d *fakeDeleterDriver) GetAddition() any           { return &struct{}{} }
 func (d *fakeDeleterDriver) Init(context.Context) error { return nil }
 func (d *fakeDeleterDriver) Drop(context.Context) error { return nil }
 func (d *fakeDeleterDriver) Ping(context.Context) error { return nil }
-func (d *fakeDeleterDriver) ListFiles(context.Context, string) ([]domain.FileItem, error) {
-	return nil, nil
+func (d *fakeDeleterDriver) ListFiles(_ context.Context, parentID string) ([]domain.FileItem, error) {
+	return d.listed[parentID], nil
 }
 func (d *fakeDeleterDriver) DeleteFiles(_ context.Context, ids []string) error {
 	d.deleted = append(d.deleted, ids)
 	return nil
+}
+
+func TestBatchPause(t *testing.T) {
+	m := NewManager(Options{})
+	m.mu.Lock()
+	first := m.newTaskStateLocked(CreateParams{FileName: "01.mp4", AccountID: 1, TargetPath: "root"})
+	second := m.newTaskStateLocked(CreateParams{FileName: "02.mp4", AccountID: 1, TargetPath: "root"})
+	m.addTaskLocked(first)
+	m.addTaskLocked(second)
+	m.mu.Unlock()
+
+	result := m.BatchPause(context.Background(), []string{first.TaskID, second.TaskID, first.TaskID, "missing"})
+	if len(result.UpdatedTaskIDs) != 2 {
+		t.Fatalf("updated=%v, want 2 unique tasks", result.UpdatedTaskIDs)
+	}
+	if len(result.MissingTaskIDs) != 1 || result.MissingTaskIDs[0] != "missing" {
+		t.Fatalf("missing=%v, want [missing]", result.MissingTaskIDs)
+	}
+	for _, taskID := range []string{first.TaskID, second.TaskID} {
+		task, ok := m.Get(context.Background(), taskID)
+		if !ok || task.Status != StatusPaused {
+			t.Fatalf("task %s status=%v ok=%v, want paused", taskID, task, ok)
+		}
+	}
 }
 
 type fakeProvider struct{ drv driver.Driver }
@@ -293,6 +322,162 @@ func TestDeleteUploadedFileFailureKeepsTask(t *testing.T) {
 	}
 }
 
+func TestBatchDeleteOwnedFolderRemovesBatchRootOnce(t *testing.T) {
+	drv := &fakeDeleterDriver{listed: map[string][]domain.FileItem{
+		"target-parent": {{ID: "uploaded-folder", Name: "folder-name", IsDir: true}},
+	}}
+	exec := driverexec.New(fakeProvider{drv: drv}, nil)
+	files := file.NewService(exec, nil, nil, nil, nil, nil)
+	m := NewManager(Options{Exec: exec, Files: files, DataDir: t.TempDir()})
+
+	const batchID = "folder-batch"
+	ids := []string{"task1", "task2"}
+	m.mu.Lock()
+	for index, id := range ids {
+		m.tasks[id] = &taskState{
+			Task: Task{
+				TaskID:     id,
+				BatchID:    batchID,
+				BatchName:  "folder-name",
+				AccountID:  7,
+				Status:     StatusSuccess,
+				TargetPath: "nested-dir",
+				Result: map[string]any{
+					"file_id":              fmt.Sprintf("file-%d", index),
+					"parent_id":            "nested-dir",
+					"batch_root_id":        "uploaded-folder",
+					"batch_root_parent_id": "target-parent",
+					"batch_root_owned":     true,
+				},
+			},
+			runDone: make(chan struct{}),
+		}
+	}
+	m.mu.Unlock()
+
+	result := m.BatchDelete(context.Background(), ids, true, true)
+	if len(result.FailedTaskIDs) != 0 || len(result.DeletedTaskIDs) != 2 {
+		t.Fatalf("batch delete result = %+v", result)
+	}
+	if len(drv.deleted) != 1 || len(drv.deleted[0]) != 1 || drv.deleted[0][0] != "uploaded-folder" {
+		t.Fatalf("deleted calls = %#v, want one root-folder delete", drv.deleted)
+	}
+}
+
+func TestBatchDeletePartialFolderFallsBackToFiles(t *testing.T) {
+	drv := &fakeDeleterDriver{}
+	exec := driverexec.New(fakeProvider{drv: drv}, nil)
+	files := file.NewService(exec, nil, nil, nil, nil, nil)
+	m := NewManager(Options{Exec: exec, Files: files, DataDir: t.TempDir()})
+
+	const batchID = "folder-batch"
+	m.mu.Lock()
+	for _, id := range []string{"task1", "task2"} {
+		m.tasks[id] = &taskState{
+			Task: Task{
+				TaskID:     id,
+				BatchID:    batchID,
+				AccountID:  7,
+				Status:     StatusSuccess,
+				TargetPath: "nested-dir",
+				Result: map[string]any{
+					"file_id":              id + "-file",
+					"parent_id":            "nested-dir",
+					"batch_root_id":        "uploaded-folder",
+					"batch_root_parent_id": "target-parent",
+					"batch_root_owned":     true,
+				},
+			},
+			runDone: make(chan struct{}),
+		}
+	}
+	m.mu.Unlock()
+
+	result := m.BatchDelete(context.Background(), []string{"task1"}, true, true)
+	if len(result.FailedTaskIDs) != 0 || len(result.DeletedTaskIDs) != 1 {
+		t.Fatalf("batch delete result = %+v", result)
+	}
+	if len(drv.deleted) == 0 || len(drv.deleted[0]) != 1 || drv.deleted[0][0] != "task1-file" {
+		t.Fatalf("deleted calls = %#v, partial batch must delete selected file only", drv.deleted)
+	}
+}
+
+func TestBatchDeleteUnconfirmedFolderFallsBackToFiles(t *testing.T) {
+	drv := &fakeDeleterDriver{listed: map[string][]domain.FileItem{
+		"target-parent": {{ID: "other-folder", Name: "folder-name", IsDir: true}},
+	}}
+	exec := driverexec.New(fakeProvider{drv: drv}, nil)
+	files := file.NewService(exec, nil, nil, nil, nil, nil)
+	m := NewManager(Options{Exec: exec, Files: files, DataDir: t.TempDir()})
+
+	m.mu.Lock()
+	m.tasks["task1"] = &taskState{
+		Task: Task{
+			TaskID: "task1", BatchID: "folder-batch", BatchName: "folder-name",
+			AccountID: 7, Status: StatusSuccess, TargetPath: "nested-dir",
+			Result: map[string]any{
+				"file_id": "uploaded-file", "batch_root_id": "uploaded-folder",
+				"batch_root_parent_id": "target-parent", "batch_root_owned": true,
+			},
+		},
+		runDone: make(chan struct{}),
+	}
+	m.mu.Unlock()
+
+	result := m.BatchDelete(context.Background(), []string{"task1"}, true, true)
+	if len(result.FailedTaskIDs) != 0 || len(result.DeletedTaskIDs) != 1 {
+		t.Fatalf("batch delete result = %+v", result)
+	}
+	if len(drv.deleted) == 0 || len(drv.deleted[0]) != 1 || drv.deleted[0][0] != "uploaded-file" {
+		t.Fatalf("deleted calls = %#v, unconfirmed root must fall back to uploaded file", drv.deleted)
+	}
+}
+
+func TestBatchPauseDoesNotReportTerminalTaskAsUpdated(t *testing.T) {
+	m := NewManager(Options{})
+	m.mu.Lock()
+	m.tasks["done"] = &taskState{Task: Task{TaskID: "done", Status: StatusSuccess}}
+	m.mu.Unlock()
+
+	result := m.BatchPause(context.Background(), []string{"done"})
+	if len(result.UpdatedTaskIDs) != 0 || len(result.MissingTaskIDs) != 0 {
+		t.Fatalf("batch pause result = %+v", result)
+	}
+}
+
+func TestBatchDeletePausedFolderDoesNotDeleteBatchRoot(t *testing.T) {
+	drv := &fakeDeleterDriver{}
+	exec := driverexec.New(fakeProvider{drv: drv}, nil)
+	files := file.NewService(exec, nil, nil, nil, nil, nil)
+	m := NewManager(Options{Exec: exec, Files: files, DataDir: t.TempDir()})
+
+	m.mu.Lock()
+	m.tasks["task1"] = &taskState{
+		Task: Task{
+			TaskID:     "task1",
+			BatchID:    "folder-batch",
+			AccountID:  7,
+			Status:     StatusPaused,
+			TargetPath: "nested-dir",
+			Result: map[string]any{
+				"batch_root_id":        "uploaded-folder",
+				"batch_root_parent_id": "target-parent",
+				"batch_root_owned":     true,
+			},
+		},
+		runDone: make(chan struct{}),
+	}
+	m.mu.Unlock()
+
+	result := m.BatchDelete(context.Background(), []string{"task1"}, true, true)
+	if len(result.DeletedTaskIDs) != 1 {
+		t.Fatalf("batch delete result = %+v", result)
+	}
+	if len(drv.deleted) != 0 {
+		t.Fatalf("paused batch deleted root: %#v", drv.deleted)
+	}
+}
+
 func TestResumeWaitsForPreviousRunAndReusesCheckpoint(t *testing.T) {
 	releaseFirst := make(chan struct{})
 	defer func() {
@@ -318,12 +503,15 @@ func TestResumeWaitsForPreviousRunAndReusesCheckpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	task, err := m.Create(context.Background(), CreateParams{
-		AccountID:      1,
-		FileName:       "sample.bin",
-		TargetPath:     "0",
-		LocalPath:      localPath,
-		TotalBytes:     16,
-		ConflictPolicy: "overwrite",
+		AccountID:         1,
+		FileName:          "sample.bin",
+		TargetPath:        "0",
+		LocalPath:         localPath,
+		TotalBytes:        16,
+		ConflictPolicy:    "overwrite",
+		BatchRootID:       "folder-id",
+		BatchRootParentID: "root-id",
+		BatchRootOwned:    true,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -375,6 +563,10 @@ func TestResumeWaitsForPreviousRunAndReusesCheckpoint(t *testing.T) {
 	parts, ok := state["completed_slices"].([]any)
 	if !ok || len(parts) != 1 {
 		t.Fatalf("resume completed_slices=%#v want [1]", state["completed_slices"])
+	}
+	resumedTask, ok := m.Get(context.Background(), task.TaskID)
+	if !ok || resumedTask.Result["batch_root_id"] != "folder-id" || resumedTask.Result["batch_root_owned"] != true {
+		t.Fatalf("resume lost batch root metadata: task=%+v ok=%v", resumedTask, ok)
 	}
 }
 

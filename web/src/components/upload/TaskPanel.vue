@@ -111,6 +111,15 @@
         />
 
         <template v-else>
+          <div v-if="taskPanelCategory === 'upload' && currentBatchId" class="task-path-bar">
+            <button type="button" class="task-path-back" @click="leaveTaskFolder()">上传列表</button>
+            <span class="task-path-separator">/</span>
+            <button type="button" class="task-path-crumb" @click="goTaskFolder('')">{{ currentBatchName }}</button>
+            <template v-for="crumb in taskFolderCrumbs" :key="crumb.path">
+              <span class="task-path-separator">/</span>
+              <button type="button" class="task-path-crumb" @click="goTaskFolder(crumb.path)">{{ crumb.name }}</button>
+            </template>
+          </div>
           <div v-if="visibleRows.length > 0" class="table-head">
             <div>文件名</div>
             <div>来源</div>
@@ -118,9 +127,10 @@
             <div>{{ tailColumnLabel }}</div>
           </div>
 
-          <div v-if="visibleRows.length > 0" class="task-list">
+          <div v-if="visibleRows.length > 0" ref="taskListRef" class="task-list" @scroll.passive="onTaskListScroll">
+            <div v-if="virtualTopSpace > 0" class="task-virtual-space" :style="{ height: `${virtualTopSpace}px` }"></div>
             <div
-              v-for="row in visibleRows"
+              v-for="row in renderedRows"
               :key="row.id"
               class="task-row"
               :class="{ 'is-selected': selectedTaskIds.has(row.id) }"
@@ -135,7 +145,17 @@
                     :name="row.badgeName"
                     :size="32"
                   />
-                  <div class="file-name">{{ row.name }}</div>
+                  <span v-if="row.isFolder" class="folder-task-chip"><SvgIcon name="folder" :size="20" /></span>
+                  <button
+                    v-if="row.isFolder"
+                    type="button"
+                    class="file-name file-name-folder"
+                    :disabled="row.isPreparing"
+                    @click.stop="openTaskFolder(row)"
+                  >
+                    {{ row.name }}
+                  </button>
+                  <div v-else class="file-name">{{ row.name }}</div>
                 </div>
                 <div class="source-cell">{{ row.source }}</div>
                 <div class="status-cell" :class="row.statusClass">
@@ -163,6 +183,7 @@
                 <span v-else :class="row.progressClass" :style="{ width: `${clampProgress(row.progress)}%` }"></span>
               </div>
             </div>
+            <div v-if="virtualBottomSpace > 0" class="task-virtual-space" :style="{ height: `${virtualBottomSpace}px` }"></div>
           </div>
 
           <AppStateBlock v-else :message="emptyText" min-height="220px" />
@@ -187,6 +208,7 @@ import SvgIcon from "@/components/icons/SvgIcon.vue";
 import UploadProgressInner from "@/components/upload/UploadProgressInner.vue";
 import UploadTaskSettingsPanel from "@/components/upload/UploadTaskSettingsPanel.vue";
 import { getUploadTaskStableKey } from "@/composables/upload/uploadTaskFormatters";
+import { buildUploadTaskLevel, uploadTaskPathParts, type UploadTaskTreeNode } from "@/composables/upload/uploadTaskTree";
 import { formatSize } from "@/utils/format";
 import type { UploadTask } from "@/types/upload";
 import type { useUploadTasks } from "@/composables/useUploadTasks";
@@ -215,6 +237,12 @@ type PanelRow = {
   badgeName: string;
   badgeColor: string;
   searchText: string;
+  state: StateKey;
+  isFolder?: boolean;
+  batchId?: string;
+  folderPath?: string;
+  tasks?: UploadTask[];
+  isPreparing?: boolean;
 };
 
 const props = defineProps<{
@@ -234,6 +262,7 @@ const {
   getUploadTaskStatusText,
   handleDeleteUploadTasks,
   handleUploadTaskPrimaryAction,
+  handleToggleUploadTasks,
   openUploadNoticeFromPanel,
   closeUploadTaskPanel,
   refreshUploadTaskServerConcurrency,
@@ -259,6 +288,13 @@ const settingsOpen = ref(false);
 const panelExpanded = ref(false);
 const selectedTaskIds = ref<Set<string>>(new Set());
 const uploadStateFilter = ref<StateKey>("active");
+const taskListRef = ref<HTMLElement | null>(null);
+const taskListScrollTop = ref(0);
+const taskListViewportHeight = ref(480);
+const virtualRowHeight = ref(53);
+const currentBatchId = ref("");
+const currentBatchName = ref("");
+const currentFolderPath = ref("");
 const panelRoot = ref<HTMLElement | null>(null);
 
 function useFullscreenPanelLayout() {
@@ -275,6 +311,11 @@ function updatePanelLeft() {
   if (panelRoot.value) {
     panelRoot.value.style.left = `${document.documentElement.clientWidth / 2}px`;
   }
+}
+
+function onWindowResize() {
+  updatePanelLeft();
+  updateTaskListViewport();
 }
 
 function openUploadHelp() {
@@ -424,10 +465,116 @@ function buildUploadRow(task: UploadTask): PanelRow {
     badgeName: String(badge.name || "网盘").slice(0, 2),
     badgeColor: badge.color || "#4b63e9",
     searchText: [task.file_name, task.account_name, task.target_display_path, task.message, task.error].join(" "),
+    state: uploadStateOf(task),
   };
 }
 
-const uploadRows = computed(() => uploadTasks.value.map(buildUploadRow));
+function batchDisplayStatus(tasks: UploadTask[]) {
+  const statuses = tasks.map(uploadDisplayStatus);
+  if (statuses.some((status) => status === "running")) return "running";
+  if (statuses.some((status) => status === "pending")) return "pending";
+  if (statuses.some((status) => status === "paused")) return "paused";
+  if (statuses.some((status) => status === "failed" || status === "canceled")) return "failed";
+  return "success";
+}
+
+function buildUploadNodeRow(node: UploadTaskTreeNode): PanelRow {
+  if (!node.isFolder && node.tasks.length === 1) {
+    const row = buildUploadRow(node.tasks[0]);
+    row.id = node.id;
+    row.name = node.name;
+    row.tasks = node.tasks;
+    return row;
+  }
+  const tasks = node.tasks;
+  const representative = tasks[0];
+  const badge = getUploadTaskDriverBadge(representative);
+  const preparing = tasks.find((task) => task.batch_placeholder);
+  if (preparing) {
+    const failed = uploadStateOf(preparing) === "failed";
+    return {
+      id: node.id,
+      kind: "upload",
+      raw: preparing,
+      name: node.name,
+      source: "文件夹上传",
+      status: failed ? "准备失败" : "正在准备",
+      statusDetail: String(preparing.error || preparing.message || "正在准备远端目录"),
+      statusClass: failed ? "error" : "pending",
+      tail: "---",
+      tailActive: false,
+      progress: Number(preparing.progress || 0),
+      progressClass: "uploading",
+      showProgress: !failed && Number(preparing.progress || 0) > 0,
+      sortOrder: taskOrder(preparing),
+      badgeLogo: badge.logo || "",
+      badgeName: "夹",
+      badgeColor: badge.color || "#4b63e9",
+      searchText: [node.name, preparing.message, preparing.error].join(" "),
+      state: failed ? "failed" : "active",
+      isFolder: true,
+      isPreparing: true,
+      batchId: node.batchId,
+      folderPath: node.path,
+      tasks,
+    };
+  }
+  const statusClass = batchDisplayStatus(tasks);
+  const done = tasks.filter((task) => uploadStateOf(task) === "done").length;
+  const skipped = tasks.filter((task) => String(task.status) === "skipped").length;
+  const failed = tasks.filter((task) => uploadStateOf(task) === "failed").length;
+  const totalBytes = tasks.reduce((sum, task) => sum + Math.max(0, Number(task.total_bytes || 0)), 0);
+  const transferred = tasks.reduce((sum, task) => sum + Math.max(0, uploadTransferredBytes(task)), 0);
+  const fallbackProgress = tasks.reduce((sum, task) => sum + preciseUploadProgress(task), 0) / Math.max(1, tasks.length);
+  const progress = totalBytes > 0 ? clampProgress((transferred * 100) / totalBytes) : fallbackProgress;
+  const speed = tasks.reduce((sum, task) => sum + Math.max(0, Number(task.speed_bytes_per_second || 0)), 0);
+  const state = tasks.some((task) => uploadStateOf(task) === "active")
+    ? "active"
+    : tasks.some((task) => uploadStateOf(task) === "failed")
+      ? "failed"
+      : "done";
+  const status = state === "done"
+    ? skipped === tasks.length
+      ? `已跳过 ${skipped}/${tasks.length}`
+      : skipped > 0
+        ? `完成 ${done - skipped} · 跳过 ${skipped}/${tasks.length}`
+        : `已完成 ${done}/${tasks.length}`
+    : state === "failed"
+      ? `失败 ${failed} · 完成 ${done}/${tasks.length}`
+      : `传输中 ${done}/${tasks.length}`;
+  return {
+    id: node.id,
+    kind: "upload",
+    raw: representative,
+    name: node.name,
+    source: representative.source_type === "server_local" ? "服务器上传" : "文件夹上传",
+    status,
+    statusDetail: `${tasks.length} 个文件${failed > 0 ? ` · ${failed} 个失败` : ""}`,
+    statusClass,
+    tail: state === "done" ? "" : speed > 0 ? `${formatSize(speed)}/s` : "---",
+    tailActive: state !== "done" && speed > 0,
+    progress,
+    progressClass: "uploading",
+    showProgress: state === "active" && progress > 0,
+    sortOrder: tasks.reduce((min, task) => Math.min(min, taskOrder(task)), Number.MAX_SAFE_INTEGER),
+    badgeLogo: badge.logo || "",
+    badgeName: "夹",
+    badgeColor: badge.color || "#4b63e9",
+    searchText: node.name,
+    state,
+    isFolder: true,
+    batchId: node.batchId,
+    folderPath: node.path,
+    tasks,
+  };
+}
+
+const uploadRootRows = computed(() => buildUploadTaskLevel(uploadTasks.value).map(buildUploadNodeRow));
+const uploadRows = computed(() =>
+  currentBatchId.value
+    ? buildUploadTaskLevel(uploadTasks.value, currentBatchId.value, currentFolderPath.value).map(buildUploadNodeRow)
+    : uploadRootRows.value,
+);
 
 function stateFilterOf(_category: CategoryKey) {
   return uploadStateFilter.value;
@@ -437,7 +584,7 @@ const baseRows = computed(() => uploadRows.value);
 
 const currentRows = computed(() =>
   [...baseRows.value]
-    .filter((row) => uploadStateOf(row.raw) === stateFilterOf(taskPanelCategory.value))
+    .filter((row) => row.state === stateFilterOf(taskPanelCategory.value))
     .sort((a, b) => a.sortOrder - b.sortOrder),
 );
 
@@ -447,10 +594,41 @@ const visibleRows = computed(() => {
   return currentRows.value.filter((row) => row.searchText.toLowerCase().includes(query));
 });
 
+const virtualOverscan = 8;
+const virtualStart = computed(() => Math.max(0, Math.floor(taskListScrollTop.value / virtualRowHeight.value) - virtualOverscan));
+const virtualCount = computed(() => Math.ceil(taskListViewportHeight.value / virtualRowHeight.value) + virtualOverscan * 2);
+const renderedRows = computed(() => visibleRows.value.slice(virtualStart.value, virtualStart.value + virtualCount.value));
+const virtualTopSpace = computed(() => virtualStart.value * virtualRowHeight.value);
+const virtualBottomSpace = computed(() =>
+  Math.max(0, (visibleRows.value.length - virtualStart.value - renderedRows.value.length) * virtualRowHeight.value),
+);
+
+function updateTaskListViewport() {
+  taskListViewportHeight.value = taskListRef.value?.clientHeight || 480;
+  virtualRowHeight.value = typeof window !== "undefined" && window.innerWidth <= 768 ? 82 : 53;
+}
+
+function onTaskListScroll() {
+  taskListScrollTop.value = taskListRef.value?.scrollTop || 0;
+}
+
 watch(visibleRows, (rows) => {
   const visibleIds = new Set(rows.map((row) => row.id));
   selectedTaskIds.value = new Set([...selectedTaskIds.value].filter((id) => visibleIds.has(id)));
+  requestAnimationFrame(updateTaskListViewport);
 }, { immediate: true });
+
+watch(taskPanelCategory, () => {
+  if (taskPanelCategory.value !== "upload") leaveTaskFolder();
+  requestAnimationFrame(updateTaskListViewport);
+});
+
+watch(uploadStateFilter, () => {
+  selectedTaskIds.value = new Set();
+  taskListScrollTop.value = 0;
+  if (taskListRef.value) taskListRef.value.scrollTop = 0;
+  requestAnimationFrame(updateTaskListViewport);
+});
 
 const selectedRows = computed(() => visibleRows.value.filter((row) => selectedTaskIds.value.has(row.id)));
 const allVisibleSelected = computed(() => visibleRows.value.length > 0 && visibleRows.value.every((row) => selectedTaskIds.value.has(row.id)));
@@ -462,11 +640,17 @@ function resolveUploadTaskForRow(row: PanelRow): UploadTask | null {
   return null;
 }
 
+function uploadTasksForRow(row: PanelRow) {
+  if (row.kind !== "upload") return [];
+  return row.tasks?.length ? row.tasks : [row.raw as UploadTask];
+}
+
 const selectedToggleTasks = computed(() =>
   selectedRows.value
-    .map(resolveUploadTaskForRow)
+    .flatMap(uploadTasksForRow)
     .filter((task): task is UploadTask => {
       if (!task) return false;
+      if (task.batch_placeholder) return false;
       return ["pending", "running", "paused", "failed", "canceled"].includes(uploadDisplayStatus(task));
     }),
 );
@@ -492,6 +676,7 @@ const showLoading = computed(() => taskPanelCategory.value === "upload" && uploa
 const loadingText = computed(() => uploadTaskPanelLoadingText?.value || "正在加载上传任务...");
 
 function countByState(_category: CategoryKey, state: StateKey) {
+  if (_category === "upload") return uploadRootRows.value.filter((row) => row.state === state).length;
   const rows = uploadRows.value;
   return rows.filter((row) => uploadStateOf(row.raw) === state).length;
 }
@@ -528,6 +713,7 @@ const detailExtra = computed(() => {
   if (!row) return "";
   const details: string[] = [];
   if (row.kind === "upload") {
+    if (row.isFolder) return `${row.tasks?.length || 0} 个文件`;
     const task = row.raw as UploadTask;
     const part = typeof formatUploadPart === "function" ? formatUploadPart(task) : "";
     if (part) details.push(part);
@@ -551,6 +737,38 @@ function handleRowClick(event: MouseEvent, rowId: string) {
   }
   selectedTaskIds.value = new Set([rowId]);
 }
+
+function openTaskFolder(row: PanelRow) {
+  if (!row.isFolder || !row.batchId || row.isPreparing) return;
+  currentBatchId.value = row.batchId;
+  if (!currentBatchName.value) currentBatchName.value = String(row.raw?.batch_name || row.name || "文件夹上传");
+  currentFolderPath.value = row.folderPath || "";
+  selectedTaskIds.value = new Set();
+  keyword.value = "";
+  requestAnimationFrame(() => {
+    if (taskListRef.value) taskListRef.value.scrollTop = 0;
+    onTaskListScroll();
+  });
+}
+
+function leaveTaskFolder() {
+  if (!currentBatchId.value) return;
+  currentFolderPath.value = "";
+  selectedTaskIds.value = new Set();
+  currentBatchId.value = "";
+  currentBatchName.value = "";
+}
+
+function goTaskFolder(path: string) {
+  currentFolderPath.value = path;
+  selectedTaskIds.value = new Set();
+  requestAnimationFrame(() => {
+    if (taskListRef.value) taskListRef.value.scrollTop = 0;
+    onTaskListScroll();
+  });
+}
+
+const taskFolderCrumbs = computed(() => uploadTaskPathParts(currentFolderPath.value));
 
 function showStatusPulse(row: PanelRow) {
   if (row.kind === "upload") {
@@ -581,22 +799,21 @@ const deleteButtonLabel = computed(() => "删除");
 async function handleSelectedToggle() {
   const tasks = [...selectedToggleTasks.value];
   if (!tasks.length) return;
-  const resumeMode = tasks.every((task) => ["paused", "failed", "canceled"].includes(uploadDisplayStatus(task)));
-  for (const task of tasks) {
-    const displayStatus = uploadDisplayStatus(task);
-    if (resumeMode && ["paused", "failed", "canceled"].includes(displayStatus)) {
-      await handleUploadTaskPrimaryAction(task);
-    }
-    if (!resumeMode && ["pending", "running"].includes(displayStatus)) {
-      await handleUploadTaskPrimaryAction(task);
-    }
-  }
+  await handleToggleUploadTasks(tasks);
 }
 
 async function handleSelectedDelete() {
   const rows = [...selectedRows.value];
   if (!rows.length) return;
-  await handleDeleteUploadTasks(rows.map((row) => row.raw as UploadTask));
+  const tasks = rows.flatMap(uploadTasksForRow);
+  const unique = [...new Map(tasks.map((task) => [task.task_id, task])).values()];
+  const preferBatchRootDelete =
+    !currentBatchId.value &&
+    rows.every((row) => row.isFolder && Boolean(row.batchId) && !row.folderPath && !row.isPreparing);
+  await handleDeleteUploadTasks(unique, {
+    preferBatchRootDelete,
+    folderTaskCount: preferBatchRootDelete ? rows.length : 0,
+  });
   selectedTaskIds.value = new Set();
 }
 
@@ -618,6 +835,7 @@ function uploadTransferredBytes(task: UploadTask) {
 
 function useSmoothUploadProgress(row: PanelRow) {
   if (row.kind !== "upload") return false;
+  if (row.isFolder) return false;
   const task = row.raw as UploadTask;
   return Number(task.total_bytes || 0) > 0 && ["pending", "running", "paused"].includes(task.status);
 }
@@ -663,9 +881,10 @@ function uploadStatusRank(task: UploadTask) {
 
 onMounted(() => {
   updatePanelLeft();
-  window.addEventListener("resize", updatePanelLeft);
+  window.addEventListener("resize", onWindowResize);
   document.addEventListener("click", onDocumentClick);
   void refreshUploadTaskServerConcurrency?.();
+  requestAnimationFrame(updateTaskListViewport);
 });
 
 watch(panelExpanded, () => {
@@ -673,7 +892,7 @@ watch(panelExpanded, () => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener("resize", updatePanelLeft);
+  window.removeEventListener("resize", onWindowResize);
   document.removeEventListener("click", onDocumentClick);
 });
 </script>

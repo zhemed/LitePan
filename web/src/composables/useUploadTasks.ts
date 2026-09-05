@@ -139,6 +139,7 @@ export function useUploadTasks(deps: UploadTaskDeps) {
     handleDeleteUploadTask: actions.handleDeleteUploadTask,
     handleDeleteUploadTasks: actions.handleDeleteUploadTasks,
     handleUploadTaskPrimaryAction: actions.handleUploadTaskPrimaryAction,
+    handleToggleUploadTasks: actions.handleToggleUploadTasks,
     openUploadTaskPanel: actions.openUploadTaskPanel,
     closeUploadTaskPanel: actions.closeUploadTaskPanel,
     openUploadNoticeFromPanel: actions.openUploadNoticeFromPanel,

@@ -32,7 +32,7 @@ func (m *Manager) updateProgress(taskID string, uploaded, total int64, message s
 	if !emit {
 		m.mu.Unlock()
 		if st.SpeedBytesPerSecond != prevSpeed {
-			m.broadcast()
+			m.broadcast(taskID)
 		}
 		return
 	}
@@ -51,7 +51,7 @@ func (m *Manager) updateProgress(taskID string, uploaded, total int64, message s
 	st.Message = message
 	st.UpdatedAt = timeutil.UnixFloat(now)
 	m.mu.Unlock()
-	m.broadcast()
+	m.broadcast(taskID)
 }
 
 func calcProgress(uploaded, total int64) int {

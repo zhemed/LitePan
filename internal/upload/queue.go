@@ -122,7 +122,7 @@ func (m *Manager) acquireRunSlot(taskID string, done chan struct{}, cancel conte
 		if !ok || m.stopping || st.runDone != done || st.Status != StatusPending {
 			m.mu.Unlock()
 			if waitingUpdated {
-				m.broadcast()
+				m.broadcast(taskID)
 			}
 			return queueSlotNone, false
 		}
@@ -133,7 +133,7 @@ func (m *Manager) acquireRunSlot(taskID string, done chan struct{}, cancel conte
 			st.cancel = cancel
 			m.mu.Unlock()
 			if waitingUpdated {
-				m.broadcast()
+				m.broadcast(taskID)
 			}
 			return kind, true
 		}

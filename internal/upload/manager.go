@@ -55,7 +55,9 @@ type Manager struct {
 	runCond                sync.Cond
 	subs                   map[chan []byte]struct{}
 	broadcastPending       bool
-	broadcastDirty         bool
+	broadcastAllDirty      bool
+	broadcastDirtyTaskIDs  map[string]struct{}
+	broadcastDeletedTaskIDs map[string]struct{}
 	subMu                  sync.Mutex
 	clientTaskIndex        map[string]string
 	tempRegistry           *TempRegistry
@@ -85,6 +87,8 @@ func NewManager(opts Options) *Manager {
 		limit:                  defaultLimit,
 		subs:                   make(map[chan []byte]struct{}),
 		clientTaskIndex:        make(map[string]string),
+		broadcastDirtyTaskIDs:  make(map[string]struct{}),
+		broadcastDeletedTaskIDs: make(map[string]struct{}),
 		targetDirCache: newUploadTargetDirCache(),
 		runCtx:         runCtx,
 		runCancel:              runCancel,
@@ -187,7 +191,11 @@ func (m *Manager) createBatch(ctx context.Context, params []CreateParams) ([]*Ta
 		persisted = append(persisted, st.TaskID)
 	}
 	if len(created) > 0 {
-		m.broadcast()
+		ids := make([]string, 0, len(created))
+		for _, st := range created {
+			ids = append(ids, st.TaskID)
+		}
+		m.broadcast(ids...)
 	}
 	for _, st := range created {
 		go m.runTask(st.TaskID)
