@@ -7,7 +7,7 @@ const LOCAL_UPLOAD_SESSION_KEY = "litepan.local-upload-tasks";
 
 type PersistedLocalUploadTask = Pick<
   UploadTask,
-  "task_id" | "account_id" | "account_name" | "file_name" | "target_path" | "target_display_path" | "status" | "progress" | "uploaded_bytes" | "total_bytes" | "message" | "error"
+  "task_id" | "batch_id" | "batch_name" | "batch_placeholder" | "account_id" | "account_name" | "file_name" | "rel_path" | "rel_dir" | "target_path" | "target_display_path" | "status" | "progress" | "uploaded_bytes" | "total_bytes" | "message" | "error"
 >;
 
 export function useUploadTaskStore(deps: UploadTaskDeps) {
@@ -21,6 +21,9 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   const uploadTaskServerConcurrency = ref(3);
   const batchPauseInProgress = ref(false);
   const pendingDirRefreshBatches = ref<Record<string, { count: number; creationRefreshed: boolean }>>({});
+  const remoteUploadTaskIndexes = new Map<string, number>();
+  const localUploadTaskIndexes = new Map<string, number>();
+  let localTaskPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
   function registerDirRefreshBatch(key: string, count: number) {
     pendingDirRefreshBatches.value = {
@@ -102,11 +105,17 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
 
   const uploadTaskLabel = computed(() => uploadTaskBadgeText.value || "暂无传输任务");
   function createLocalUploadTask(file: File, options: Partial<UploadTask> = {}): UploadTask {
+    const now = Date.now() / 1000;
     return {
       task_id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      batch_id: options.batch_id,
+      batch_name: options.batch_name,
+      batch_placeholder: options.batch_placeholder,
       account_id: deps.selectedAccountId.value as number,
       account_name: deps.selectedAccountName.value,
       file_name: options.file_name || file.name,
+      rel_path: options.rel_path,
+      rel_dir: options.rel_dir,
       target_path: options.target_path || deps.currentPath.value,
       target_display_path: options.target_display_path || "",
       status: "pending",
@@ -115,6 +124,8 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
       total_bytes: file.size,
       message: "等待发送到 LitePan 服务器",
       error: "",
+      created_at: now,
+      updated_at: now,
     };
   }
 
@@ -128,20 +139,34 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   }
 
   function addLocalUploadTask(task: UploadTask) {
-    ensureUploadTaskDisplayOrder(task);
-    localUploadTasks.value = [task, ...localUploadTasks.value];
+    addLocalUploadTasks([task]);
+  }
+
+  function rebuildLocalUploadTaskIndexes() {
+    localUploadTaskIndexes.clear();
+    localUploadTasks.value.forEach((task, index) => localUploadTaskIndexes.set(task.task_id, index));
+  }
+
+  function addLocalUploadTasks(tasks: UploadTask[]) {
+    if (!tasks.length) return;
+    tasks.forEach(ensureUploadTaskDisplayOrder);
+    // 调度器按展示顺序取下一个本地任务，追加可保持先加入先上传。
+    localUploadTasks.value = [...localUploadTasks.value, ...tasks];
+    rebuildLocalUploadTaskIndexes();
     persistLocalUploadTasks();
   }
 
   function updateLocalUploadTask(taskId: string, patch: Partial<UploadTask>) {
-    localUploadTasks.value = localUploadTasks.value.map((t) =>
-      t.task_id === taskId ? { ...t, ...patch } : t,
-    );
+    const index = localUploadTaskIndexes.get(taskId);
+    if (index === undefined) return;
+    localUploadTasks.value[index] = { ...localUploadTasks.value[index], ...patch };
     persistLocalUploadTasks();
   }
 
   function removeLocalUploadTask(taskId: string) {
     localUploadTasks.value = localUploadTasks.value.filter((t) => t.task_id !== taskId);
+    rebuildLocalUploadTaskIndexes();
+    localUploadTaskPayloads.delete(taskId);
     persistLocalUploadTasks();
   }
 
@@ -149,18 +174,36 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     if (!keys.length) return;
     const keySet = new Set(keys.filter(Boolean));
     if (!keySet.size) return;
-    const next = localUploadTasks.value.filter((task) => !keySet.has(getUploadTaskStableKey(task)));
+    const removedTaskIDs: string[] = [];
+    const next = localUploadTasks.value.filter((task) => {
+      const removed = keySet.has(getUploadTaskStableKey(task));
+      if (removed) removedTaskIDs.push(task.task_id);
+      return !removed;
+    });
     if (next.length === localUploadTasks.value.length) return;
     localUploadTasks.value = next;
+    for (const taskID of removedTaskIDs) {
+      localUploadTaskPayloads.delete(taskID);
+      localUploadTaskControllers.delete(taskID);
+      canceledLocalUploadTaskIds.delete(taskID);
+      pausedLocalUploadTaskIds.delete(taskID);
+      localDispatchingTaskIds.delete(taskID);
+    }
+    rebuildLocalUploadTaskIndexes();
     persistLocalUploadTasks();
   }
 
   function serializeLocalUploadTask(task: UploadTask): PersistedLocalUploadTask {
     return {
       task_id: task.task_id,
+      batch_id: task.batch_id,
+      batch_name: task.batch_name,
+      batch_placeholder: task.batch_placeholder,
       account_id: task.account_id,
       account_name: task.account_name,
       file_name: task.file_name,
+      rel_path: task.rel_path,
+      rel_dir: task.rel_dir,
       target_path: task.target_path,
       target_display_path: task.target_display_path,
       status: task.status,
@@ -173,6 +216,14 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   }
 
   function persistLocalUploadTasks() {
+    if (localTaskPersistTimer) clearTimeout(localTaskPersistTimer);
+    localTaskPersistTimer = setTimeout(() => {
+      localTaskPersistTimer = null;
+      flushLocalUploadTasks();
+    }, 750);
+  }
+
+  function flushLocalUploadTasks() {
     if (typeof window === "undefined") return;
     if (!localUploadTasks.value.length) {
       window.sessionStorage.removeItem(LOCAL_UPLOAD_SESSION_KEY);
@@ -197,6 +248,7 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
       })) as UploadTask[];
       restored.forEach((task) => ensureUploadTaskDisplayOrder(task));
       localUploadTasks.value = restored;
+      rebuildLocalUploadTaskIndexes();
       persistLocalUploadTasks();
     } catch {
       window.sessionStorage.removeItem(LOCAL_UPLOAD_SESSION_KEY);
@@ -204,11 +256,53 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   }
 
   function patchRemoteUploadTask(taskId: string, patch: Partial<UploadTask>) {
-    uploadTasks.value = uploadTasks.value.map((t) => (t.task_id === taskId ? { ...t, ...patch } : t));
+    const index = remoteUploadTaskIndexes.get(taskId);
+    if (index === undefined) return;
+    uploadTasks.value[index] = { ...uploadTasks.value[index], ...patch };
   }
 
   function removeRemoteUploadTask(taskId: string) {
-    uploadTasks.value = uploadTasks.value.filter((t) => t.task_id !== taskId);
+    removeRemoteUploadTasks([taskId]);
+  }
+
+  function replaceRemoteUploadTasks(tasks: UploadTask[]) {
+    const currentByID = new Map(uploadTasks.value.map((task) => [task.task_id, task] as const));
+    uploadTasks.value = tasks.map((task) => {
+      const current = currentByID.get(task.task_id);
+      if (!current) return task;
+      const incomingUpdatedAt = Number(task.updated_at || 0);
+      const currentUpdatedAt = Number(current.updated_at || 0);
+      return incomingUpdatedAt > 0 && currentUpdatedAt > incomingUpdatedAt ? current : task;
+    });
+    remoteUploadTaskIndexes.clear();
+    uploadTasks.value.forEach((task, index) => remoteUploadTaskIndexes.set(task.task_id, index));
+  }
+
+  function upsertRemoteUploadTasks(tasks: UploadTask[]) {
+    for (const task of tasks) {
+      ensureUploadTaskDisplayOrder(task);
+      const index = remoteUploadTaskIndexes.get(task.task_id);
+      if (index === undefined) {
+        remoteUploadTaskIndexes.set(task.task_id, uploadTasks.value.length);
+        uploadTasks.value.push(task);
+      } else {
+        const current = uploadTasks.value[index];
+        const incomingUpdatedAt = Number(task.updated_at || 0);
+        const currentUpdatedAt = Number(current.updated_at || 0);
+        if (incomingUpdatedAt > 0 && currentUpdatedAt > 0 && incomingUpdatedAt < currentUpdatedAt) {
+          continue;
+        }
+        uploadTasks.value[index] = task;
+      }
+    }
+  }
+
+  function removeRemoteUploadTasks(taskIds: string[]) {
+    if (!taskIds.length) return;
+    const removed = new Set(taskIds);
+    const next = uploadTasks.value.filter((task) => !removed.has(task.task_id));
+    if (next.length === uploadTasks.value.length) return;
+    replaceRemoteUploadTasks(next);
   }
 
   function markFolderUploadRefreshPending() {
@@ -250,6 +344,7 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     createLocalUploadTask,
     createSkippedUploadTask,
     addLocalUploadTask,
+    addLocalUploadTasks,
     updateLocalUploadTask,
     removeLocalUploadTask,
     pruneLocalUploadTasksByStableKeys,
@@ -257,6 +352,9 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     restoreLocalUploadTasks,
     patchRemoteUploadTask,
     removeRemoteUploadTask,
+    replaceRemoteUploadTasks,
+    upsertRemoteUploadTasks,
+    removeRemoteUploadTasks,
     markFolderUploadRefreshPending,
     consumeFolderUploadRefreshPending,
   };

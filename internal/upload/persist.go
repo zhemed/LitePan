@@ -119,6 +119,8 @@ func recordFromState(st *taskState) *domain.UploadTaskRecord {
 	return &domain.UploadTaskRecord{
 		TaskID:              st.TaskID,
 		ClientTaskID:        st.ClientTaskID,
+		BatchID:             st.BatchID,
+		BatchName:           st.BatchName,
 		AccountID:           st.AccountID,
 		AccountName:         st.AccountName,
 		DriverType:          st.DriverType,
@@ -158,6 +160,8 @@ func stateFromRecord(row *domain.UploadTaskRecord) *taskState {
 		Task: Task{
 			TaskID:              row.TaskID,
 			ClientTaskID:        row.ClientTaskID,
+			BatchID:             row.BatchID,
+			BatchName:           row.BatchName,
 			AccountID:           row.AccountID,
 			AccountName:         row.AccountName,
 			DriverType:          row.DriverType,

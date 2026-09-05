@@ -16,6 +16,8 @@ const (
 type Task struct {
 	TaskID              string         `json:"task_id"`
 	ClientTaskID        string         `json:"client_task_id,omitempty"`
+	BatchID             string         `json:"batch_id,omitempty"`
+	BatchName           string         `json:"batch_name,omitempty"`
 	AccountID           int64          `json:"account_id"`
 	AccountName         string         `json:"account_name"`
 	DriverType          string         `json:"driver_type"`
@@ -94,6 +96,11 @@ type taskState struct {
 
 type CreateParams struct {
 	ClientTaskID      string
+	BatchID           string
+	BatchName         string
+	BatchRootID       string
+	BatchRootParentID string
+	BatchRootOwned    bool
 	AccountID         int64
 	AccountName       string
 	DriverType        string
@@ -118,12 +125,16 @@ type CreateParams struct {
 
 type ServerLocalCreateParams struct {
 	ClientTaskID      string
+	BatchID           string
+	BatchName         string
 	AccountID         int64
 	AccountName       string
 	DriverType        string
 	FileName          string
 	DisplayName       string
 	SourceType        string
+	RelPath           string
+	RelDir            string
 	TargetPath        string
 	TargetDisplayPath string
 	LocalPath         string
@@ -138,4 +149,25 @@ type BatchDeleteResult struct {
 	FailedTaskIDs  []string          `json:"failed_task_ids"`
 	MissingTaskIDs []string          `json:"missing_task_ids"`
 	FailedMessages map[string]string `json:"failed_messages"`
+}
+
+type BatchControlResult struct {
+	UpdatedTaskIDs []string `json:"updated_task_ids"`
+	MissingTaskIDs []string `json:"missing_task_ids"`
+}
+
+func retainBatchRootMetadata(result map[string]any) map[string]any {
+	if len(result) == 0 {
+		return nil
+	}
+	metadata := make(map[string]any, 3)
+	for _, key := range []string{"batch_root_id", "batch_root_parent_id", "batch_root_owned"} {
+		if value, ok := result[key]; ok {
+			metadata[key] = value
+		}
+	}
+	if len(metadata) == 0 {
+		return nil
+	}
+	return metadata
 }

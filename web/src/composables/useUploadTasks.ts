@@ -76,6 +76,22 @@ export function useUploadTasks(deps: UploadTaskDeps) {
     }
   }
 
+  async function enqueueTerminalFolderFiles(files: File[]) {
+    if (!files.length) return;
+    const rootName = String(
+      (files[0] as File & { litepanRelativePath?: string }).litepanRelativePath || files[0].name,
+    ).split("/")[0];
+    const result = await showConfirm({
+      title: "确认上传",
+      message: `将上传文件夹「${rootName || "所选文件夹"}」中的 ${files.length} 个文件，是否继续？`,
+      confirmText: "上传",
+      cancelText: "取消",
+      danger: false,
+    }).catch(() => null);
+    if (!result || result.action !== "confirm") return;
+    await actions.enqueueUploadFolderFiles(files);
+  }
+
   async function handleUploadFileChange(event: Event) {
     await actions.handleUploadFileChange(event);
   }
@@ -130,6 +146,7 @@ export function useUploadTasks(deps: UploadTaskDeps) {
     handleTerminalUploadFile: actions.handleUploadFile,
     handleTerminalUploadFolder: actions.handleUploadFolder,
     enqueueTerminalFiles,
+    enqueueTerminalFolderFiles,
     kickUploadTaskPolling,
     markCurrentDirRefreshPending,
     refreshCurrentFiles,

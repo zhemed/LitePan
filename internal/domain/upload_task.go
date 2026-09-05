@@ -6,6 +6,8 @@ import "context"
 type UploadTaskRecord struct {
 	TaskID              string
 	ClientTaskID        string
+	BatchID             string
+	BatchName           string
 	AccountID           int64
 	AccountName         string
 	DriverType          string
