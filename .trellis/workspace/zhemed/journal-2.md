@@ -744,3 +744,36 @@ fetch确认无新增20提交。所需12项实证全过（0.0.13~0.0.17）。文�
 ### Next Steps
 
 - 4微补丁默认不做；下次发版自动带上此测试
+
+
+## Session 79: 调查430004映射：建议合，唯一收益删除幂等
+<!-- trellis-session: v=2 fp=e931d90515b58460 -->
+
+**Date**: 2026-09-05
+**Task**: 调查430004映射：建议合，唯一收益删除幂等
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+追完transport→file/service链：有映射则删已消失文件视为成功（幂等），列取/建目录仅消息404vs502差异，认证重试无影响。风险约0，apply可过，建议搭顺风车合入。
+
+### Main Changes
+
+- 调查报告归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 代码链只读追踪（transport/file-service/target-dir/errors表）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户定夺是否顺风车合入
