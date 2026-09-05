@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 80
+- **Total Sessions**: 81
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~812 | Active |
+| `journal-2.md` | ~845 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 81 | 2026-09-05 | 否决430004合入归档：STRM已删零收益 | - | `main` |
 | 80 | 2026-09-05 | 重查430004：故事AB讲清作用，合否理由各四 | - | `main` |
 | 79 | 2026-09-05 | 调查430004映射：建议合，唯一收益删除幂等 | - | `main` |
 | 78 | 2026-09-05 | 补合入遗漏batch单测，无发版 | `b48bb90` | `main` |

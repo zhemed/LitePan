@@ -810,3 +810,36 @@ fetch确认无新增20提交。所需12项实证全过（0.0.13~0.0.17）。文�
 ### Next Steps
 
 - 用户定夺合或等有号
+
+
+## Session 81: 否决430004合入归档：STRM已删零收益
+<!-- trellis-session: v=2 fp=6d60dae7b484829e -->
+
+**Date**: 2026-09-05
+**Task**: 否决430004合入归档：STRM已删零收益
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户拍板否决b2ecd58两行映射：STRM移除无执行器、无115账号、总体零收益。报告含决定理由与重开条件，防重复调查。纯文档零代码改动。
+
+### Main Changes
+
+- 否决结论归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 无（文档任务）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 重开条件满足时再议
