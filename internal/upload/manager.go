@@ -317,10 +317,20 @@ func (m *Manager) newTaskStateLocked(p CreateParams) *taskState {
 	if sourceType == SourceTypeOfflineHandoff {
 		message = "等待离线文件上传"
 	}
+	var initialResult map[string]any
+	if strings.TrimSpace(p.BatchRootID) != "" {
+		initialResult = map[string]any{
+			"batch_root_id":        strings.TrimSpace(p.BatchRootID),
+			"batch_root_parent_id": strings.TrimSpace(p.BatchRootParentID),
+			"batch_root_owned":     p.BatchRootOwned,
+		}
+	}
 	st := &taskState{
 		Task: Task{
 			TaskID:            id,
 			ClientTaskID:      p.ClientTaskID,
+			BatchID:           strings.TrimSpace(p.BatchID),
+			BatchName:         strings.TrimSpace(p.BatchName),
 			AccountID:         p.AccountID,
 			AccountName:       p.AccountName,
 			DriverType:        p.DriverType,
@@ -343,6 +353,7 @@ func (m *Manager) newTaskStateLocked(p CreateParams) *taskState {
 			QueueOrder:        order,
 			CreatedAt:         timeutil.UnixFloat(now),
 			UpdatedAt:         timeutil.UnixFloat(now),
+			Result:            initialResult,
 		},
 		localPath:      localPath,
 		conflictPolicy: p.ConflictPolicy,
