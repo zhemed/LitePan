@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 76
+- **Total Sessions**: 77
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~678 | Active |
+| `journal-2.md` | ~711 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 77 | 2026-09-05 | 审计上游合入完整性：所需100%在位，1测试遗漏 | - | `main` |
 | 76 | 2026-09-05 | 一次合入B-road发0.0.17，冒烟全过 | `74230af` | `main` |
 | 75 | 2026-09-05 | 评估万级上传：B-road必要不充分，加固+调优+阶梯实测 | - | `main` |
 | 74 | 2026-09-05 | 调查B-road：值得做拆B1先合B2B3后合 | - | `main` |

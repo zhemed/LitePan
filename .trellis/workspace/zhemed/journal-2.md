@@ -676,3 +676,36 @@ B1B2B3一次合入：14文件直合+manager struct/router/单测/TaskPanel等手
 ### Next Steps
 
 - 真实业务验证批量折叠展示
+
+
+## Session 77: 审计上游合入完整性：所需100%在位，1测试遗漏
+<!-- trellis-session: v=2 fp=dd83dde13092264b -->
+
+**Date**: 2026-09-05
+**Task**: 审计上游合入完整性：所需100%在位，1测试遗漏
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+fetch确认无新增20提交。所需12项实证全过（0.0.13~0.0.17）。文件交叉核对：c7a424c余34全命中跳过类；de83b46余3（123删驱动、panelActions中继、store_test遗漏）。遗漏TestUploadTaskBatchFieldsPersist可干净移植，建议小任务补。可选微补丁4项默认不做。
+
+### Main Changes
+
+- 审计报告归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] fetch+逐文件comm差集+12符号实证（纠正一次空集误算）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 是否建小任务补store_test遗漏
