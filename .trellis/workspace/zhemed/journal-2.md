@@ -608,3 +608,36 @@ c7a424c白名单30文件发0.0.14（剔除2绑已删模块测试）；de83b46拆
 ### Next Steps
 
 - 用户定夺：执行B1和/或B2+B3
+
+
+## Session 75: 评估万级上传：B-road必要不充分，加固+调优+阶梯实测
+<!-- trellis-session: v=2 fp=8a8c2ebe9186cdc0 -->
+
+**Date**: 2026-09-05
+**Task**: 评估万级上传：B-road必要不充分，加固+调优+阶梯实测
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+1-2万文件场景：致命是TaskPanel全行渲染+400ms全量轮询（B3解），严重是SSE全量快照（B1解）与拖拽流进度风暴（走服务器面板则避开），sessionStorage配额溢出需5行try/catch加固，并发调5观察429。建议B1先合、B2B3后合、阶梯实测。
+
+### Main Changes
+
+- 评估报告归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 代码级量化推导（轮询/渲染/持久化/哈希/并发/配额），只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户定夺执行B1（可附带5行加固）
