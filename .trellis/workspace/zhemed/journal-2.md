@@ -357,3 +357,37 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 67: 检查上游Ponphil更新：领先20提交，不建议整体同步
+<!-- trellis-session: v=2 fp=dbf73f517dc60ab7 -->
+
+**Date**: 2026-09-05
+**Task**: 检查上游Ponphil更新：领先20提交，不建议整体同步
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+fetch origin 后对比：本地b77c1f7领先178，上游374affd领先20（08-30~09-05，v0.5.4-beta）。20提交中仅353b830/目录错位、c7a424c/115+189认证、de83b46/上传批次化与本地保留链路相关，其余STRM/跨盘/离线/Emby等与精简方向冲突。结论：不merge，仅评估3个cherry-pick。全程只读。
+
+### Main Changes
+
+- git fetch origin，比对 HEAD...origin/main = 178/20，分叉点 4c160d9
+- 20提交逐个分类：3个相关、17个忽略，源码diff 171文件+7893/-1472
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] git status 确认除任务目录外工作区干净，无代码改动
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如需：人工评估 353b830 是否 cherry-pick
