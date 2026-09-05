@@ -1,0 +1,29 @@
+{
+  "id": "check-remaining-upstream-merge",
+  "name": "check-remaining-upstream-merge",
+  "title": "调查剩余上游提交能否安全合并",
+  "description": "父任务：逐个评估c7a424c认证修复与de83b46上传批次化能否安全合入本地，给出合入/改写/放弃结论",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": "backend",
+  "priority": "P2",
+  "creator": "zhemed",
+  "assignee": "zhemed",
+  "createdAt": "2026-09-05",
+  "completedAt": "2026-09-05",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-05-check-c7a424c-safe-merge",
+    "09-05-check-de83b46-safe-merge"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
