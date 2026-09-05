@@ -472,3 +472,36 @@ cherry-pick上游353b830（CloudLocalUploadPanel目录错位8行修复），vue-
 ### Next Steps
 
 - 候选c7a424c认证修复与de83b46批次化待单独评估
+
+
+## Session 71: 调查剩余上游提交：c7a424c可挑拣合入风险中，de83b46需拆AB路
+<!-- trellis-session: v=2 fp=1050b10be4682685 -->
+
+**Date**: 2026-09-05
+**Task**: 调查剩余上游提交：c7a424c可挑拣合入风险中，de83b46需拆AB路
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+c7a424c：26源文件全PASS，接口RecoverAccount三触点全覆盖，排除7类（他驱动/已删模块/wire公告行/userAgent/oauth_test/版本噪音/settings死代码）后可合入，风险中。de83b46：29PASS/5FAIL（manager/worker/TaskPanel/store/router+manager_test），根因为本地精简删同区代码；sse依赖manager新字段、handler依赖BatchPause不可拆错；建议A路文件夹上传链先合、B路任务树按需。全程只读。
+
+### Main Changes
+
+- 两子任务report.md归档，父任务归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] git diff确认业务代码零改动
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户定夺：先执行c7a424c挑拣合入和/或A路文件夹上传
