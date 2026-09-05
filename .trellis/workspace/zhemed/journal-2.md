@@ -777,3 +777,36 @@ fetch确认无新增20提交。所需12项实证全过（0.0.13~0.0.17）。文�
 ### Next Steps
 
 - 用户定夺是否顺风车合入
+
+
+## Session 80: 重查430004：故事AB讲清作用，合否理由各四
+<!-- trellis-session: v=2 fp=7ada36cd6540c9bf -->
+
+**Date**: 2026-09-05
+**Task**: 重查430004：故事AB讲清作用，合否理由各四
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+读透b2ecd58：STRM故事（整任务失败降级为跳过+防误删）证码义；本地适用删除幂等+列取提示语。公开无权威错码表，标注未验证。合4理由/否4理由，倾向合（赌作者码义），等用户拍板。
+
+### Main Changes
+
+- 重查报告归档
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] strm配套逻辑+transport调用链+4路错码搜索+三驱动一致性
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户定夺合或等有号
