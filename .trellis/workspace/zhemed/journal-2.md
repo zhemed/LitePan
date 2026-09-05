@@ -391,3 +391,37 @@ fetch origin 后对比：本地b77c1f7领先178，上游374affd领先20（08-30~
 ### Next Steps
 
 - 如需：人工评估 353b830 是否 cherry-pick
+
+
+## Session 68: 评估353b830可安全合入：apply-check通过风险低
+<!-- trellis-session: v=2 fp=70666e459a3a0455 -->
+
+**Date**: 2026-09-05
+**Task**: 评估353b830可安全合入：apply-check通过风险低
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+上游353b830（目录错位8行补丁）与本地hunk逐字相同，de83b46未碰该块，git apply --check PASS。结论：可安全合入，建议cherry-pick后做vue-tsc与面板验证。全程只读。
+
+### Main Changes
+
+- 比对分叉点/前像/本地三处hunk一致，确认mappingIndex+loadBrowse语义兼容
+- git apply --check PASS，输出report.md，风险等级低
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] git status确认业务代码零改动
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户确认后建合入任务执行cherry-pick与验证
