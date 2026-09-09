@@ -595,3 +595,34 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 待用户决定是否移植守卫接线(建议下一轮)
+
+
+## Session 75: 接入上游认证守卫并发布 0.0.17
+<!-- trellis-session: v=2 fp=8f8fc353d800b269 -->
+
+**Date**: 2026-09-09
+**Task**: 接入上游认证守卫并发布 0.0.17
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+整取 upstream internal/auth(control.go+9文件+4测试文件,本方零分叉)与 driverexec 网络熔断,激活 0.0.13 预埋 SetAuthGuards。内联刷新统一收口:sync.Once 请求内去重/recentlyRefreshed 复用窗口/冷却封锁/失败入状态机;initializeDriver 账号锁防冷启动风暴;RecoverAccount 回归 error 签名。两处适配:oauth_integration_test 驱动矩阵 123/Baidu/OneDrive→template(已删驱动替代);template 骨架对齐统一代理契约(postOAuthJSON→OAuthProxyHTTPError,classifyRefreshError→ClassifyOAuthRefreshError,上游疏漏修正)。auth 包 31 测试全绿,全模块零失败。0.0.17 三 tag digest 7f691b58,部署三连+启动日志正常。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `68f4c8e` | feat: wire auth refresh guards from upstream c7a424c, bump to 0.0.17 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;auth 31 测试通过;health/登录/files-list 三连通过;启动日志无错误
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 上游未移植项仅剩上传批次化(P3,挂起待真实需求)
