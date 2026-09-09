@@ -508,3 +508,30 @@ DB 证实 08-30 后本实例从未改密（用户改密发生在别处）；经�
 ### Next Steps
 
 - 无遗留
+
+
+## Session 72: 本轮维护总结报告归档
+<!-- trellis-session: v=2 fp=92f5a2c2ee4214d7 -->
+
+**Date**: 2026-09-09
+**Task**: 本轮维护总结报告归档
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+产出 report.md 总结 0.0.12→0.0.15 全程：5 任务、3 发布(0.0.13 适配上移植/0.0.14 189Cloud 回归修复/0.0.15 孤儿表清理)、上游合并决策C(不整体merge小步移植)、回归教训(收窄型判定须连同兜底机制一起评估,400vs401差异用回归单测锁死)、运维知识(form编码登录/admin123456落档)、DB卫生(17→10表)。遗留:internal/file存量2例测试失败、上游守卫接线未移植。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e2c492a` | chore: record journal |
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无
