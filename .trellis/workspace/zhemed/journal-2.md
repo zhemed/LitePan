@@ -566,3 +566,32 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 无遗留
+
+
+## Session 74: 调查上游未移植项：守卫接线建议移植、批次化挂起
+<!-- trellis-session: v=2 fp=dda8f1de9da3d0a4 -->
+
+**Date**: 2026-09-09
+**Task**: 调查上游未移植项：守卫接线建议移植、批次化挂起
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+守卫接线(c7a424c 单提交,本方 internal/auth 零分叉):control.go 新增 130 行,内联刷新 sync.Once 去重+复用窗口+冷却+失败入状态机,initializeDriver 防冷启动风暴,driverexec 网络熔断(3次失败退避30s);移植面=auth 9 文件整取+driverexec+4测试文件(~370行)+仅 1 处手改(RecoverAccount 还原 error 签名);wire_http 无需改(自装配);manager 预埋挂载点将首次激活。结论 B 建议移植。批次化 de83b46:真实源码 30 文件,前端 1088 行与本方 705 行删减正面相撞,纯 UX 无正确性修复(目录错位已移植),结论 C 挂起,若做需独立任务三步走。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读取证:git log/diff/grep 对照,工作区干净
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户决定是否移植守卫接线(建议下一轮)

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 73
+- **Total Sessions**: 74
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~568 | Active |
+| `journal-2.md` | ~597 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 74 | 2026-09-09 | 调查上游未移植项：守卫接线建议移植、批次化挂起 | - | `main` |
 | 73 | 2026-09-09 | 修复命名对齐中文集号解析并发布 0.0.16 | `c996c21` | `main` |
 | 72 | 2026-09-09 | 本轮维护总结报告归档 | `e2c492a` | `main` |
 | 71 | 2026-09-09 | 清理孤儿表与残留键并发布 0.0.15 | `9bb17de` | `main` |
