@@ -686,3 +686,34 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 待用户确认并发策略后建修复任务
+
+
+## Session 78: 修复大批量上传目录解析吞吐并发布 0.0.19
+<!-- trellis-session: v=2 fp=cab802bbc0c99e85 -->
+
+**Date**: 2026-09-09
+**Task**: 修复大批量上传目录解析吞吐并发布 0.0.19
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+承接调查报告实施(并发=1 用户设置保留,500ms 门保留)：①target_dir 缓存 TTL 30s→10min(消长跑重复 List)②批次目录预解析(CreateBatch 后台去重+字典序预热唯一 rel_dir,父前缀先行,防重复预热,失败 worker 兜底),上传命中缓存不再边传边解析。另修正上轮调查误报:pause 未写 updated_at 系 datetime 缺 unixepoch 查询笔误,原始值核对 791 行时间戳全部正常,该项撤销。新增单测 2 组(预热去重/排序/缓存吸收、批次收集分组),全模块 go test 零失败。0.0.19 三 tag digest 1fa84073,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cd5720c` | perf: speed up bulk upload dir resolution, bump to 0.0.19 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;health/登录/列表三连
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户复测大批量上传(745 个 paused 任务可续传观察吞吐变化)

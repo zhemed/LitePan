@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 77
+- **Total Sessions**: 78
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~688 | Active |
+| `journal-2.md` | ~719 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 78 | 2026-09-09 | 修复大批量上传目录解析吞吐并发布 0.0.19 | `cd5720c` | `main` |
 | 77 | 2026-09-09 | 调查大批量上传卡死：吞吐塌陷非死锁 | - | `main` |
 | 76 | 2026-09-09 | 移植上传批次化并发布 0.0.18 | `6f375f5` | `main` |
 | 75 | 2026-09-09 | 接入上游认证守卫并发布 0.0.17 | `68f4c8e` | `main` |
