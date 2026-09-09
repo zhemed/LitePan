@@ -12,6 +12,11 @@ func (s *Service) ensureSchedule(ctx context.Context, accountID int64) {
 	if s.accounts == nil || s.authStates == nil {
 		return
 	}
+	ctx, unlock, err := s.lockAccount(ctx, accountID)
+	if err != nil {
+		return
+	}
+	defer unlock()
 	acc, err := s.accounts.Get(ctx, accountID)
 	if err != nil {
 		return
@@ -49,11 +54,10 @@ func (s *Service) calcNextCheck(ctx context.Context, accountID int64, now time.T
 
 	switch st.Status {
 	case domain.AuthFailed, domain.AuthTokenExpired:
-		base := st.LastRefreshAt
-		if base.IsZero() {
-			base = now
+		if !st.NextRetryAt.IsZero() {
+			return st.NextRetryAt
 		}
-		return base.Add(failedRetryCooldown)
+		return now.Add(failedRetryCooldown)
 	case domain.AuthCooldown:
 		if !st.NextRetryAt.IsZero() {
 			return st.NextRetryAt

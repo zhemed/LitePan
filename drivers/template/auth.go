@@ -22,15 +22,16 @@ func (d *Driver) RefreshAuth(ctx context.Context, _ driver.RefreshCaller) (drive
 }
 
 func classifyRefreshError(err error) driver.RefreshOutcome {
+	// 0.0.17：对齐统一分类契约——骨架驱动的特定致命提示之外，
+	// 一律交由 ClassifyOAuthRefreshError（AuthRefreshError/IsAuthExpiredError）判定，
+	// 保证与守卫体系（refreshInline/状态机冷却分级）语义一致。
 	if ae, ok := domain.AsAppError(err); ok {
 		msg := strings.ToLower(ae.Message)
-		if strings.Contains(msg, "invalid") && strings.Contains(msg, "refresh") ||
-			strings.Contains(msg, "revoked") ||
-			strings.Contains(msg, "不能都为空") {
+		if strings.Contains(msg, "不能都为空") || strings.Contains(msg, "缺少 refresh_token") {
 			return driver.RefreshFatal
 		}
 	}
-	return driver.RefreshRetryable
+	return driver.ClassifyOAuthRefreshError(err)
 }
 
 func (d *Driver) oauthServer() string {
@@ -104,7 +105,9 @@ func (d *Driver) postOAuthJSON(ctx context.Context, url string, body, out any) e
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return domain.Errorf(domain.CodeDriverError, "OAuth HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300))
+		// 0.0.17：对齐统一代理契约——401=认证失效、429=限流、403=权限，其余驱动错误。
+		// 守卫体系（refreshInline/状态机）按该语义分类冷却与恢复。
+		return httpx.OAuthProxyHTTPError(resp.StatusCode, string(data))
 	}
 	if err := json.Unmarshal(data, out); err != nil {
 		return domain.Wrap(domain.CodeDriverError, err)

@@ -74,6 +74,7 @@ func NewService(opts Options) *Service {
 	}
 	if mgr, ok := opts.Drivers.(*driver.Manager); ok {
 		mgr.SetAuthPersistHook(s.onCredentialsPersisted)
+		mgr.SetAuthGuards(s.initializeDriver, s.refreshInline)
 	}
 	return s
 }
