@@ -386,3 +386,34 @@ Webhook可彻底移除
 ### Next Steps
 
 - 如需上游修复：逐项建任务 cherry-pick 并 bump 0.0.13
+
+
+## Session 68: 适配合并上游保留功能修复并发布 0.0.13
+<!-- trellis-session: v=2 fp=9cec962eb22e55a7 -->
+
+**Date**: 2026-09-09
+**Task**: 适配合并上游保留功能修复并发布 0.0.13
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按 investigate-upstream-merge-safety 结论移植上游 4 组修复：8e332f3 oauth 状态码细分+UA、1c71fec 连接检测(ping 重试/分类，剔除 Baidu)、c7a424c 189Cloud 认证子集(auth_response.go 重构+token 先落库+会话错误降级)、353b830 上传目录错位。适配点：RecoverAccount 保持 void 签名、115 保留 600s 超时、Init 移除内联 Ping、驱动嵌入 AuthRefreshControl(guard nil 行为不变)、未移植 internal/auth 守卫接线与 de83b46 批次化。vet/test(除存量 internal/file 失败)/type-check/build 全绿，0.0.13 镜像三 tag 同 digest 67d3b57f，tag+release+容器重建 health ok。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `221c340` | fix: adapt upstream auth/account/upload fixes, bump to 0.0.13 |
+
+### Testing
+
+- [OK] GOWORK=off go vet ./... 全绿；go test httpx/account/driver/115_Open/189Cloud 全绿；web type-check+build 通过；存量失败 internal/file name_align_test 在 clean HEAD 复现(与本任务无关)；容器 /api/health ok
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 存量 internal/file name_align 中文集号解析失败可另建任务修复；如需 189Cloud 实测认证刷新可后续验证

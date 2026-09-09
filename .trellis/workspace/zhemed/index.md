@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 67
+- **Total Sessions**: 68
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~388 | Active |
+| `journal-2.md` | ~419 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 68 | 2026-09-09 | 适配合并上游保留功能修复并发布 0.0.13 | `221c340` | `main` |
 | 67 | 2026-09-09 | 调查上游合并安全性：不建议 merge，改按需 cherry-pick | - | `main` |
 | 66 | 2026-09-01 | Interval hours to minutes | `03e90f7` | `main` |
 | 65 | 2026-09-01 | Investigate trigger cleanup | `5f72e15` | `main` |
