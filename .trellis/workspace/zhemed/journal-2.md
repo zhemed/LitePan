@@ -746,3 +746,32 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 无
+
+
+## Session 80: 生成 2000×1MB 大批量上传测试文件
+<!-- trellis-session: v=2 fp=96bce32ded84c87f -->
+
+**Date**: 2026-09-09
+**Task**: 生成 2000×1MB 大批量上传测试文件
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+落位 /root/LitePan/mounts/LitePan-123/bulk-test-2000（容器视角 /app/mounts/LitePan-123/bulk-test-2000）：bulk_0000~1999.bin 各 1MiB 共 2.0G，单次 urandom 流 split 生成（2.7s）。全量 MD5 校验 2000/2000 唯一（排除天翼秒传干扰；期间修正抽验 glob 数学错误 bulk_000* 仅匹配 10 文件）。磁盘 215G 充足。吞吐基准（0.0.19，并发1+500ms门）：预估 1.5-2.5s/文件，全批 50-80 分钟，供复测对照。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 数量/大小/全量MD5唯一性三重校验通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户在服务器上传面板选择该目录发起 2000 文件批次实测
