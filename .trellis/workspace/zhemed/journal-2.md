@@ -657,3 +657,32 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 用户 UI 实测文件夹上传批次体验;上游未移植项全部清零
+
+
+## Session 77: 调查大批量上传卡死：吞吐塌陷非死锁
+<!-- trellis-session: v=2 fp=2941f1efeee77cbf -->
+
+**Date**: 2026-09-09
+**Task**: 调查大批量上传卡死：吞吐塌陷非死锁
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+791 文件批次(xwechat_files,40MB)5分钟仅完成46个(6%)→观感卡死。根因:①upload_task_concurrency=1(configs实测,单并发);②189账号级500ms操作间隔门持锁串行(全账号2req/s天花板,数据面PUT已豁免);③目录解析缓存TTL仅30s,数百微信哈希目录长跑反复重List。量化模型2500-3000门限操作≈20-25分钟起步,吞吐曲线(1/8/27/10每分钟)吻合。排除:SSE托底drop-1不死锁(上游同款无后续修复)、后端零错误、暂停时仍在推进。次要:pause不写updated_at(745行0值)。修复建议:并发2-4/TTL10min/批次预解析/pause补时间戳,待用户确认后实施。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] upload_tasks 表逐项核对+configs 实测+源码路径核实(delay/transport/target_dir/sse/upload),全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户确认并发策略后建修复任务
