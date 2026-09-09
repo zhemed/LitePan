@@ -477,3 +477,34 @@ DB 证实 08-30 后本实例从未改密（用户改密发生在别处）；经�
 ### Next Steps
 
 - 无遗留；可选：清理 DB 已删功能残留表
+
+
+## Session 71: 清理孤儿表与残留键并发布 0.0.15
+<!-- trellis-session: v=2 fp=69b165e7b48b1879 -->
+
+**Date**: 2026-09-09
+**Task**: 清理孤儿表与残留键并发布 0.0.15
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+逐表对照代码引用分类：strm×3/offline_download 纯孤儿，media_organize/cache_retention 仅 backup.go 引用，quarktv_bindings 为死代码(repo+domain+装配)。notifications/api_keys/fuse_mounts 复核为活功能保留(用户原以为 notifications 是残留,实为站内通知)。实施:迁移0022(幂等DROP×7+删configs strm_base_url/strm_token)+backup.go 清引用+删 quarktv 死代码。0.0.15 三 tag digest da66cbe8,tag+release,部署前备份 data/backups/manual-pre-0022-20260909-202635.db,启动自动迁移成功(台账22),表17→10、键10→8,health/login/files-list 三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9bb17de` | chore: drop removed-feature orphan tables via migration 0022, bump to 0.0.15 |
+
+### Testing
+
+- [OK] go vet 全绿;go test 仅存量 internal/file 失败(备案);迁移0022 幂等执行;健康/登录/列表实测通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无遗留
