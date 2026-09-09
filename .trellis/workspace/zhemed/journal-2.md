@@ -862,3 +862,34 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 待用户拍板后实施重试放行
+
+
+## Session 84: 实施上传瞬时错误重试放行并发布 0.0.20
+<!-- trellis-session: v=2 fp=21029cd15231936d -->
+
+**Date**: 2026-09-09
+**Task**: 实施上传瞬时错误重试放行并发布 0.0.20
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryableUploadURLFailure 识别 5xx/429 可重试(400/403/会话失效不重试)；既有3调用点与重试上限3/递增退避不动,分片PUT原本已放行。背景:2000批次14/2000(0.7%)失败全为单发瞬时511/-1,放行后残留趋近0。单测5组(511/502/429可重试,400/403不可,会话失效永不)+既有400payload回归全绿,全模块零失败。0.0.20 三 tag digest a97d6ceb,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `118d9e2` | fix: retry transient 189 gateway errors on upload path, bump to 0.0.20 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;health/登录/列表三连
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无;评估报告其余项均不修
