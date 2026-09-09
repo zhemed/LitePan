@@ -3,6 +3,7 @@ package taskauth
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"litepan/internal/domain"
 	"litepan/internal/eventbus"
@@ -100,6 +101,9 @@ func (c *Coordinator) RemoveTasksByAccount(ctx context.Context, accountID int64)
 }
 
 func (c *Coordinator) onAuthFailed(ctx context.Context, e eventbus.AccountAuthFailed) {
+	// 异步通知到达时，触发刷新的请求可能早已结束；任务状态保存使用独立限时。
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
 	msg := e.Reason
 	if msg == "" {
 		msg = "账号认证已失效"
@@ -108,6 +112,8 @@ func (c *Coordinator) onAuthFailed(ctx context.Context, e eventbus.AccountAuthFa
 }
 
 func (c *Coordinator) onAuthRecovered(ctx context.Context, e eventbus.AccountAuthRecovered) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
 	_, _ = c.ResumeByAccount(ctx, e.AccountID)
 }
 

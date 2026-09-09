@@ -211,7 +211,11 @@ func (d *Driver) rawJSON(ctx context.Context, method, rawURL string, query url.V
 	if err != nil {
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
-	if resp.StatusCode == http.StatusUnauthorized || (resp.StatusCode == http.StatusOK && is189AuthExpiredPayload(data)) {
+	// 189 现网对失效 open token/会话返回 HTTP 400 + 失效 payload（UserInvalidOpenToken /
+	// unifyAccountInfo is null 等）。必须与 401/200+payload 一致判为认证失效，否则被动刷新
+	// 恢复路径（WithRetry / Init.isSessionExpired）全部失效（0.0.13 回归，本任务修复）。
+	if resp.StatusCode == http.StatusUnauthorized ||
+		((resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusBadRequest) && is189AuthExpiredPayload(data)) {
 		return domain.Errorf(domain.CodeAuthExpired, "天翼云盘认证会话已失效")
 	}
 	if resp.StatusCode == http.StatusForbidden {
@@ -245,7 +249,9 @@ func (d *Driver) rawForm(ctx context.Context, method, rawURL string, query url.V
 	if err != nil {
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
-	if resp.StatusCode == http.StatusUnauthorized || (resp.StatusCode == http.StatusOK && is189AuthExpiredPayload(data)) {
+	// 同 rawJSON：HTTP 400 + 失效 payload 也必须判为认证失效（0.0.13 回归修复）。
+	if resp.StatusCode == http.StatusUnauthorized ||
+		((resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusBadRequest) && is189AuthExpiredPayload(data)) {
 		return domain.Errorf(domain.CodeAuthExpired, "天翼云盘认证会话已失效")
 	}
 	if resp.StatusCode == http.StatusForbidden {
