@@ -717,3 +717,32 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 用户复测大批量上传(745 个 paused 任务可续传观察吞吐变化)
+
+
+## Session 79: 创建容器映射目录 LitePan-123
+<!-- trellis-session: v=2 fp=72f45645d77b03b6 -->
+
+**Date**: 2026-09-09
+**Task**: 创建容器映射目录 LitePan-123
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户选定方案A：宿主 /root/LitePan/mounts/LitePan-123（位于既有 bind /root/LitePan/mounts→/app/mounts:shared 之下）→ 容器内 /app/mounts/LitePan-123 即时可见，零重建。双向读写探针通过后清理；容器未重启（boot_id 不变）；health/登录/列表三连通过；binds 布局核实不变。运行记录：容器挂载布局=data+/app/data、mounts+/app/mounts(shared 传播,子目录自动可见)、/dev/fuse、pid host、privileged。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 双向读写探针+三连验证
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无
