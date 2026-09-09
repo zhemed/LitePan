@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 87
+- **Total Sessions**: 88
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~984 | Active |
+| `journal-2.md` | ~1015 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 88 | 2026-09-10 | 实施遗留优化2+3并发布0.0.22 | `d4bb01e` | `main` |
 | 87 | 2026-09-10 | 突破2000对账+两波终局99.95%+115覆盖面核查 | - | `main` |
 | 86 | 2026-09-09 | 调查最新失败+降噪处置+补全init/commit重试,0.0.21 | `4a7162a` | `main` |
 | 85 | 2026-09-09 | 调查暂缓项：虚拟滚动已存在,清理清单就绪 | - | `main` |

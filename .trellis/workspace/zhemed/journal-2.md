@@ -982,3 +982,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 可选优化三项(防重复触发/walk接共享缓存/-1重试);本地2G测试目录待清理决定
+
+
+## Session 88: 实施遗留优化2+3并发布0.0.22
+<!-- trellis-session: v=2 fp=a799eeebb7649363 -->
+
+**Date**: 2026-09-10
+**Task**: 实施遗留优化2+3并发布0.0.22
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+①批次目录解析统一共享缓存：Manager.ResolveUploadTargetDir 新增（返回本次新建前缀集合,BatchRootOwned 语义保持），handler ensureLocalUploadTargetDir 改走它（极端装配无 manager 时逐段直连兜底）——walk/预解析同一实例(TTL 10min 跨请求命中),0.0.19 预解析真正生效,驱动无关 115 同益。②189 HTTP 200 业务错 code/res_code=-1('服务暂时不可用')附加 189_business_code 详情,retryableUploadURLFailure 识别可重试(终局报告 2 例残留类型闭环)。③修复 collectBatchWarmDirs 测试潜在 flaky(map 遍历序随机→集合断言)。单测:共享缓存跨请求命中(root List 计数不增,仅新叶+1)/createdPrefixes 正确/-1可重试与其它码不可重试。防重复触发项按用户拍板另任务归档为决策记录。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d4bb01e` | fix: unify batch dir resolution on shared cache + retry 189 business -1, bump to 0.0.22 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;web type-check+build 通过;0.0.22 三tag digest 5154bbd6;部署三连通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无
