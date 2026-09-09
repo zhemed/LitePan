@@ -428,8 +428,9 @@ func extractAlignMeta(name string) (alignMeta, bool) {
 			return out, true
 		}
 	}
-	// fallback: last number in name
-	if locs := alignDigitRe.FindAllString(name, -1); len(locs) > 0 {
+	// fallback: 最后一个数字；必须基于去掉扩展名的 stem，避免 ".mp4" 的 4 被当成集号。
+	stem := strings.TrimSuffix(name, path.Ext(name))
+	if locs := alignDigitRe.FindAllString(stem, -1); len(locs) > 0 {
 		for i := len(locs) - 1; i >= 0; i-- {
 			if ep := parseEpisodeNumber(locs[i]); ep != nil {
 				out.episode = *ep
@@ -687,22 +688,62 @@ func parseEpisodeNumber(s string) *int {
 	if s == "" {
 		return nil
 	}
-	// handle chinese numerals simple: try direct int
 	if n, err := strconv.Atoi(s); err == nil {
 		n2 := n
 		return &n2
 	}
-	// try to parse chinese numerals via fallback: digit extraction
-	// Use simple mapping for common chinese numbers
-	cnMap := map[string]int{"零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
-	if val, ok := cnMap[s]; ok {
-		return &val
-	}
-	// for multi-char like "十二" etc, try to find digits
-	if n, err := strconv.Atoi(strings.Trim(s, "零〇一二两三四五六七八九十百")); err == nil {
+	// 中文数字（含组合进位："十二"→12、"二十八"→28、"一百零五"→105）。
+	if n, ok := parseChineseNumeral(s); ok {
 		return &n
 	}
 	return nil
+}
+
+// parseChineseNumeral 解析 [零〇一二两三四五六七八九十百] 组成的中文数字。
+// 带十/百单位走标准进位；纯数字串（无单位）按位拼接（"二零"→20、"二三"→23）。
+func parseChineseNumeral(s string) (int, bool) {
+	digitMap := map[rune]int{'零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+	var (
+		value   int   // 已按单位进位的累计值
+		digit   = -1  // 最近一个待进位数字
+		seen    []int // 数字序列（无单位时按位拼接用）
+		hasUnit bool
+	)
+	for _, ch := range s {
+		if d, ok := digitMap[ch]; ok {
+			digit = d
+			seen = append(seen, d)
+			continue
+		}
+		if ch == '十' || ch == '百' {
+			unit := 10
+			if ch == '百' {
+				unit = 100
+			}
+			if digit < 0 {
+				digit = 1
+			}
+			value += digit * unit
+			digit = -1
+			hasUnit = true
+			continue
+		}
+		return 0, false
+	}
+	if !hasUnit {
+		if len(seen) == 0 {
+			return 0, false
+		}
+		pos := 0
+		for _, d := range seen {
+			pos = pos*10 + d
+		}
+		return pos, true
+	}
+	if digit >= 0 {
+		value += digit
+	}
+	return value, true
 }
 func leftPadNumber(v, width int) string {
 	s := strconv.Itoa(v)

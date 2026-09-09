@@ -142,3 +142,37 @@ func TestUniqueNameAlignSampleCandidatesPreferHigherEpisodeInDisplayOrder(t *tes
 		t.Fatalf("第 3 个候选 = %s，期望 sig-c-02（更低集数即使分高也应排后）", got[2].item.ID)
 	}
 }
+
+// 中文数字组合进位解析（0.0.16 修复锁死）。
+func TestParseEpisodeNumberChineseCompositions(t *testing.T) {
+	cases := []struct {
+		in   string
+		want int
+	}{
+		{"一", 1}, {"两", 2}, {"十", 10}, {"十二", 12}, {"二十", 20},
+		{"二十八", 28}, {"五十二", 52}, {"一百零五", 105}, {"一百二十", 120},
+		{"二零", 20}, {"二三", 23}, {"42", 42}, {"〇一", 1},
+	}
+	for _, c := range cases {
+		got := parseEpisodeNumber(c.in)
+		if got == nil || *got != c.want {
+			t.Fatalf("parseEpisodeNumber(%q) = %v，期望 %d", c.in, got, c.want)
+		}
+	}
+	for _, bad := range []string{"", "  ", "abc", "第x集"} {
+		if got := parseEpisodeNumber(bad); got != nil {
+			t.Fatalf("parseEpisodeNumber(%q) = %v，期望 nil", bad, got)
+		}
+	}
+}
+
+// 扩展名数字不得被兜底逻辑当成集号（0.0.16 修复锁死）。
+func TestExtractAlignMetaIgnoresExtensionDigits(t *testing.T) {
+	meta, ok := extractAlignMeta("第二十八集.mp4")
+	if !ok || meta.episode != 28 {
+		t.Fatalf("extractAlignMeta = %+v ok=%v，期望 episode=28", meta, ok)
+	}
+	if meta, ok := extractAlignMeta(" random 7.mp4"); !ok || meta.episode != 7 {
+		t.Fatalf("stem 兜底 = %+v ok=%v，期望 episode=7", meta, ok)
+	}
+}
