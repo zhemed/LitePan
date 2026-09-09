@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 82
+- **Total Sessions**: 83
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~835 | Active |
+| `journal-2.md` | ~864 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 83 | 2026-09-09 | 评估修复必要性：仅重试放行值得修 | - | `main` |
 | 82 | 2026-09-09 | 2000 文件批次终局验收：99.3% 成功，50 分钟跑完 | - | `main` |
 | 81 | 2026-09-09 | 调查批次上传失败：189 S3 网关瞬时超时 | - | `main` |
 | 80 | 2026-09-09 | 生成 2000×1MB 大批量上传测试文件 | - | `main` |
