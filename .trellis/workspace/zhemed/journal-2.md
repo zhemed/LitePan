@@ -922,3 +922,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 待用户拍板清理项;降噪一行可搭下个版本
+
+
+## Session 86: 调查最新失败+降噪处置+补全init/commit重试,0.0.21
+<!-- trellis-session: v=2 fp=0064bb5c720ff4b0 -->
+
+**Date**: 2026-09-09
+**Task**: 调查最新失败+降噪处置+补全init/commit重试,0.0.21
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户重传14个失败后11个成功,3个(bulk_1921/1980/1987)持续commit阶段HTTP 511 'inner service error'(0.0.20部署后仍复现)。根因:0.0.20缺口——init/commit无重试循环消费分类器;且活体复现+对照实验证明189对污染文件名有卡死服务端状态(同内容换名2秒成功)。处置:①retryUploadEncryptedRequest 补全init/commit有限重试(3次,5xx/429/传输层,递增退避,commit绑定同一uploadFileId不重复建文件)②injectAuth ctx取消降噪(用户指定处置)③3个文件换名补齐,云端2000/2000对齐(2个经rename API改名失败报文件不存在-疑似缓存传播时序,名字外观保留p1921/p1987)。0.0.21三tag digest ca6211b4,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4a7162a` | fix: complete upload init/commit retry loop + auth-load noise reduction, bump to 0.0.21 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;活体复现+对照实验;云端List对账2000/2000;health/登录/列表三连
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无;Rename对新建文件报NOT_FOUND可另查(外观)
