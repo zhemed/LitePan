@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 84
+- **Total Sessions**: 85
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~895 | Active |
+| `journal-2.md` | ~924 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 85 | 2026-09-09 | 调查暂缓项：虚拟滚动已存在,清理清单就绪 | - | `main` |
 | 84 | 2026-09-09 | 实施上传瞬时错误重试放行并发布 0.0.20 | `118d9e2` | `main` |
 | 83 | 2026-09-09 | 评估修复必要性：仅重试放行值得修 | - | `main` |
 | 82 | 2026-09-09 | 2000 文件批次终局验收：99.3% 成功，50 分钟跑完 | - | `main` |

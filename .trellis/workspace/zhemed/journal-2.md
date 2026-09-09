@@ -893,3 +893,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 无;评估报告其余项均不修
+
+
+## Session 85: 调查暂缓项：虚拟滚动已存在,清理清单就绪
+<!-- trellis-session: v=2 fp=46d6a2b23461099e -->
+
+**Date**: 2026-09-09
+**Task**: 调查暂缓项：虚拟滚动已存在,清理清单就绪
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+①认证取消噪音:溯源 manager.injectAuth:177,10条=并发实例构建遇请求取消(预期行为),1行降噪(ctx.Err短路)可随下次发布顺带。②重要更正:虚拟滚动 0.0.18 批次化已自带(TaskPanel renderedRows=visibleRows.slice(virtualStart,virtualCount)+53px行高+overscan+spacer),2000节点流畅与实证吻合,上轮评估'不修'实为'已具备',无动作。③清理清单对账:云端 /bulk-test-2000/bulk-test-2000 实测 1986 文件=成功数 1:1 无缺失;本地 2.0G;/tmp 探针(含会话cookie建议清);DB 14 行 failed 记录。云删属破坏性操作待用户拍板。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] API List 云端对账+源码窗口化确认,全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户拍板清理项;降噪一行可搭下个版本
