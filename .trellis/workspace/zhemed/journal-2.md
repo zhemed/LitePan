@@ -357,3 +357,32 @@ Webhook可彻底移除
 ### Status
 
 [OK] **Completed**
+
+
+## Session 67: 调查上游合并安全性：不建议 merge，改按需 cherry-pick
+<!-- trellis-session: v=2 fp=a1457bbbdabcf38b -->
+
+**Date**: 2026-09-09
+**Task**: 调查上游合并安全性：不建议 merge，改按需 cherry-pick
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+只读模拟合并 origin/main(374affd, v0.5.4-beta)：merge-tree 68 冲突文件（50 个为本方已删功能 delete/modify，18 个保留文件 content 冲突，automation 5 文件方向性冲突不可自动解决）。结论 C：不合并，按需移植 8e332f3 认证刷新/1c71fec 连接检测/c7a424c 189Cloud 认证子集/353b830 上传目录错位；de83b46 上传批次化与本方精简 worker 语义相撞不建议。全程只读，工作区干净，未改业务代码。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] git merge-tree --write-tree 模拟 + 保留文件上下游 diff 对照
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如需上游修复：逐项建任务 cherry-pick 并 bump 0.0.13
