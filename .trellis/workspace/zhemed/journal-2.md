@@ -535,3 +535,34 @@ DB 证实 08-30 后本实例从未改密（用户改密发生在别处）；经�
 ### Next Steps
 
 - 无
+
+
+## Session 73: 修复命名对齐中文集号解析并发布 0.0.16
+<!-- trellis-session: v=2 fp=bda3f41ebafbdec4 -->
+
+**Date**: 2026-09-09
+**Task**: 修复命名对齐中文集号解析并发布 0.0.16
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简化 parseEpisodeNumber，组合中文数字(二十八)完全不支持(Trim+Atoi 把整串删空)；(2) 兜底'最后一个数字'没去扩展名，.mp4 的 4 被当集号(即测试看到的 episode=4)。修复:标准进位中文数字解析(十二/二十八/一百零五,无单位按位拼接)+兜底用 stem。新增组合数字与扩展名忽略 2 组单测。全模块 go test 首次全绿。0.0.16 三 tag digest f91294c2,tag+release,部署三连验证通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c996c21` | fix: Chinese numeral episode parsing in name align, bump to 0.0.16 |
+
+### Testing
+
+- [OK] internal/file 全部 8 测试通过;go vet 全绿;go test ./... 全模块零失败(首次)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无遗留
