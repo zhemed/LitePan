@@ -4,7 +4,6 @@ import "time"
 
 const NotificationCategoryCacheScopeWarn = "cache_scope_warn"
 const NotificationCategoryFuseMountWarn = "fuse_mount_warn"
-const NotificationCategoryQuarkTVWarn = "quarktv_warn"
 
 type Notification struct {
 	ID        int64

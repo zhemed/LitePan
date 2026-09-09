@@ -1,6 +1,6 @@
 services:
   litepan:
-    image: ghcr.io/zhemed/litepan:v0.0.14
+    image: ghcr.io/zhemed/litepan:v0.0.15
     container_name: litepan
     environment:
       - TZ=Asia/Shanghai
