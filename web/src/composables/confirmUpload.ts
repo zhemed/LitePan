@@ -56,14 +56,20 @@ export function confirmUploadTaskDelete(
 export function confirmBatchUploadTaskDelete(
   taskCount: number,
   successCount: number,
+  folderTaskCount = 0,
 ): Promise<ConfirmDialogResult | null> {
+  const deletingFolders = folderTaskCount > 0;
   return nullOnCancel(
     showConfirm({
-      title: "批量删除任务",
-      message: `确定要删除 ${taskCount} 个任务吗？`,
+      title: deletingFolders ? "删除文件夹任务" : "批量删除任务",
+      message: deletingFolders
+        ? `确定要删除 ${folderTaskCount} 个文件夹任务吗？`
+        : `确定要删除 ${taskCount} 个任务吗？`,
       icon: "trash",
       confirmText: "删除",
-      checkboxLabel: successCount > 0 ? "同时删除文件" : undefined,
+      checkboxLabel: successCount > 0 || deletingFolders
+        ? (deletingFolders ? "同时删除网盘中的文件夹" : "同时删除文件")
+        : undefined,
     }),
   );
 }

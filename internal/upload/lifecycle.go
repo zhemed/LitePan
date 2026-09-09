@@ -3,27 +3,57 @@ package upload
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"litepan/pkg/timeutil"
 )
 
+func (m *Manager) BatchPause(_ context.Context, taskIDs []string) BatchControlResult {
+	result := BatchControlResult{}
+	seen := make(map[string]struct{}, len(taskIDs))
+	for _, taskID := range taskIDs {
+		taskID = strings.TrimSpace(taskID)
+		if taskID == "" {
+			continue
+		}
+		if _, ok := seen[taskID]; ok {
+			continue
+		}
+		seen[taskID] = struct{}{}
+		_, ok, changed := m.pause(taskID)
+		if !ok {
+			result.MissingTaskIDs = append(result.MissingTaskIDs, taskID)
+			continue
+		}
+		if changed {
+			result.UpdatedTaskIDs = append(result.UpdatedTaskIDs, taskID)
+		}
+	}
+	return result
+}
+
 func (m *Manager) Pause(_ context.Context, taskID string) (*Task, bool) {
+	task, found, _ := m.pause(taskID)
+	return task, found
+}
+
+func (m *Manager) pause(taskID string) (*Task, bool, bool) {
 	m.mu.Lock()
 	st, ok := m.tasks[taskID]
 	if !ok {
 		m.mu.Unlock()
-		return nil, false
+		return nil, false, false
 	}
 	if m.stopping {
 		t := m.snapshot(st)
 		m.mu.Unlock()
-		return t, true
+		return t, true, false
 	}
 	if st.Status != StatusPending && st.Status != StatusRunning {
 		t := m.snapshot(st)
 		m.mu.Unlock()
-		return t, true
+		return t, true, false
 	}
 	st.cancelMode = "pause"
 	st.Status = StatusPaused
@@ -40,8 +70,9 @@ func (m *Manager) Pause(_ context.Context, taskID string) (*Task, bool) {
 	}
 	m.runCond.Broadcast()
 	_ = m.persistTask(snap)
-	m.broadcast()
-	return m.Get(context.Background(), taskID)
+	m.broadcast(taskID)
+	task, found := m.Get(context.Background(), taskID)
+	return task, found, true
 }
 
 func (m *Manager) Resume(ctx context.Context, taskID string) (*Task, bool) {
@@ -88,7 +119,7 @@ func (m *Manager) Resume(ctx context.Context, taskID string) (*Task, bool) {
 			snap := st
 			m.mu.Unlock()
 			_ = m.persistTask(snap)
-			m.broadcast()
+			m.broadcast(taskID)
 			return snapshotCopy(snap), true
 		}
 		if _, err := os.Stat(st.localPath); err != nil {
@@ -96,7 +127,7 @@ func (m *Manager) Resume(ctx context.Context, taskID string) (*Task, bool) {
 			snap := st
 			m.mu.Unlock()
 			_ = m.persistTask(snap)
-			m.broadcast()
+			m.broadcast(taskID)
 			return snapshotCopy(snap), true
 		}
 	}
@@ -105,7 +136,7 @@ func (m *Manager) Resume(ctx context.Context, taskID string) (*Task, bool) {
 	st.Status = StatusPending
 	st.resumePriority = true
 	st.Error = ""
-	st.Result = nil
+	st.Result = retainBatchRootMetadata(st.Result)
 	st.cancelMode = ""
 	st.runDone = make(chan struct{})
 	progress, uploaded := resumedProgress(st)
@@ -123,7 +154,7 @@ func (m *Manager) Resume(ctx context.Context, taskID string) (*Task, bool) {
 	m.mu.Unlock()
 	_ = m.persistTask(snap)
 	go m.runTask(taskID)
-	m.broadcast()
+	m.broadcast(taskID)
 	return task, true
 }
 

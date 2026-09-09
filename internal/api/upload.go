@@ -22,6 +22,11 @@ import (
 type batchDeleteUploadTasksReq struct {
 	TaskIDs            []string `json:"task_ids"`
 	DeleteUploadedFile bool     `json:"delete_uploaded_file"`
+	DeleteBatchRoots   bool     `json:"delete_batch_roots"`
+}
+
+type batchControlUploadTasksReq struct {
+	TaskIDs []string `json:"task_ids"`
 }
 
 func (h *Handler) createUploadTask(w http.ResponseWriter, r *http.Request) {
@@ -76,9 +81,16 @@ func (h *Handler) createUploadTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := h.uploads.Create(r.Context(), upload.CreateParams{
 		ClientTaskID:      r.FormValue("client_task_id"),
+		BatchID:           r.FormValue("batch_id"),
+		BatchName:         r.FormValue("batch_name"),
+		BatchRootID:       r.FormValue("batch_root_id"),
+		BatchRootParentID: r.FormValue("batch_root_parent_id"),
+		BatchRootOwned:    strings.EqualFold(strings.TrimSpace(r.FormValue("batch_root_owned")), "true"),
 		AccountID:         accountID,
 		FileName:          fileName,
 		DisplayName:       displayName,
+		RelPath:           r.FormValue("rel_path"),
+		RelDir:            r.FormValue("rel_dir"),
 		TargetPath:        targetPath,
 		TargetDisplayPath: r.FormValue("target_display_path"),
 		LocalPath:         tempPath,
@@ -208,6 +220,16 @@ func (h *Handler) batchDeleteUploadTasks(w http.ResponseWriter, r *http.Request)
 		writeErr(w, err)
 		return
 	}
-	result := h.uploads.BatchDelete(r.Context(), req.TaskIDs, req.DeleteUploadedFile)
+	result := h.uploads.BatchDelete(r.Context(), req.TaskIDs, req.DeleteUploadedFile, req.DeleteBatchRoots)
 	writeJSON(w, http.StatusOK, Resp{Success: true, Message: "批量删除上传任务成功", Data: result})
+}
+
+func (h *Handler) batchPauseUploadTasks(w http.ResponseWriter, r *http.Request) {
+	var req batchControlUploadTasksReq
+	if err := decodeJSON(r, &req); err != nil {
+		writeErr(w, err)
+		return
+	}
+	result := h.uploads.BatchPause(r.Context(), req.TaskIDs)
+	writeJSON(w, http.StatusOK, Resp{Success: true, Message: "批量暂停上传任务成功", Data: result})
 }

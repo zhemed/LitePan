@@ -21,6 +21,7 @@ const props = defineProps<{
   targetDisplayPath: string;
   uploadKind?: "file" | "folder";
   onEnqueueFiles?: (files: File[]) => void;
+  onEnqueueFolderFiles?: (files: File[]) => void | Promise<void>;
   onTasksCreated?: () => void;
   onFolderUploadAccepted?: (key: string, count: number) => void;
   onMarkCurrentDirRefresh?: () => void;
@@ -149,13 +150,105 @@ function fmtSize(size: number) {
   return size + " B";
 }
 
-function onDrop(e: DragEvent) {
+type DroppedFileEntry = {
+  name: string;
+  isFile: boolean;
+  isDirectory: boolean;
+  file?: (success: (file: File) => void, error?: (reason: unknown) => void) => void;
+  createReader?: () => {
+    readEntries: (success: (entries: DroppedFileEntry[]) => void, error?: (reason: unknown) => void) => void;
+  };
+};
+
+function readDroppedFile(entry: DroppedFileEntry) {
+  return new Promise<File>((resolve, reject) => {
+    if (!entry.file) {
+      reject(new Error(`无法读取文件：${entry.name}`));
+      return;
+    }
+    entry.file(resolve, reject);
+  });
+}
+
+function readDroppedEntries(entry: DroppedFileEntry) {
+  return new Promise<DroppedFileEntry[]>((resolve, reject) => {
+    const reader = entry.createReader?.();
+    if (!reader) {
+      reject(new Error(`无法读取文件夹：${entry.name}`));
+      return;
+    }
+    const all: DroppedFileEntry[] = [];
+    const readNext = () => {
+      reader.readEntries((entries) => {
+        if (!entries.length) {
+          resolve(all);
+          return;
+        }
+        all.push(...entries);
+        readNext();
+      }, reject);
+    };
+    readNext();
+  });
+}
+
+async function collectDroppedFolderFiles(dataTransfer: DataTransfer) {
+  const entries = Array.from(dataTransfer.items || [])
+    .map((item): DroppedFileEntry | null => {
+      const getEntry = (item as unknown as { webkitGetAsEntry?: () => DroppedFileEntry | null })
+        .webkitGetAsEntry;
+      return getEntry?.call(item) || null;
+    })
+    .filter((entry): entry is DroppedFileEntry => entry !== null);
+  const roots = entries.filter((entry) => entry.isDirectory);
+  if (roots.length !== 1 || entries.length !== 1) {
+    throw new Error("一次只能拖入一个文件夹");
+  }
+
+  const files: File[] = [];
+  const walk = async (entry: DroppedFileEntry, parentPath: string) => {
+    if (entry.isFile) {
+      const file = await readDroppedFile(entry);
+      Object.defineProperty(file, "litepanRelativePath", {
+        configurable: true,
+        value: `${parentPath}${entry.name}`,
+      });
+      files.push(file);
+      return;
+    }
+    if (!entry.isDirectory) return;
+    const children = await readDroppedEntries(entry);
+    const childPath = `${parentPath}${entry.name}/`;
+    await Promise.all(children.map((child) => walk(child, childPath)));
+  };
+  await walk(roots[0], "");
+  return files;
+}
+
+async function onDrop(e: DragEvent) {
   dragOver.value = false;
-  const files = e.dataTransfer?.files;
-  if (!files || files.length === 0) return;
-  terminalFiles.value = [...files].map((f) => f.name);
-  props.onEnqueueFiles?.([...files]);
-  emit("close");
+  const dataTransfer = e.dataTransfer;
+  if (!dataTransfer) return;
+  if (props.uploadKind !== "folder") {
+    const files = [...dataTransfer.files];
+    if (!files.length) return;
+    terminalFiles.value = files.map((file) => file.name);
+    props.onEnqueueFiles?.(files);
+    emit("close");
+    return;
+  }
+  uploading.value = true;
+  try {
+    const files = await collectDroppedFolderFiles(dataTransfer);
+    if (!files.length) throw new Error("所选文件夹中没有可上传的文件，空文件夹暂不支持");
+    terminalFiles.value = files.map((file) => file.name);
+    await props.onEnqueueFolderFiles?.(files);
+    emit("close");
+  } catch (error) {
+    toast.error(getApiErrorMessage(error, "读取拖入的文件夹失败"));
+  } finally {
+    uploading.value = false;
+  }
 }
 
 function pickFromTerminal() {
@@ -199,7 +292,7 @@ async function startLocalUpload() {
       target_path: props.targetPath,
       target_display_path: props.targetDisplayPath,
       conflict_policy: "overwrite",
-      client_task_id: batchKey,
+      client_task_id: isFolder ? batchKey : "",
       items,
     });
     toast.success(`已受理 ${res.count} 个文件，任务将陆续显示在上传面板`);

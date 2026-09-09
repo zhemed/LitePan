@@ -30,7 +30,7 @@ func (m *Manager) patch(taskID string, fn func(*taskState)) {
 	snap := st
 	m.mu.Unlock()
 	_ = m.persistTask(snap)
-	m.broadcast()
+	m.broadcast(taskID)
 }
 
 func (m *Manager) failTask(taskID, errMsg string) {
@@ -44,6 +44,7 @@ func (m *Manager) failTask(taskID, errMsg string) {
 
 func (m *Manager) snapshot(st *taskState) *Task {
 	t := st.Task
+	t.Result = cloneMap(st.Result)
 	return &t
 }
 
@@ -91,7 +92,7 @@ func (m *Manager) stopTaskForDelete(ctx context.Context, taskID string) error {
 
 	if active {
 		_ = m.persistTask(snap)
-		m.broadcast()
+		m.broadcast(taskID)
 	}
 	if cancel != nil {
 		cancel()

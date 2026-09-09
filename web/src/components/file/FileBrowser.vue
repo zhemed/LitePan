@@ -1031,6 +1031,7 @@ homeFooterStatus.onOpenTaskPanel(openTaskPanel);
       :target-display-path="getCurrentDisplayPath()"
       :upload-kind="uploadEntry.localUploadKind.value"
       :on-enqueue-files="uploadApi.enqueueTerminalFiles"
+      :on-enqueue-folder-files="uploadApi.enqueueTerminalFolderFiles"
       :on-tasks-created="uploadApi.afterLocalUploadCreated"
       :on-folder-upload-accepted="uploadApi.registerDirRefreshBatch"
       :on-mark-current-dir-refresh="uploadApi.markCurrentDirRefreshPending"

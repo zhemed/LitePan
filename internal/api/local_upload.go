@@ -284,11 +284,16 @@ func (h *Handler) createLocalUploadTasks(w http.ResponseWriter, r *http.Request)
 		writeErr(w, domain.Errorf(domain.CodeValidation, "未找到可上传的文件"))
 		return
 	}
+	batchID := strings.TrimSpace(in.ClientTaskID)
+	batchName := strings.TrimSpace(in.DisplayName)
+	if batchName == "" && len(in.Items) == 1 && in.Items[0].IsDir {
+		batchName = path.Base(strings.Trim(cleanRelativePath(in.Items[0].RelPath), "/"))
+	}
 
 	ctx := context.WithoutCancel(r.Context())
 	go func() {
 		created, err := h.createLocalUploadTasksSync(ctx, m, in.AccountID, in.TargetPath,
-			strings.TrimSpace(in.TargetDisplay), in.ClientTaskID, in.DisplayName, conflict,
+			strings.TrimSpace(in.TargetDisplay), batchID, batchName, conflict,
 			sources)
 		if err == nil {
 			return
@@ -315,6 +320,7 @@ func (h *Handler) createLocalUploadTasksSync(
 	seq := 0
 	var tasks []*upload.Task
 	targetDirs := map[string]string{"": targetRoot}
+	createdDirs := map[string]bool{"": false}
 	skipped := 0
 	var firstErr error
 	recordFailure := func(err error) {
@@ -343,13 +349,28 @@ func (h *Handler) createLocalUploadTasksSync(
 		tasks = append(tasks, created...)
 		return nil
 	}
+	batchRootName := ""
+	for _, source := range sources {
+		parts := strings.Split(strings.Trim(filepath.ToSlash(source.relPath), "/"), "/")
+		if len(parts) == 0 || parts[0] == "" {
+			continue
+		}
+		if batchRootName == "" {
+			batchRootName = parts[0]
+			continue
+		}
+		if batchRootName != parts[0] {
+			batchRootName = ""
+			break
+		}
+	}
 	for _, s := range sources {
 		if err := ctx.Err(); err != nil {
 			return tasks, err
 		}
 		targetParent, ok := targetDirs[s.relDir]
 		if !ok {
-			parent, err := h.ensureLocalUploadTargetDir(ctx, accountID, targetRoot, s.relDir, targetDirs)
+			parent, err := h.ensureLocalUploadTargetDir(ctx, accountID, targetRoot, s.relDir, targetDirs, createdDirs)
 			if err != nil {
 				h.logError("创建网盘子目录失败", "dir", s.relDir, "err", err.Error())
 				recordFailure(fmt.Errorf("创建目录 %s 失败：%w", s.relDir, err))
@@ -376,11 +397,18 @@ func (h *Handler) createLocalUploadTasksSync(
 		}
 		batch = append(batch, upload.CreateParams{
 			ClientTaskID:      taskID,
+			BatchID:           clientTaskID,
+			BatchName:         batchRootName,
+			BatchRootID:       targetDirs[batchRootName],
+			BatchRootParentID: targetRoot,
+			BatchRootOwned:    batchRootName != "" && createdDirs[batchRootName],
 			AccountID:         accountID,
 			AccountName:       accountName,
 			DriverType:        driverType,
 			FileName:          filepath.Base(s.abs),
-			DisplayName:       displayName,
+			DisplayName:       filepath.Base(s.abs),
+			RelPath:           trimUploadBatchRoot(s.relPath, batchRootName),
+			RelDir:            trimUploadBatchRoot(s.relDir, batchRootName),
 			TargetPath:        targetParent,
 			TargetDisplayPath: joinLocalDisplayPath(targetDisplay, s.relDir),
 			LocalPath:         localPath,
@@ -405,9 +433,22 @@ func (h *Handler) createLocalUploadTasksSync(
 	return tasks, nil
 }
 
+func trimUploadBatchRoot(value, batchName string) string {
+	value = strings.Trim(filepath.ToSlash(value), "/")
+	batchName = strings.Trim(filepath.ToSlash(batchName), "/")
+	if value == batchName {
+		return ""
+	}
+	if batchName != "" && strings.HasPrefix(value, batchName+"/") {
+		return strings.TrimPrefix(value, batchName+"/")
+	}
+	return value
+}
+
 type localUploadSource struct {
-	abs    string
-	relDir string
+	abs     string
+	relDir  string
+	relPath string
 }
 
 func buildLocalUploadSources(abs, rel string, isDir bool) ([]localUploadSource, error) {
@@ -415,7 +456,7 @@ func buildLocalUploadSources(abs, rel string, isDir bool) ([]localUploadSource, 
 		if isSystemJunkFile(filepath.Base(abs)) {
 			return nil, nil
 		}
-		return []localUploadSource{{abs: abs}}, nil
+		return []localUploadSource{{abs: abs, relPath: filepath.Base(abs)}}, nil
 	}
 	rootName := strings.Trim(path.Base(strings.Trim(rel, "/")), "/")
 	if rootName == "" || rootName == "." {
@@ -445,7 +486,8 @@ func buildLocalUploadSources(abs, rel string, isDir bool) ([]localUploadSource, 
 				relDir = filepath.ToSlash(filepath.Join(rootName, inner))
 			}
 		}
-		sources = append(sources, localUploadSource{abs: p, relDir: relDir})
+		relPath := filepath.ToSlash(filepath.Join(relDir, d.Name()))
+		sources = append(sources, localUploadSource{abs: p, relDir: relDir, relPath: relPath})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -493,12 +535,21 @@ func (h *Handler) logError(msg string, args ...any) {
 	slog.Error(msg, args...)
 }
 
-func (h *Handler) ensureLocalUploadTargetDir(ctx context.Context, accountID int64, rootID, relDir string, cache map[string]string) (string, error) {
+func (h *Handler) ensureLocalUploadTargetDir(
+	ctx context.Context,
+	accountID int64,
+	rootID, relDir string,
+	cache map[string]string,
+	createdCache map[string]bool,
+) (string, error) {
 	if h.files == nil {
 		return "", domain.Errorf(domain.CodeInternal, "文件服务未就绪")
 	}
 	if cache == nil {
 		cache = make(map[string]string)
+	}
+	if createdCache == nil {
+		createdCache = make(map[string]bool)
 	}
 	if _, ok := cache[""]; !ok {
 		cache[""] = rootID
@@ -536,6 +587,9 @@ func (h *Handler) ensureLocalUploadTargetDir(ctx context.Context, accountID int6
 				return "", err
 			}
 			next = created.ID
+			createdCache[key] = true
+		} else {
+			createdCache[key] = false
 		}
 		cur = next
 		cache[key] = cur

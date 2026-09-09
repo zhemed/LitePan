@@ -15,14 +15,16 @@ func (r *uploadTaskRepo) Upsert(ctx context.Context, rec *domain.UploadTaskRecor
 	}
 	_, err := r.db.write.ExecContext(ctx, `
 INSERT INTO upload_tasks(
-    task_id, client_task_id, account_id, account_name, driver_type, file_name,
+    task_id, client_task_id, batch_id, batch_name, account_id, account_name, driver_type, file_name,
     source_type, source_account_id, source_account_name, source_driver_type, source_file_id,
     rel_path, rel_dir, target_path, target_display_path, status, phase, progress,
     downloaded_bytes, uploaded_bytes, speed_bps, total_bytes, message, error, result_json,
     resume_data_json, cleanup_local_mode, cleanup_local_path, queue_order, created_at, updated_at, local_path, conflict_policy
-) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(task_id) DO UPDATE SET
     client_task_id=excluded.client_task_id,
+    batch_id=excluded.batch_id,
+    batch_name=excluded.batch_name,
     account_id=excluded.account_id,
     account_name=excluded.account_name,
     driver_type=excluded.driver_type,
@@ -54,7 +56,7 @@ ON CONFLICT(task_id) DO UPDATE SET
     updated_at=excluded.updated_at,
     local_path=excluded.local_path,
     conflict_policy=excluded.conflict_policy`,
-		rec.TaskID, rec.ClientTaskID, rec.AccountID, rec.AccountName, rec.DriverType, rec.FileName,
+		rec.TaskID, rec.ClientTaskID, rec.BatchID, rec.BatchName, rec.AccountID, rec.AccountName, rec.DriverType, rec.FileName,
 		rec.SourceType, rec.SourceAccountID, rec.SourceAccountName, rec.SourceDriverType, rec.SourceFileID,
 		rec.RelPath, rec.RelDir, rec.TargetPath, rec.TargetDisplayPath, rec.Status, rec.Phase, rec.Progress,
 		rec.DownloadedBytes, rec.UploadedBytes, rec.SpeedBytesPerSecond, rec.TotalBytes, rec.Message, rec.Error, rec.ResultJSON,
@@ -71,7 +73,7 @@ func (r *uploadTaskRepo) Delete(ctx context.Context, taskID string) error {
 
 func (r *uploadTaskRepo) List(ctx context.Context) ([]*domain.UploadTaskRecord, error) {
 	rows, err := r.db.read.QueryContext(ctx, `
-SELECT task_id, client_task_id, account_id, account_name, driver_type, file_name,
+SELECT task_id, client_task_id, batch_id, batch_name, account_id, account_name, driver_type, file_name,
        source_type, source_account_id, source_account_name, source_driver_type, source_file_id,
        rel_path, rel_dir, target_path, target_display_path, status, phase, progress,
        downloaded_bytes, uploaded_bytes, speed_bps, total_bytes, message, error, result_json,
@@ -95,7 +97,7 @@ FROM upload_tasks ORDER BY queue_order ASC, created_at ASC`)
 func scanUploadTask(rows *sql.Rows) (*domain.UploadTaskRecord, error) {
 	var rec domain.UploadTaskRecord
 	err := rows.Scan(
-		&rec.TaskID, &rec.ClientTaskID, &rec.AccountID, &rec.AccountName, &rec.DriverType, &rec.FileName,
+		&rec.TaskID, &rec.ClientTaskID, &rec.BatchID, &rec.BatchName, &rec.AccountID, &rec.AccountName, &rec.DriverType, &rec.FileName,
 		&rec.SourceType, &rec.SourceAccountID, &rec.SourceAccountName, &rec.SourceDriverType, &rec.SourceFileID,
 		&rec.RelPath, &rec.RelDir, &rec.TargetPath, &rec.TargetDisplayPath, &rec.Status, &rec.Phase, &rec.Progress,
 		&rec.DownloadedBytes, &rec.UploadedBytes, &rec.SpeedBytesPerSecond, &rec.TotalBytes, &rec.Message, &rec.Error, &rec.ResultJSON,

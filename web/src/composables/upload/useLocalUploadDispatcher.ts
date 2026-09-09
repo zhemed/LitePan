@@ -57,6 +57,13 @@ export function useLocalUploadDispatcher(
     formData.append("client_task_id", task.task_id);
     formData.append("display_name", displayName);
     formData.append("target_display_path", targetDisplayPath);
+    formData.append("batch_id", String(task.batch_id || ""));
+    formData.append("batch_name", String(task.batch_name || ""));
+    formData.append("batch_root_id", String(options.batchRootId || ""));
+    formData.append("batch_root_parent_id", String(options.batchRootParentId || ""));
+    formData.append("batch_root_owned", options.batchRootOwned ? "true" : "false");
+    formData.append("rel_path", String(task.rel_path || ""));
+    formData.append("rel_dir", String(task.rel_dir || ""));
 
     const controller = new AbortController();
     store.localUploadTaskControllers.set(task.task_id, controller);
@@ -78,6 +85,9 @@ export function useLocalUploadDispatcher(
           });
         },
       });
+      // 文件已经完整投递到服务端，立即释放浏览器中的 File 引用。
+      // 万级文件夹上传时若保留这些 payload，会持续占用大量内存。
+      store.localUploadTaskPayloads.delete(task.task_id);
       if (store.canceledLocalUploadTaskIds.has(task.task_id)) {
         try {
           await uploadApi.deleteTask(created.task_id);

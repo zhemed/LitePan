@@ -111,6 +111,31 @@ func TestAccountSetDefaultOrder(t *testing.T) {
 	}
 }
 
+func TestUploadTaskBatchFieldsPersist(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	record := &domain.UploadTaskRecord{
+		TaskID:       "upload-batch-task",
+		ClientTaskID: "client-1",
+		BatchID:      "batch-1",
+		BatchName:    "电影文件夹",
+		AccountID:    1,
+		FileName:     "第一季/01.mkv",
+		RelPath:      "第一季/01.mkv",
+		Status:       "pending",
+	}
+	if err := s.UploadTasks.Upsert(ctx, record); err != nil {
+		t.Fatalf("upsert upload task: %v", err)
+	}
+	rows, err := s.UploadTasks.List(ctx)
+	if err != nil {
+		t.Fatalf("list upload tasks: %v", err)
+	}
+	if len(rows) != 1 || rows[0].BatchID != record.BatchID || rows[0].BatchName != record.BatchName {
+		t.Fatalf("unexpected upload batch fields: %+v", rows)
+	}
+}
+
 func TestAuthStateUpsert(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore(t)

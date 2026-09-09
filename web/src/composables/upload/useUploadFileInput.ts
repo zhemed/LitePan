@@ -19,11 +19,12 @@ export function useUploadFileInput(ctx: UploadActionsCtx) {
       let batchConflictPolicy: string | null = null;
       const existing = new Set(deps.files.value.map((f) => f.name.toLowerCase()));
       const plans: { file: File; conflictPolicy: string; localTask: UploadTask }[] = [];
+      const skipped: UploadTask[] = [];
 
       for (const file of selectedFiles) {
         const skipReason = getSystemUploadJunkReason(normalizeUploadRelativePath(file));
         if (skipReason) {
-          store.addLocalUploadTask(store.createSkippedUploadTask(file, skipReason));
+          skipped.push(store.createSkippedUploadTask(file, skipReason));
           continue;
         }
         let conflictPolicy = "overwrite";
@@ -37,7 +38,7 @@ export function useUploadFileInput(ctx: UploadActionsCtx) {
             conflictPolicy = batchConflictPolicy;
           }
           if (conflictPolicy === "skip") {
-            store.addLocalUploadTask(store.createSkippedUploadTask(file, "检测到同名文件，已跳过"));
+            skipped.push(store.createSkippedUploadTask(file, "检测到同名文件，已跳过"));
             continue;
           }
         }
@@ -51,8 +52,11 @@ export function useUploadFileInput(ctx: UploadActionsCtx) {
         });
         store.ensureUploadTaskDisplayOrder(p.localTask);
       }
+      const localTasks = [...skipped, ...plans.map((p) => p.localTask)];
+      if (localTasks.length) {
+        store.addLocalUploadTasks(localTasks);
+      }
       if (plans.length) {
-        store.localUploadTasks.value = [...plans.map((p) => p.localTask), ...store.localUploadTasks.value];
         void dispatcher.startUploadTaskScheduler();
       }
     } finally {

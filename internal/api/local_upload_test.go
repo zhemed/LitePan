@@ -134,3 +134,17 @@ func TestBuildLocalUploadSourcesForSingleFileKeepsRootTarget(t *testing.T) {
 		t.Fatalf("file abs = %q, want %q", sources[0].abs, filePath)
 	}
 }
+
+func TestTrimUploadBatchRoot(t *testing.T) {
+	cases := map[string]string{
+		"短剧/01.mp4":          "01.mp4",
+		"短剧/Season 1/01.mp4": "Season 1/01.mp4",
+		"短剧":                 "",
+		"电影/01.mp4":          "电影/01.mp4",
+	}
+	for input, want := range cases {
+		if got := trimUploadBatchRoot(input, "短剧"); got != want {
+			t.Errorf("trimUploadBatchRoot(%q) = %q, want %q", input, got, want)
+		}
+	}
+}

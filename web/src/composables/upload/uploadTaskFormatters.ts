@@ -154,7 +154,8 @@ export function getUploadTaskDriverBadge(
 }
 
 export function normalizeUploadRelativePath(file: File) {
-  const raw = String((file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name).replace(/\\/g, "/");
+  const withRelativePath = file as File & { webkitRelativePath?: string; litepanRelativePath?: string };
+  const raw = String(withRelativePath.litepanRelativePath || withRelativePath.webkitRelativePath || file.name).replace(/\\/g, "/");
   return raw.split("/").filter(Boolean).join("/");
 }
 

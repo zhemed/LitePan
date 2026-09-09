@@ -10,6 +10,9 @@ export type UploadTaskStatus =
 export interface UploadTask {
   task_id: string;
   client_task_id?: string;
+  batch_id?: string;
+  batch_name?: string;
+  batch_placeholder?: boolean;
   account_id: number;
   account_name?: string;
   driver_type?: string;
@@ -38,6 +41,9 @@ export interface UploadTask {
     parent_path?: string;
     file_name?: string;
     size?: number;
+    batch_root_id?: string;
+    batch_root_parent_id?: string;
+    batch_root_owned?: boolean;
   };
   queue_order?: number;
   created_at?: number;

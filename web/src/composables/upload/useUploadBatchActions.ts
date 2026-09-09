@@ -149,6 +149,38 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
     void dispatcher.startUploadTaskScheduler();
   }
 
+  async function handleToggleUploadTasks(tasks: UploadTask[]) {
+    const unique = [...new Map(tasks.map((task) => [String(task.task_id), task])).values()];
+    if (!unique.length) return;
+    const resumeMode = unique.every((task) => ["paused", "failed", "canceled"].includes(String(task.status)));
+    if (resumeMode) {
+      for (const task of unique) {
+        await resumeUploadTask(task, true);
+      }
+      return;
+    }
+
+    const remote: UploadTask[] = [];
+    for (const task of unique) {
+      if (!["pending", "running"].includes(String(task.status))) continue;
+      if (isLocalUploadTask(task) || isQueuedRemoteResumeTask(task)) {
+        await pauseUploadTask(task, true);
+        continue;
+      }
+      store.pendingRemoteResumeTaskIds.delete(String(task.task_id));
+      store.patchRemoteUploadTask(task.task_id, { status: "paused", message: getPausedMessage(task), error: "" });
+      remote.push(task);
+    }
+    if (!remote.length) return;
+    try {
+      await uploadApi.batchPause(remote.map((task) => task.task_id));
+      await stream.fetchUploadTasks();
+    } catch (e) {
+      await stream.fetchUploadTasks();
+      toast.error(getApiErrorMessage(e, "批量暂停上传任务失败"));
+    }
+  }
+
   async function handleDeleteUploadTask(
     task: UploadTask,
     opts: { silent?: boolean; skipDialog?: boolean; deleteUploadedFile?: boolean } = {},
@@ -253,14 +285,37 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
     }
   }
 
-  async function handleDeleteUploadTasks(tasks: UploadTask[]) {
+  async function handleDeleteUploadTasks(
+    tasks: UploadTask[],
+    opts: { preferBatchRootDelete?: boolean; folderTaskCount?: number } = {},
+  ) {
     if (!tasks.length) return;
+    // 同一上传在本地投递态与服务端任务态短暂重叠时，只保留服务端任务，
+    // 避免先 abort 本地请求、随后又对同一任务发起一次删除。
+    const byStableKey = new Map<string, UploadTask>();
+    for (const task of tasks) {
+      const key = getUploadTaskStableKey(task) || String(task.task_id);
+      const current = byStableKey.get(key);
+      if (!current || (isLocalUploadTask(current) && !isLocalUploadTask(task))) {
+        byStableKey.set(key, task);
+      }
+    }
+    tasks = [...byStableKey.values()];
     const hasRemote = tasks.some((t) => !isLocalUploadTask(t));
     const remote = tasks.filter((t) => !isLocalUploadTask(t));
+    const deleteBatchRoots = Boolean(opts.preferBatchRootDelete) && remote.length > 0 && remote.every((task) =>
+      ["success", "failed", "canceled", "skipped"].includes(String(task.status)) &&
+      Boolean(task.result?.batch_root_owned) &&
+      Boolean(String(task.result?.batch_root_id || "").trim()),
+    );
     let deleteUploadedFile = false;
     if (hasRemote) {
       const successCount = tasks.filter((t) => t.status === "success").length;
-      const r = await confirmBatchUploadTaskDelete(tasks.length, successCount);
+      const r = await confirmBatchUploadTaskDelete(
+        tasks.length,
+        successCount,
+        deleteBatchRoots ? Number(opts.folderTaskCount || 1) : 0,
+      );
       if (!r) return;
       deleteUploadedFile = r.checked;
     }
@@ -276,16 +331,17 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
       const visibleTargetMap = new Map(visibleTargets.map((item) => [item.taskId, item] as const));
       const deleteFileCount = remote.filter((task) => task.status === "success").length;
       remote.forEach((t) => store.hiddenUploadTaskKeys.add(getUploadTaskStableKey(t)));
-      if (deleteUploadedFile && deleteFileCount > 0) {
+      if (deleteUploadedFile && (deleteFileCount > 0 || deleteBatchRoots)) {
         if (visibleTargets.length) {
           deps.markDeletingFiles(visibleTargets.map((item) => item.rowKey));
         }
-        toast.info(formatCloudDeleteStartToast(deleteFileCount));
+        toast.info(deleteBatchRoots ? "任务已移除，网盘文件夹删除中…" : formatCloudDeleteStartToast(deleteFileCount));
       }
       try {
         const result = await uploadApi.batchDelete(
           remote.map((t) => t.task_id),
           deleteUploadedFile,
+          deleteUploadedFile && deleteBatchRoots,
         );
         const failedTaskIds = new Set((result.failed_task_ids || []).map(String));
         const processedTaskIds = remote
@@ -322,6 +378,11 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
         }
         const failedCount = failedTaskIds.size;
         const successCount = Math.max(0, deleteFileCount - failedCount);
+        if (deleteBatchRoots) {
+          if (failedCount === 0) toast.success("网盘文件夹已删除");
+          else toast.error("网盘文件夹删除失败");
+          return;
+        }
         if (failedCount === 0) toast.success(formatCloudDeleteResultToast(successCount, 0));
         else if (successCount > 0) toast.warning(formatCloudDeleteResultToast(successCount, failedCount));
         else toast.error(formatCloudDeleteResultToast(0, failedCount));
@@ -341,6 +402,7 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
     handleDeleteUploadTask,
     handleDeleteUploadTasks,
     handleUploadTaskPrimaryAction,
+    handleToggleUploadTasks,
   };
 }
 

@@ -27,8 +27,11 @@ export function useUploadPanelActions(ctx: UploadActionsCtx) {
 
   function closeUploadTaskPanel() {
     store.uploadTaskPanelOpen.value = false;
-    stream.disconnectUploadTaskStream();
-    if (store.activeUploadTasks.value.length === 0) stream.stopUploadTaskPolling();
+    // 本方无 relay 任务（精简）：仅按上传任务判断是否保活事件流。
+    if (store.activeUploadTasks.value.length === 0) {
+      stream.disconnectUploadTaskStream();
+      stream.stopUploadTaskPolling();
+    }
   }
 
   async function openUploadNoticeDialog() {
