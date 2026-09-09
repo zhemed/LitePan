@@ -417,3 +417,34 @@ Webhook可彻底移除
 ### Next Steps
 
 - 存量 internal/file name_align 中文集号解析失败可另建任务修复；如需 189Cloud 实测认证刷新可后续验证
+
+
+## Session 69: 修复 189Cloud HTTP 400 认证判定回归并发布 0.0.14
+<!-- trellis-session: v=2 fp=f5952dcbffacb375 -->
+
+**Date**: 2026-09-09
+**Task**: 修复 189Cloud HTTP 400 认证判定回归并发布 0.0.14
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+0.0.13 验收失败：天翼云盘报 DRIVER_ERROR HTTP 400 UserInvalidOpenToken/unifyAccountInfo is null 且不恢复(调度排7440分钟后)。根因是移植 c7a424c 时照搬收窄判定(401||200+payload)，丢掉 0.0.12 的'400+失效payload→CodeAuthExpired→WithRetry被动刷新'链路。修复 rawJSON/rawForm 恢复 400 分支(payload 精确匹配不影响其它400)，taskauth 异步事件 ctx 加固，新增7例回归单测全绿。0.0.14 三 tag digest 3b2ae4fb，tag+release+容器重建 health ok。API 实测受阻(admin密码已改)，待用户 UI 复测；DB 只读核对认证态 active/无错误记录印证态机无感知。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `add540a` | fix: restore 189Cloud auth-expired classification on HTTP 400, bump to 0.0.14 |
+
+### Testing
+
+- [OK] go vet 全绿；drivers/189Cloud 7 例回归单测全绿；全量测试仅存量 internal/file 失败(已备案)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户 UI 复测天翼云盘列表；可选清理 data/litepan.db 中已删功能残留表(strm_tasks/offline_download_tasks 等)
