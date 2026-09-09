@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 80
+- **Total Sessions**: 81
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~777 | Active |
+| `journal-2.md` | ~806 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 81 | 2026-09-09 | 调查批次上传失败：189 S3 网关瞬时超时 | - | `main` |
 | 80 | 2026-09-09 | 生成 2000×1MB 大批量上传测试文件 | - | `main` |
 | 79 | 2026-09-09 | 创建容器映射目录 LitePan-123 | - | `main` |
 | 78 | 2026-09-09 | 修复大批量上传目录解析吞吐并发布 0.0.19 | `cd5720c` | `main` |

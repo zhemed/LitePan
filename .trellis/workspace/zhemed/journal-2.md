@@ -775,3 +775,32 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 用户在服务器上传面板选择该目录发起 2000 文件批次实测
+
+
+## Session 81: 调查批次上传失败：189 S3 网关瞬时超时
+<!-- trellis-session: v=2 fp=25cff11958418ac0 -->
+
+**Date**: 2026-09-09
+**Task**: 调查批次上传失败：189 S3 网关瞬时超时
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+2000 文件批次 2/66 失败(3%)：HTTP 511 S3ClientException Read timed out——189 云盘自己内部 S3 网关瞬时故障(21:50:31/21:51:03 两例相隔32s,约1分钟抖动窗)。失败在 init/commit 步骤(无'上传分片'前缀)；retryableUploadURLFailure 只认传输层错误(与上游逐字一致,非本方引入),HTTP 5xx 业务错判不可重试→一次即死。批次健康:64成功/5进行/1929排队继续跑,失败任务可UI重新上传。建议(可选):init/commit/getMultiUploadURLs 对 HTTP 5xx/429 纳入重试分类(rawJSON 带结构化状态码),上游同款局限可独立改进。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 失败子集逐行核对+重试链路逐段核实+上游对照,全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 批次跑完后 UI 重传 2 个失败任务;如需自动重试另建任务
