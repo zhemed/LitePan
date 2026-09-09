@@ -41,6 +41,10 @@ func (d *Driver) oauthServer() string {
 }
 
 func (d *Driver) doRefresh(ctx context.Context) (string, error) {
+	return d.RefreshToken(ctx, d.currentToken, d.exchangeToken, driver.ClassifyOAuthRefreshError)
+}
+
+func (d *Driver) exchangeToken(ctx context.Context) (string, error) {
 	d.mu.Lock()
 	refresh := strings.TrimSpace(d.refresh)
 	d.mu.Unlock()
@@ -68,7 +72,7 @@ func (d *Driver) doRefresh(ctx context.Context) (string, error) {
 		if msg == "" {
 			msg = "刷新访问令牌失败"
 		}
-		return "", domain.Errorf(domain.CodeAuthExpired, "%s", msg)
+		return "", httpx.OAuthProxyResponseError(msg)
 	}
 
 	d.mu.Lock()

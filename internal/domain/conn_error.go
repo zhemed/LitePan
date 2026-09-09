@@ -1,6 +1,11 @@
 package domain
 
-import "strings"
+import (
+	"context"
+	"errors"
+	"net"
+	"strings"
+)
 
 // TokenAuthFailureMessage 判断文本是否表示 access/refresh token 已失效。
 func TokenAuthFailureMessage(text string) bool {
@@ -13,10 +18,7 @@ func IsAuthExpiredError(err error) bool {
 		return false
 	}
 	if ae, ok := AsAppError(err); ok {
-		if ae.Code == CodeAuthExpired {
-			return true
-		}
-		return TokenAuthFailureMessage(ae.Message)
+		return ae.Code == CodeAuthExpired
 	}
 	return TokenAuthFailureMessage(err.Error())
 }
@@ -57,9 +59,12 @@ func isTokenAuthFailure(lower string) bool {
 		"refresh token is invalid",
 		"invalid, expired, revoked",
 		"authorization grant",
-		"刷新token失败",
-		"刷新 token 失败",
-		"刷新访问令牌失败",
+		"invalid_grant",
+		"invalid_token",
+		"invalid refresh token",
+		"invalid access token",
+		"令牌已失效",
+		"令牌无效",
 		"token is invalid",
 		"token expired",
 		"unauthorized",
@@ -84,6 +89,13 @@ func IsNetworkError(err error) bool {
 	}
 	if IsAuthExpiredError(err) {
 		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
 	}
 	return isNetworkFailure(strings.ToLower(err.Error()))
 }

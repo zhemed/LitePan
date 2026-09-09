@@ -211,8 +211,14 @@ func (d *Driver) rawJSON(ctx context.Context, method, rawURL string, query url.V
 	if err != nil {
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
-	if is189AuthExpiredPayload(data) {
+	if resp.StatusCode == http.StatusUnauthorized || (resp.StatusCode == http.StatusOK && is189AuthExpiredPayload(data)) {
 		return domain.Errorf(domain.CodeAuthExpired, "天翼云盘认证会话已失效")
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return domain.Errf(domain.CodePermissionDenied)
+	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return domain.Errf(domain.CodeRateLimited)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300))
@@ -239,8 +245,14 @@ func (d *Driver) rawForm(ctx context.Context, method, rawURL string, query url.V
 	if err != nil {
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
-	if is189AuthExpiredPayload(data) {
+	if resp.StatusCode == http.StatusUnauthorized || (resp.StatusCode == http.StatusOK && is189AuthExpiredPayload(data)) {
 		return domain.Errorf(domain.CodeAuthExpired, "天翼云盘认证会话已失效")
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return domain.Errf(domain.CodePermissionDenied)
+	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return domain.Errf(domain.CodeRateLimited)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300))
@@ -341,8 +353,8 @@ func isSessionExpired(err error) bool {
 	if err == nil {
 		return false
 	}
-	if ae, ok := domain.AsAppError(err); ok && ae.Code == domain.CodeAuthExpired {
-		return true
+	if ae, ok := domain.AsAppError(err); ok {
+		return ae.Code == domain.CodeAuthExpired
 	}
 	msg := err.Error()
 	lower := strings.ToLower(msg)

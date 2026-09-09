@@ -16,6 +16,7 @@ import (
 
 // Driver 为实例骨架，复制后按需增删字段。
 type Driver struct {
+	driver.AuthRefreshControl
 	add    Addition
 	client *http.Client
 

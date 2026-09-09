@@ -13,6 +13,7 @@ import (
 
 	"litepan/internal/domain"
 	"litepan/internal/driver"
+	"litepan/internal/httpx"
 	"litepan/internal/settings"
 )
 
@@ -51,6 +52,8 @@ func (h *Handler) oauthForward(w http.ResponseWriter, r *http.Request, method, u
 		if body != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
+		// 与刷新请求一致，显式携带程序 UA，便于 OAuth 服务端识别官方 litepan 的转发请求。
+		req.Header.Set("User-Agent", httpx.DefaultUserAgent)
 		client := &http.Client{Timeout: timeout}
 		resp, err := client.Do(req)
 		if err != nil {

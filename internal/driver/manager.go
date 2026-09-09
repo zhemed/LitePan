@@ -15,12 +15,14 @@ import (
 
 // Manager 管理并复用静态配置未变化的驱动实例。
 type Manager struct {
-	repo          domain.AccountRepository
-	authStates    domain.AuthStateRepository
-	settings      domain.ConfigRepository
-	log           *slog.Logger
-	delays        *DelayController
-	onAuthPersist func(ctx context.Context, accountID int64)
+	repo           domain.AccountRepository
+	authStates     domain.AuthStateRepository
+	settings       domain.ConfigRepository
+	log            *slog.Logger
+	delays         *DelayController
+	onAuthPersist  func(ctx context.Context, accountID int64)
+	authInitialize func(context.Context, int64, func(context.Context) error) error
+	authRefresh    func(context.Context, int64, Driver, func(context.Context) (RefreshOutcome, error)) error
 
 	mu        sync.Mutex
 	instances map[int64]*managedInstance
@@ -51,8 +53,26 @@ func (m *Manager) SetAuthPersistHook(fn func(ctx context.Context, accountID int6
 	m.onAuthPersist = fn
 }
 
+// SetAuthGuards 在装配时注入账号初始化与内联刷新的统一认证控制。
+func (m *Manager) SetAuthGuards(initialize func(context.Context, int64, func(context.Context) error) error, refresh func(context.Context, int64, Driver, func(context.Context) (RefreshOutcome, error)) error) {
+	m.authInitialize, m.authRefresh = initialize, refresh
+}
+
 // Get 返回账号对应的驱动实例：配置未变则复用，变了则重建。
 func (m *Manager) Get(ctx context.Context, accountID int64) (Driver, error) {
+	if m.authInitialize == nil {
+		return m.get(ctx, accountID)
+	}
+	var drv Driver
+	err := m.authInitialize(ctx, accountID, func(ctx context.Context) error {
+		var err error
+		drv, err = m.get(ctx, accountID)
+		return err
+	})
+	return drv, err
+}
+
+func (m *Manager) get(ctx context.Context, accountID int64) (Driver, error) {
 	acc, err := m.repo.Get(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -108,6 +128,11 @@ func (m *Manager) buildDriver(ctx context.Context, accountID int64, acc *domain.
 		c.SetRequestIntervalGate(m.delays.Gate(accountID))
 	}
 	m.injectAuth(ctx, accountID, drv)
+	if c, ok := drv.(AuthRefreshConsumer); ok && m.authRefresh != nil {
+		c.SetAuthRefreshGuard(func(ctx context.Context, fn func(context.Context) (RefreshOutcome, error)) error {
+			return m.authRefresh(ctx, accountID, drv, fn)
+		})
+	}
 	if err := drv.Init(ctx); err != nil {
 		_ = drv.Drop(ctx)
 		return nil, err
@@ -115,16 +140,21 @@ func (m *Manager) buildDriver(ctx context.Context, accountID int64, acc *domain.
 	return drv, nil
 }
 
-// ResetTransport 关闭账号当前驱动实例的 idle 连接，便于断网/睡眠后恢复；不丢弃实例。
+// ResetTransport 网络故障后重置该账号的驱动实例：释放旧实例并从缓存移除，
+// 下次访问时按当前配置自动重建（对 Drop 后不再可用的驱动如 WebDAV 必须重建，
+// 否则残留实例会一直报"客户端未初始化"）。
 func (m *Manager) ResetTransport(ctx context.Context, accountID int64) {
 	m.mu.Lock()
 	inst, ok := m.instances[accountID]
+	if ok {
+		delete(m.instances, accountID)
+	}
 	m.mu.Unlock()
 	if !ok {
 		return
 	}
 	_ = inst.drv.Drop(ctx)
-	m.log.Debug("驱动传输层已重置", "account", accountID)
+	m.log.Debug("驱动实例已重置，下次访问重建", "account", accountID)
 }
 
 // oauthServerURL 取全局 OAuth 代理地址：系统设置优先，无效值回落默认值。

@@ -16,15 +16,22 @@ import (
 func (d *Driver) RefreshAuth(ctx context.Context, _ driver.RefreshCaller) (driver.RefreshOutcome, error) {
 	_, err := d.doRefresh(ctx)
 	if err != nil {
-		if strings.Contains(err.Error(), "缺少 refresh_token") || strings.Contains(err.Error(), "重新扫码") {
-			return driver.RefreshFatal, err
-		}
-		return driver.RefreshRetryable, err
+		return driver.ClassifyOAuthRefreshError(err), err
 	}
 	return driver.RefreshSuccess, nil
 }
 
 func (d *Driver) doRefresh(ctx context.Context) (string, error) {
+	return d.RefreshToken(ctx, d.currentToken, d.exchangeToken, driver.ClassifyOAuthRefreshError)
+}
+
+func (d *Driver) currentToken() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.accessToken
+}
+
+func (d *Driver) exchangeToken(ctx context.Context) (string, error) {
 	d.mu.Lock()
 	refresh := strings.TrimSpace(d.refreshToken)
 	d.mu.Unlock()
@@ -49,29 +56,13 @@ func (d *Driver) doRefresh(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", domain.Wrap(domain.CodeDriverError, err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		return "", domain.Errorf(domain.CodeDriverError, "刷新令牌失败 HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300))
-	}
-	var out oauthRefreshResp
-	if err := decodeJSON(data, &out); err != nil {
+	out, err := parseRefreshResponse(resp.StatusCode, data)
+	if err != nil {
 		return "", err
-	}
-	if !successResCode(out.ResCode) {
-		msg := strings.TrimSpace(out.ResMessage)
-		if msg == "" {
-			msg = "刷新令牌失败"
-		}
-		return "", domain.Errorf(domain.CodeAuthExpired, "%s", msg)
 	}
 
 	access := firstString(out.AccessToken, out.AccessToken2)
 	newRefresh := firstString(out.RefreshToken, refresh)
-	if access == "" {
-		return "", domain.Errorf(domain.CodeAuthExpired, "刷新令牌成功但未返回 accessToken")
-	}
-	if err := d.refreshSession(ctx, access); err != nil {
-		return "", err
-	}
 	expiresIn := firstPositiveNumber(out.ExpiresIn, out.ExpiresIn2, out.Expires)
 	expiresAt := time.Time{}
 	if expiresIn > 0 {
@@ -92,6 +83,10 @@ func (d *Driver) doRefresh(ctx context.Context) (string, error) {
 			return "", domain.Wrap(domain.CodeInternal, err)
 		}
 	}
+	// 新 refresh_token 先落库，会话接口短暂不可用时仍可用新凭据继续恢复。
+	if err := d.refreshSession(ctx, access); err != nil {
+		return "", err
+	}
 	return access, nil
 }
 
@@ -108,14 +103,14 @@ func (d *Driver) refreshSession(ctx context.Context, accessToken string) error {
 		if msg == "" {
 			msg = "刷新会话失败"
 		}
-		return domain.Errorf(domain.CodeAuthExpired, "%s", msg)
+		return domain.Errorf(domain.CodeDriverError, "%s", msg)
 	}
 	if d.isFamily() {
 		if out.FamilySessionKey == "" || out.FamilySessionSecret == "" {
-			return domain.Errorf(domain.CodeAuthExpired, "刷新会话成功但缺少家庭云会话信息")
+			return domain.Errorf(domain.CodeDriverError, "刷新会话响应缺少家庭云会话信息")
 		}
 	} else if out.SessionKey == "" || out.SessionSecret == "" {
-		return domain.Errorf(domain.CodeAuthExpired, "刷新会话成功但缺少个人云会话信息")
+		return domain.Errorf(domain.CodeDriverError, "刷新会话响应缺少个人云会话信息")
 	}
 	d.mu.Lock()
 	d.sessionKey = out.SessionKey

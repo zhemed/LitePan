@@ -218,16 +218,18 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (View, error) 
 	if err := s.accounts.Update(ctx, a); err != nil {
 		return View{}, err
 	}
-	if authChanged {
-		if err := s.upsertAuthFromFields(ctx, id, existingAuth, authFields, driverType, true); err != nil {
+	if authChanged || (s.auth == nil && existingAuth != nil) {
+		if err := s.upsertAuthFromFields(ctx, id, existingAuth, authFields, driverType, authChanged); err != nil {
 			return View{}, err
-		}
-		if s.auth != nil {
-			s.auth.RecoverAccount(ctx, id)
 		}
 	}
 	s.dropDriver(ctx, id)
 	s.invalidateAccountCaches(id)
+	// 连接测试已通过，凭据未变化也要恢复；先清理旧实例，再通知后台任务。
+	// 本方适配：RecoverAccount 保持 void 签名（internal/auth 未随上游重构）。
+	if s.auth != nil && (existingAuth != nil || authChanged) {
+		s.auth.RecoverAccount(ctx, id)
+	}
 	activeChanged := existing.IsActive != a.IsActive
 	switch {
 	case !a.IsActive:
@@ -319,12 +321,16 @@ func (s *Service) upsertAuthFromFields(ctx context.Context, accountID int64, exi
 	}
 	st := auth.ApplyUpdate(existing, fields)
 	st.AccountID = accountID
-	if reseedSchedule && auth.HasCredentials(st) {
+	// 已有账号由认证服务清理负面状态并发恢复事件，不能在这里提前抹掉旧状态（上游 c7a424c）。
+	if s.auth == nil {
 		st.Status = domain.AuthActive
 		st.ActiveAttempts = 0
 		st.PassiveAttempts = 0
 		st.LastError = ""
+		st.LastFailureKind = ""
 		st.NextRetryAt = time.Time{}
+	}
+	if reseedSchedule && auth.HasCredentials(st) {
 		st.TokenExpires = time.Time{}
 		st.CookieExpires = time.Time{}
 		st.LastRefreshAt = time.Time{}

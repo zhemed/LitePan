@@ -58,10 +58,30 @@ function navigateOAuthWindow(url: string) {
   }
 }
 
+function oauthFieldValue(value: unknown): string {
+  if (typeof value !== "string") return "";
+  // OAuth Token 本身允许包含 +、/、= 等字符，只清理 JSON 外层可能夹带的空白/BOM。
+  return value.replace(/^\uFEFF/, "").trim();
+}
+
+export function normalizeOAuthFields(
+  tokens: Record<string, unknown> | null | undefined,
+  fieldNames: string[],
+): Record<string, string> {
+  if (!tokens || typeof tokens !== "object") return {};
+  const accepted = new Set(fieldNames);
+  const out: Record<string, string> = {};
+  for (const name of accepted) {
+    const value = oauthFieldValue(tokens[name]);
+    if (value) out[name] = value;
+  }
+  return out;
+}
+
 async function pollStatus(
   sessionId: string,
   cancelled: () => boolean,
-): Promise<Record<string, string>> {
+): Promise<Record<string, unknown>> {
   const maxAttempts = 30;
   let attempts = 0;
 
@@ -158,11 +178,10 @@ export function useOAuthAuth() {
       if (driverType === "115_open") {
         await new Promise((r) => setTimeout(r, 2000));
       }
-      const filled: Record<string, string> = {};
-      let count = 0;
-      for (const [k, v] of Object.entries(tokens)) {
-        filled[k] = String(v);
-        if (fieldNames.includes(k)) count++;
+      const filled = normalizeOAuthFields(tokens, fieldNames);
+      const count = Object.keys(filled).length;
+      if (count === 0) {
+        throw new Error("OAuth 服务未返回当前驱动可用的认证字段");
       }
       renderPopup("OAuth 认证成功", `已自动填充 ${count} 个字段，可关闭此页返回。`);
       toast.success(`OAuth 认证成功，已自动填充 ${count} 个字段`);

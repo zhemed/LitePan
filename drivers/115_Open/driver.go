@@ -14,6 +14,7 @@ import (
 )
 
 type Driver struct {
+	driver.AuthRefreshControl
 	add       Addition
 	client    *http.Client
 	oauthBase string
@@ -92,7 +93,8 @@ func (d *Driver) Init(ctx context.Context) error {
 			return err
 		}
 	}
-	return d.Ping(ctx)
+	// 连接检测不再内联在 Init（上游 1c71fec）：由账号连接测试显式触发，避免初始化即被网络抖动拖死。
+	return nil
 }
 
 func (d *Driver) Drop(context.Context) error {

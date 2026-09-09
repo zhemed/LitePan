@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"errors"
 
 	"litepan/internal/domain"
 )
@@ -42,8 +43,21 @@ type AuthRefresher interface {
 
 // ClassifyOAuthRefreshError 判断 OAuth 代理 refresh 失败是否不可恢复。
 func ClassifyOAuthRefreshError(err error) RefreshOutcome {
+	var refreshErr *AuthRefreshError
+	if errors.As(err, &refreshErr) {
+		return refreshErr.Outcome
+	}
 	if domain.IsAuthExpiredError(err) {
 		return RefreshFatal
 	}
 	return RefreshRetryable
 }
+
+// AuthRefreshError 保留驱动的协议判断，初始化失败时也不丢失可重试/需重授权的区别。
+type AuthRefreshError struct {
+	Outcome RefreshOutcome
+	Err     error
+}
+
+func (e *AuthRefreshError) Error() string { return e.Err.Error() }
+func (e *AuthRefreshError) Unwrap() error { return e.Err }

@@ -73,7 +73,14 @@ watch(
     try {
       const cfg = await localUploadApi.getConfig();
       mappings.value = cfg.mappings;
-      if (mappings.value.length > 0) await loadBrowse(0);
+      if (mappings.value.length > 0) {
+        // 保留上次选中的映射，但需同步浏览其目录并防止映射列表变化导致越界，
+        // 否则会出现下拉显示目录 A、内容却是目录 B 的错位。
+        if (mappingIndex.value >= mappings.value.length) {
+          mappingIndex.value = 0;
+        }
+        await loadBrowse(mappingIndex.value);
+      }
     } catch (e) {
       toast.error(getApiErrorMessage(e, "加载本机上传配置失败"));
     }

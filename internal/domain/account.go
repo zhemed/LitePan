@@ -29,8 +29,9 @@ const (
 type AuthFailureKind string
 
 const (
-	AuthFailureNetwork AuthFailureKind = "network"
-	AuthFailureAuth    AuthFailureKind = "auth"
+	AuthFailureNetwork  AuthFailureKind = "network"
+	AuthFailureAuth     AuthFailureKind = "auth"
+	AuthFailureUpstream AuthFailureKind = "upstream"
 )
 
 // AuthState 是账号的认证运行态，独立于静态配置存储。
