@@ -448,3 +448,32 @@ Webhook可彻底移除
 ### Next Steps
 
 - 用户 UI 复测天翼云盘列表；可选清理 data/litepan.db 中已删功能残留表(strm_tasks/offline_download_tasks 等)
+
+
+## Session 70: 记录 admin/123456 并完成 0.0.14 天翼云盘实测验收
+<!-- trellis-session: v=2 fp=c1afaaee0e7573d0 -->
+
+**Date**: 2026-09-09
+**Task**: 记录 admin/123456 并完成 0.0.14 天翼云盘实测验收
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+DB 证实 08-30 后本实例从未改密（用户改密发生在别处）；经授权用 pkg/security.HashPassword 生成哈希重置为 123456（重置前全库备份 /tmp/litepan-backup-20260909-201827.db）。破案：/api/auth/login 仅接受 form 表单编码，JSON 请求被解析为空用户名（日志 username=""）——此前所有登录失败均源于此。实测：登录成功→files/list 返回真实目录→日志还原恢复链（20:16:30 用户UI请求触发被动刷新+凭据回写→20:19:14 列表直接成功），0.0.14 修复闭环确认。AGENTS.md 更新凭据+form编码注意事项，清理笔误产物 data/litean.db 与 .tmp-hashgen。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] form 编码登录 200；files/list success:true 含真实目录；account_auth_states active/last_refresh 20:16:30
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无遗留；可选：清理 DB 已删功能残留表
