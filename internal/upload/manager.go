@@ -68,6 +68,15 @@ type Manager struct {
 
 	resumePersistMu sync.Mutex
 	resumePersist   map[string]*time.Timer
+
+	// 批次目录预热去重：同一 (账号, 根目录) 同时只有一个预热协程。
+	batchWarmingMu sync.Mutex
+	batchWarming   map[batchWarmKey]struct{}
+}
+
+type batchWarmKey struct {
+	accountID int64
+	rootID    string
 }
 
 func NewManager(opts Options) *Manager {
@@ -200,7 +209,68 @@ func (m *Manager) createBatch(ctx context.Context, params []CreateParams) ([]*Ta
 	for _, st := range created {
 		go m.runTask(st.TaskID)
 	}
+	m.preWarmBatchDirs(created)
 	return result, nil
+}
+
+// preWarmBatchDirs 收集批次内全部唯一 (账号, 根目录, rel_dir)，后台预热目录缓存。
+// 去重 + 字典序（父前缀先行），同批次重复创建（分块建批）只预热一次；
+// 预热与上传 worker 共用账号间隔门，不改变请求节奏，只消除边传边解析的长尾。
+func (m *Manager) preWarmBatchDirs(created []*taskState) {
+	if len(created) == 0 || m.files == nil {
+		return
+	}
+	dirs := collectBatchWarmDirs(created)
+	for k, list := range dirs {
+		m.batchWarmingMu.Lock()
+		if m.batchWarming == nil {
+			m.batchWarming = make(map[batchWarmKey]struct{})
+		}
+		if _, warming := m.batchWarming[k]; warming {
+			m.batchWarmingMu.Unlock()
+			continue
+		}
+		m.batchWarming[k] = struct{}{}
+		m.batchWarmingMu.Unlock()
+		go func(k batchWarmKey, list []string) {
+			defer func() {
+				m.batchWarmingMu.Lock()
+				delete(m.batchWarming, k)
+				m.batchWarmingMu.Unlock()
+			}()
+			ctx := m.runCtx
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			warmTargetDirs(ctx, m.files, m.targetDirCache, k.accountID, k.rootID, list)
+		}(k, list)
+	}
+}
+
+// collectBatchWarmDirs 汇总批次任务的唯一 (账号, 根目录, rel_dir)。
+func collectBatchWarmDirs(created []*taskState) map[batchWarmKey][]string {
+	sets := make(map[batchWarmKey]map[string]struct{})
+	for _, st := range created {
+		if st == nil || st.RelDir == "" {
+			continue
+		}
+		k := batchWarmKey{accountID: st.AccountID, rootID: st.TargetPath}
+		set, ok := sets[k]
+		if !ok {
+			set = make(map[string]struct{})
+			sets[k] = set
+		}
+		set[st.RelDir] = struct{}{}
+	}
+	out := make(map[batchWarmKey][]string, len(sets))
+	for k, set := range sets {
+		list := make([]string, 0, len(set))
+		for dir := range set {
+			list = append(list, dir)
+		}
+		out[k] = list
+	}
+	return out
 }
 
 func normalizeClientTaskID(clientTaskID string) string {

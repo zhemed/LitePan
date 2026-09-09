@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -10,7 +11,9 @@ import (
 	"litepan/internal/domain"
 )
 
-const uploadTargetCacheTTL = 30 * time.Second
+// 10 分钟：大批量上传（数百文件/目录）运行期远超旧值 30s，过期会导致
+// 同一目录被反复重新 List（每次都过账号间隔门，加剧吞吐塌陷）。
+const uploadTargetCacheTTL = 10 * time.Minute
 
 type uploadTargetFiles interface {
 	List(ctx context.Context, accountID int64, parentID string, forceRefresh bool) ([]domain.FileItem, error)
@@ -117,8 +120,23 @@ func ensureUploadTargetDir(ctx context.Context, files uploadTargetFiles, cache *
 	return cur, nil
 }
 
-func joinUploadDisplayPath(base, relDir string) string {
-	base = "/" + strings.Trim(strings.TrimSpace(base), "/")
+// warmTargetDirs 按字典序预解析目录（父前缀天然先行），全部命中缓存后
+// 上传 worker 不再边传边解析。目录已在缓存中的前缀零成本跳过。
+func warmTargetDirs(ctx context.Context, files uploadTargetFiles, cache *uploadTargetDirCache, accountID int64, rootID string, relDirs []string) {
+	sorted := append([]string(nil), relDirs...)
+	sort.Strings(sorted)
+	for _, relDir := range sorted {
+		if ctx.Err() != nil {
+			return
+		}
+		if _, err := ensureUploadTargetDir(ctx, files, cache, accountID, rootID, relDir); err != nil {
+			// 预解析失败不致命：上传 worker 走原有即时解析兜底。
+			return
+		}
+	}
+}
+
+func joinUploadDisplayPath(base, relDir string) string {	base = "/" + strings.Trim(strings.TrimSpace(base), "/")
 	if base == "/" {
 		base = ""
 	}
