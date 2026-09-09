@@ -260,10 +260,24 @@ func retryableUploadURLFailure(ctx context.Context, err error) bool {
 	}
 	var urlErr *url.Error
 	var netErr net.Error
-	return errors.As(err, &urlErr) ||
+	if errors.As(err, &urlErr) ||
 		errors.As(err, &netErr) ||
 		errors.Is(err, io.EOF) ||
-		errors.Is(err, io.ErrUnexpectedEOF)
+		errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	// 189 网关瞬时业务故障（HTTP 511 S3ClientException "Read timed out" /
+	// 5xx / 429）视为可重试：rawJSON/rawForm 把状态码放在错误详情里。
+	// 400/403/会话失效不在可重试范围（会话失效已在上方拦截）。
+	if ae, ok := domain.AsAppError(err); ok {
+		switch status := ae.Details["http_status"].(type) {
+		case int:
+			return status >= 500 || status == http.StatusTooManyRequests
+		case float64:
+			return status >= 500 || status == http.StatusTooManyRequests
+		}
+	}
+	return false
 }
 
 func rootErrorMessage(err error) string {

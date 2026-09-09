@@ -49,3 +49,55 @@ func TestRawJSONClassifies400AuthPayloadAsAuthExpired(t *testing.T) {
 		})
 	}
 }
+
+// 0.0.20：HTTP 5xx/429 携带结构化状态码，retryableUploadURLFailure 放行重试。
+func TestRawJSONStatusFeedsRetryClassification(t *testing.T) {
+	cases := []struct {
+		name       string
+		status     int
+		body       string
+		wantCode   domain.ErrorCode
+		wantRetry  bool
+	}{
+		{"511 网关超时可重试", 511, `{"code":"S3ClientException","msg":"Read timed out"}`, domain.CodeDriverError, true},
+		{"502 可重试", 502, `{}`, domain.CodeDriverError, true},
+		{"429 限流可重试", 429, `{}`, domain.CodeRateLimited, true},
+		{"400 参数错误不重试", 400, `{"res_code":"InvalidParam"}`, domain.CodeDriverError, false},
+		{"403 权限不重试", 403, `{}`, domain.CodePermissionDenied, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+
+			d := New().(*Driver)
+			d.client = srv.Client()
+			err := d.rawJSON(context.Background(), http.MethodGet, srv.URL+"/op", nil, nil, nil, &map[string]any{})
+			if got := retryableUploadURLFailure(context.Background(), err); got != tc.wantRetry {
+				t.Fatalf("status=%d retryable=%v want=%v (err=%v)", tc.status, got, tc.wantRetry, err)
+			}
+			ae, _ := domain.AsAppError(err)
+			if ae.Code != tc.wantCode {
+				t.Fatalf("status=%d code=%s want=%s", tc.status, ae.Code, tc.wantCode)
+			}
+		})
+	}
+}
+
+// 会话失效永远不可重试（避免换 Token 循环）。
+func TestSessionExpiredNeverRetryable(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		_, _ = w.Write([]byte(`{"res_code":"UserInvalidOpenToken","res_message":"session expired"}`))
+	}))
+	defer srv.Close()
+	d := New().(*Driver)
+	d.client = srv.Client()
+	err := d.rawJSON(context.Background(), http.MethodGet, srv.URL+"/op", nil, nil, nil, &map[string]any{})
+	if retryableUploadURLFailure(context.Background(), err) {
+		t.Fatalf("auth-expired error must not be retryable: %v", err)
+	}
+}

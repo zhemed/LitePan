@@ -222,10 +222,13 @@ func (d *Driver) rawJSON(ctx context.Context, method, rawURL string, query url.V
 		return domain.Errf(domain.CodePermissionDenied)
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return domain.Errf(domain.CodeRateLimited)
+		return domain.Errf(domain.CodeRateLimited).WithDetails(map[string]any{"http_status": resp.StatusCode})
 	}
 	if resp.StatusCode != http.StatusOK {
-		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300))
+		// 状态码进结构化详情：retryableUploadURLFailure 据此对 5xx/429 放行重试
+		// （189 S3 网关瞬时 511 "Read timed out" 等），400/403 仍不可重试。
+		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300)).
+			WithDetails(map[string]any{"http_status": resp.StatusCode})
 	}
 	return parse189Response(data, out)
 }
@@ -258,10 +261,11 @@ func (d *Driver) rawForm(ctx context.Context, method, rawURL string, query url.V
 		return domain.Errf(domain.CodePermissionDenied)
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return domain.Errf(domain.CodeRateLimited)
+		return domain.Errf(domain.CodeRateLimited).WithDetails(map[string]any{"http_status": resp.StatusCode})
 	}
 	if resp.StatusCode != http.StatusOK {
-		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300))
+		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API HTTP %d: %s", resp.StatusCode, httpx.Truncate(data, 300)).
+			WithDetails(map[string]any{"http_status": resp.StatusCode})
 	}
 	return parse189Response(data, out)
 }
