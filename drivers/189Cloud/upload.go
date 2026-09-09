@@ -129,7 +129,7 @@ func (d *Driver) UploadLocalFile(ctx context.Context, req driver.LocalUploadRequ
 		} else {
 			initParams["lazyCheck"] = "1"
 		}
-		initResp, err := d.uploadEncryptedRequest(ctx, "initMultiUpload", initParams)
+		initResp, err := d.retryUploadEncryptedRequest(ctx, "initMultiUpload", initParams)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +203,7 @@ func (d *Driver) UploadLocalFile(ctx context.Context, req driver.LocalUploadRequ
 	if policy == "overwrite" {
 		commitParams["opertype"] = "3"
 	}
-	commitResp, err := d.uploadEncryptedRequest(ctx, "commitMultiUploadFile", commitParams)
+	commitResp, err := d.retryUploadEncryptedRequest(ctx, "commitMultiUploadFile", commitParams)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +252,32 @@ func (d *Driver) getMultiUploadURLs(ctx context.Context, uploadFileID, partInfo 
 		totalParts,
 		rootErrorMessage(lastErr),
 	)
+}
+
+// retryUploadEncryptedRequest 对 init/commit 等加密上传请求做有限重试。
+// 0.0.20 只给分类器补了状态码识别，但 init/commit 没有重试循环去消费它——
+// 当晚 3 个文件 commit 阶段 511 "inner service error" 直接判死即此缺口。
+// 5xx/429/传输层错误重试至多 3 次（递增退避）；init 重试可能留下孤儿会话
+// （服务端自行过期），commit 重试绑定同一 uploadFileId，不会重复建文件。
+func (d *Driver) retryUploadEncryptedRequest(ctx context.Context, endpoint string, params map[string]string) (map[string]any, error) {
+	const maxAttempts = 3
+	var lastErr error
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			if err := retryDelay(ctx, attempt); err != nil {
+				return nil, err
+			}
+		}
+		resp, err := d.uploadEncryptedRequest(ctx, endpoint, params)
+		if err == nil {
+			return resp, nil
+		}
+		lastErr = err
+		if !retryableUploadURLFailure(ctx, err) {
+			return nil, err
+		}
+	}
+	return nil, annotateUploadPartRetry(lastErr, maxAttempts-1)
 }
 
 func retryableUploadURLFailure(ctx context.Context, err error) bool {

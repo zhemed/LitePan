@@ -173,6 +173,8 @@ func (m *Manager) injectAuth(ctx context.Context, accountID int64, drv Driver) {
 		got, err := m.authStates.Get(ctx, accountID)
 		if err == nil {
 			st = got
+		} else if ctx.Err() != nil {
+			// 请求取消属预期行为（页面关闭/中止面板等），降噪不告警（0.0.21）。
 		} else if ae, ok := domain.AsAppError(err); !ok || ae.Code != domain.CodeNotFound {
 			m.log.Warn("加载认证状态失败", "account", accountID, "err", err)
 		}
