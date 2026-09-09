@@ -294,8 +294,12 @@ func retryableUploadURLFailure(ctx context.Context, err error) bool {
 	}
 	// 189 网关瞬时业务故障（HTTP 511 S3ClientException "Read timed out" /
 	// 5xx / 429）视为可重试：rawJSON/rawForm 把状态码放在错误详情里。
-	// 400/403/会话失效不在可重试范围（会话失效已在上方拦截）。
+	// HTTP 200 业务错里仅 res_code/code = "-1"（"服务暂时不可用"，0.0.22）
+	// 可重试。400/403/会话失效/其它业务码不在可重试范围（会话失效已在上方拦截）。
 	if ae, ok := domain.AsAppError(err); ok {
+		if ae.Details["189_business_code"] == "-1" {
+			return true
+		}
 		switch status := ae.Details["http_status"].(type) {
 		case int:
 			return status >= 500 || status == http.StatusTooManyRequests

@@ -101,3 +101,32 @@ func TestSessionExpiredNeverRetryable(t *testing.T) {
 		t.Fatalf("auth-expired error must not be retryable: %v", err)
 	}
 }
+
+// 0.0.22：HTTP 200 业务错 code/res_code = "-1"（服务暂时不可用）可重试；
+// 其它业务码不可重试。
+func TestBusinessCodeMinusOneRetryable(t *testing.T) {
+	cases := []struct {
+		name      string
+		body      string
+		wantRetry bool
+	}{
+		{"code=-1 服务暂时不可用", `{"code":"-1","message":"非常抱歉服务暂时不可用，如有问题请联系系统管理员"}`, true},
+		{"res_code=-1", `{"res_code":"-1","res_message":"非常抱歉服务暂时不可用"}`, true},
+		{"code=-2 其它业务错不可重试", `{"code":"-2","message":"其他错误"}`, false},
+		{"res_code=FileNotFound", `{"res_code":"FileNotFound","res_message":"file not found"}`, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+			d := New().(*Driver)
+			d.client = srv.Client()
+			err := d.rawJSON(context.Background(), http.MethodGet, srv.URL+"/op", nil, nil, nil, &map[string]any{})
+			if got := retryableUploadURLFailure(context.Background(), err); got != tc.wantRetry {
+				t.Fatalf("retryable=%v want=%v (err=%v)", got, tc.wantRetry, err)
+			}
+		})
+	}
+}

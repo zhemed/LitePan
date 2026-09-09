@@ -74,14 +74,32 @@ func (c *uploadTargetDirCache) put(accountID int64, rootID, relDir, folderID str
 	c.mu.Unlock()
 }
 
+// ResolveUploadTargetDir 共享缓存目录解析：预解析（warmTargetDirs）与批次
+// 创建 walk（api.ensureLocalUploadTargetDir）统一走 manager 持有的同一缓存
+// 实例（TTL 10min，跨请求命中，驱动无关——115 等任何 LocalUploader 同益）。
+// 返回 folderID 与本次调用**新建**的前缀集合（键=相对前缀），供调用方维持
+// BatchRootOwned 语义（仅本次新建的根计入）。
+func (m *Manager) ResolveUploadTargetDir(ctx context.Context, accountID int64, rootID, relDir string) (string, map[string]bool, error) {
+	if m == nil || m.files == nil {
+		return "", nil, domain.Errorf(domain.CodeInternal, "上传服务未就绪")
+	}
+	return ensureUploadTargetDirDetailed(ctx, m.files, m.targetDirCache, accountID, rootID, relDir)
+}
+
 func ensureUploadTargetDir(ctx context.Context, files uploadTargetFiles, cache *uploadTargetDirCache, accountID int64, rootID, relDir string) (string, error) {
+	folderID, _, err := ensureUploadTargetDirDetailed(ctx, files, cache, accountID, rootID, relDir)
+	return folderID, err
+}
+
+func ensureUploadTargetDirDetailed(ctx context.Context, files uploadTargetFiles, cache *uploadTargetDirCache, accountID int64, rootID, relDir string) (string, map[string]bool, error) {
 	if files == nil {
-		return "", domain.Errorf(domain.CodeInternal, "文件服务未就绪")
+		return "", nil, domain.Errorf(domain.CodeInternal, "文件服务未就绪")
 	}
 	relDir = strings.Trim(relDir, "/")
 	if relDir == "" {
-		return rootID, nil
+		return rootID, nil, nil
 	}
+	createdPrefixes := make(map[string]bool)
 	now := time.Now()
 	cur := rootID
 	parts := strings.Split(relDir, "/")
@@ -98,7 +116,7 @@ func ensureUploadTargetDir(ctx context.Context, files uploadTargetFiles, cache *
 		}
 		items, err := files.List(ctx, accountID, cur, false)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		next := ""
 		for _, item := range items {
@@ -110,14 +128,15 @@ func ensureUploadTargetDir(ctx context.Context, files uploadTargetFiles, cache *
 		if next == "" {
 			created, err := files.CreateFolder(ctx, accountID, cur, part)
 			if err != nil {
-				return "", err
+				return "", nil, err
 			}
 			next = created.ID
+			createdPrefixes[prefix] = true
 		}
 		cur = next
 		cache.put(accountID, rootID, prefix, cur, now)
 	}
-	return cur, nil
+	return cur, createdPrefixes, nil
 }
 
 // warmTargetDirs 按字典序预解析目录（父前缀天然先行），全部命中缓存后
@@ -136,7 +155,8 @@ func warmTargetDirs(ctx context.Context, files uploadTargetFiles, cache *uploadT
 	}
 }
 
-func joinUploadDisplayPath(base, relDir string) string {	base = "/" + strings.Trim(strings.TrimSpace(base), "/")
+func joinUploadDisplayPath(base, relDir string) string {
+	base = "/" + strings.Trim(strings.TrimSpace(base), "/")
 	if base == "/" {
 		base = ""
 	}

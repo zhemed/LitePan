@@ -535,6 +535,10 @@ func (h *Handler) logError(msg string, args ...any) {
 	slog.Error(msg, args...)
 }
 
+// ensureLocalUploadTargetDir 走 manager 的共享缓存解析（ResolveUploadTargetDir，
+// TTL 10min 跨请求命中、与批次预解析同一实例）；walk 级 memo 保留以避免重复
+// 加锁查询。createdCache 仍按"本次 walk 新建的前缀"语义写回，BatchRootOwned
+// 行为不变（跨请求缓存命中不计入 owned，宁可少删不误删）。
 func (h *Handler) ensureLocalUploadTargetDir(
 	ctx context.Context,
 	accountID int64,
@@ -542,59 +546,69 @@ func (h *Handler) ensureLocalUploadTargetDir(
 	cache map[string]string,
 	createdCache map[string]bool,
 ) (string, error) {
-	if h.files == nil {
-		return "", domain.Errorf(domain.CodeInternal, "文件服务未就绪")
-	}
 	if cache == nil {
 		cache = make(map[string]string)
 	}
 	if createdCache == nil {
 		createdCache = make(map[string]bool)
 	}
-	if _, ok := cache[""]; !ok {
-		cache[""] = rootID
-	}
 	relDir = strings.Trim(strings.ReplaceAll(relDir, "\\", "/"), "/")
 	if relDir == "" {
 		return rootID, nil
 	}
-	cur := rootID
-	parts := make([]string, 0, strings.Count(relDir, "/")+1)
-	for _, part := range strings.Split(relDir, "/") {
-		if part == "" {
-			continue
+	if id, ok := cache[relDir]; ok {
+		return id, nil
+	}
+	if h.uploads == nil {
+		if h.files == nil {
+			return "", domain.Errorf(domain.CodeInternal, "文件服务未就绪")
 		}
-		parts = append(parts, part)
-		key := strings.Join(parts, "/")
-		if cached, ok := cache[key]; ok {
-			cur = cached
-			continue
-		}
-		items, err := h.files.List(ctx, accountID, cur, false)
-		if err != nil {
-			return "", err
-		}
-		next := ""
-		for _, item := range items {
-			if item.IsDir && item.Name == part {
-				next = item.ID
-				break
+		// 兜底：无 manager（极端装配）时退回逐段直连。
+		cur := rootID
+		parts := make([]string, 0, strings.Count(relDir, "/")+1)
+		for _, part := range strings.Split(relDir, "/") {
+			if part == "" {
+				continue
 			}
-		}
-		if next == "" {
-			created, err := h.files.CreateFolder(ctx, accountID, cur, part)
+			parts = append(parts, part)
+			key := strings.Join(parts, "/")
+			if cached, ok := cache[key]; ok {
+				cur = cached
+				continue
+			}
+			items, err := h.files.List(ctx, accountID, cur, false)
 			if err != nil {
 				return "", err
 			}
-			next = created.ID
-			createdCache[key] = true
-		} else {
-			createdCache[key] = false
+			next := ""
+			for _, item := range items {
+				if item.IsDir && item.Name == part {
+					next = item.ID
+					break
+				}
+			}
+			if next == "" {
+				created, err := h.files.CreateFolder(ctx, accountID, cur, part)
+				if err != nil {
+					return "", err
+				}
+				next = created.ID
+				createdCache[key] = true
+			}
+			cur = next
+			cache[key] = cur
 		}
-		cur = next
-		cache[key] = cur
+		return cur, nil
 	}
-	return cur, nil
+	folderID, createdPrefixes, err := h.uploads.ResolveUploadTargetDir(ctx, accountID, rootID, relDir)
+	if err != nil {
+		return "", err
+	}
+	cache[relDir] = folderID
+	for prefix := range createdPrefixes {
+		createdCache[prefix] = true
+	}
+	return folderID, nil
 }
 
 func cleanRelativePath(p string) string {

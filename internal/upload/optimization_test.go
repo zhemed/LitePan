@@ -1,6 +1,8 @@
 package upload
 
 import (
+	"sort"
+
 	"context"
 	"testing"
 
@@ -160,11 +162,67 @@ func TestCollectBatchWarmDirs(t *testing.T) {
 		t.Fatalf("groups = %d，期望 2（按账号分组）", len(got))
 	}
 	acc1 := got[batchWarmKey{accountID: 1, rootID: "0"}]
-	if len(acc1) != 2 || acc1[0] != "a/b" || acc1[1] != "a/c" {
+	// collectBatchWarmDirs 输出经 map 遍历，顺序随机（消费方 warmTargetDirs 会
+	// 排序）——断言集合内容而非顺序（修复潜在 flaky）。
+	sorted := append([]string(nil), acc1...)
+	sort.Strings(sorted)
+	if len(acc1) != 2 || sorted[0] != "a/b" || sorted[1] != "a/c" {
 		t.Fatalf("account1 dirs = %#v", acc1)
 	}
 	acc2 := got[batchWarmKey{accountID: 2, rootID: "0"}]
 	if len(acc2) != 1 || acc2[0] != "x" {
 		t.Fatalf("account2 dirs = %#v", acc2)
+	}
+}
+
+// 0.0.22：ResolveUploadTargetDir —— 共享缓存跨请求命中（零 List）与
+// createdPrefixes（仅本次新建前缀）语义。
+func TestResolveUploadTargetDirSharedCacheAndCreatedPrefixes(t *testing.T) {
+	files := &targetDirTestFiles{
+		items: map[string][]domain.FileItem{
+			"root": {{ID: "old", Name: "old", IsDir: true}},
+		},
+	}
+	cache := newUploadTargetDirCache()
+	resolve := func(relDir string) (string, map[string]bool, error) {
+		return ensureUploadTargetDirDetailed(context.Background(), files, cache, 1, "root", relDir)
+	}
+	totalLists := func() int {
+		n := 0
+		for _, c := range files.listCalls {
+			n += c
+		}
+		return n
+	}
+	baseline := totalLists()
+
+	// 第一次解析 msg/attach：msg 已存在、attach 新建
+	id, created, err := resolve("old/attach/2026-08")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if created["old"] {
+		t.Fatalf("existing prefix must not be marked created: %v", created)
+	}
+	if !created["old/attach"] || !created["old/attach/2026-08"] {
+		t.Fatalf("created prefixes missing: %v", created)
+	}
+
+	// 第二次解析同前缀 deeper 路径：前缀全部命中缓存，root 零新 List
+	id2, created2, err := resolve("old/attach/2026-09")
+	if err != nil {
+		t.Fatalf("resolve2: %v", err)
+	}
+	if created2["old"] || created2["old/attach"] {
+		t.Fatalf("cache-hit prefixes must not be created: %v", created2)
+	}
+	if !created2["old/attach/2026-09"] {
+		t.Fatalf("new leaf prefix should be created: %v", created2)
+	}
+	if got := totalLists() - baseline; got != 4 {
+		t.Fatalf("expected 4 Lists total (3 first resolve + 1 new leaf on second), got %d", got)
+	}
+	if id == "" || id2 == "" || id == id2 {
+		t.Fatalf("unexpected ids %q %q", id, id2)
 	}
 }

@@ -283,13 +283,24 @@ func parse189Response(data []byte, out any) error {
 		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API 返回非 JSON: %s", httpx.Truncate(data, 300))
 	}
 	if raw := env["res_code"]; len(raw) > 0 && !successResCode(raw) {
-		return domain.Errorf(domain.CodeDriverError, "天翼云盘 API 错误：%s", responseMessage(env, "res_message", "message", "msg"))
+		var resCode string
+		_ = json.Unmarshal(raw, &resCode)
+		err := domain.Errorf(domain.CodeDriverError, "天翼云盘 API 错误：%s", responseMessage(env, "res_message", "message", "msg"))
+		if resCode == "-1" {
+			// 189 业务级瞬时错（"服务暂时不可用"）：详情进分类器供重试放行
+			return err.WithDetails(map[string]any{"189_business_code": resCode})
+		}
+		return err
 	}
 	if raw := env["code"]; len(raw) > 0 {
 		var code string
 		_ = json.Unmarshal(raw, &code)
 		if code != "" && code != "SUCCESS" {
-			return domain.Errorf(domain.CodeDriverError, "天翼云盘 API 错误(%s)：%s", code, responseMessage(env, "message", "msg"))
+			err := domain.Errorf(domain.CodeDriverError, "天翼云盘 API 错误(%s)：%s", code, responseMessage(env, "message", "msg"))
+			if code == "-1" {
+				return err.WithDetails(map[string]any{"189_business_code": code})
+			}
+			return err
 		}
 	}
 	if out == nil {
