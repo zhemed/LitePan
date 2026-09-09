@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 75
+- **Total Sessions**: 76
 - **Last Active**: 2026-09-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~628 | Active |
+| `journal-2.md` | ~659 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 76 | 2026-09-09 | 移植上传批次化并发布 0.0.18 | `6f375f5` | `main` |
 | 75 | 2026-09-09 | 接入上游认证守卫并发布 0.0.17 | `68f4c8e` | `main` |
 | 74 | 2026-09-09 | 调查上游未移植项：守卫接线建议移植、批次化挂起 | - | `main` |
 | 73 | 2026-09-09 | 修复命名对齐中文集号解析并发布 0.0.16 | `c996c21` | `main` |

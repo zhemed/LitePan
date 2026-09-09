@@ -626,3 +626,34 @@ internal/file 2 例存量失败根因：(1) 精简时 guessit 引擎被换成简
 ### Next Steps
 
 - 上游未移植项仅剩上传批次化(P3,挂起待真实需求)
+
+
+## Session 76: 移植上传批次化并发布 0.0.18
+<!-- trellis-session: v=2 fp=900a7914eb079b29 -->
+
+**Date**: 2026-09-09
+**Task**: 移植上传批次化并发布 0.0.18
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按调查报告三步走移植 de83b46：迁移0023(batch_id/batch_name+索引,上游0022编号冲突用本方下一号)；后端 types/manager/delete/lifecycle/sse/persist/queue/state/worker+domain+repo 批次化,manager 2处冲突调和(去 runningDownloads/completedOfflineGroups 保批次广播集),worker 丢弃跨盘/离线函数块,manager_test 清孤儿 import(net/http/httptest/playback);前端 uploadTaskTree 新文件+9纯替换+TaskPanel 7冲突逐块调和(去 relay/offline 分支保 upload 树)+activeRelayCount 按 upload-only 改写。批次单测全绿,全模块零失败,type-check/build 通过。0.0.18 三 tag digest 05ac313f,迁移23落库(upload_tasks 33/34列),部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6f375f5` | feat: port upload task batching from upstream de83b46, bump to 0.0.18 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;web type-check+build 通过;迁移0023 执行;health/登录/列表三连
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户 UI 实测文件夹上传批次体验;上游未移植项全部清零
