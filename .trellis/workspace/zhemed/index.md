@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 96
+- **Total Sessions**: 97
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1255 | Active |
+| `journal-2.md` | ~1286 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 97 | 2026-09-10 | 任务列表窗口化+服务端计数,载荷-73%,0.0.27 | `e4903ac` | `main` |
 | 96 | 2026-09-10 | 载荷瘦身-15.8%+批量暂停批量化,0.0.26 | `459012b` | `main` |
 | 95 | 2026-09-10 | 调查优化空间：载荷/前端热路径/分页四类 | - | `main` |
 | 94 | 2026-09-10 | 修复继续上传卡死：批量恢复端点发布0.0.25 | `7bd68ec` | `main` |

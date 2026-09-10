@@ -1253,3 +1253,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 可选后续:报告③分页/汇总(根治)、树记忆化
+
+
+## Session 97: 任务列表窗口化+服务端计数,载荷-73%,0.0.27
+<!-- trellis-session: v=2 fp=5184fccf0ce58327 -->
+
+**Date**: 2026-09-10
+**Task**: 任务列表窗口化+服务端计数,载荷-73%,0.0.27
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+实施优化报告③:①后端 ListFiltered(status/limit/offset)+Summary(total/counts)+WindowTasks(非终态全量+最近500条已完成,排序键 CreatedAt DESC 实测确认)②列表默认窗口、新 /tasks/summary 端点、SSE 快照窗口化并带 counts/total、delta 同带 counts③前端窗口+汇总并行取数、徽标与导航计数改服务端真实计数、已完成截断提示+一键加载全部。实测:默认列表 4556545→1210584 B(-73.4%),SSE 首帧同步;相对优化前 5.41MB 累计-77.6%。测试:窗口选取(保留最新成功记录/汇总与窗口无关)/过滤分页语义,全模块零失败。0.0.27 三tag digest e9be6322,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e4903ac` | perf: windowed task list/snapshot + server counts, bump to 0.0.27 |
+
+### Testing
+
+- [OK] 实测载荷对比(-73.4%)+窗口内容核查+go vet/全模块测试/web 构建
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户硬刷新体验;报告剩余项:批次树记忆化/工作集保留策略
