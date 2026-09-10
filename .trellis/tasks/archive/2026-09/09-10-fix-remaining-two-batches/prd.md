@@ -30,7 +30,7 @@
 
 > 无硬依赖：两批代码路径不重叠，可按 PR1 顺序执行；若批次 1 阻塞，批次 2 可独立推进。
 
-## Cross-Batch Acceptance Criteria（跨批次验收）
+## Acceptance Criteria（跨批次验收）
 
 - [x] 三个子任务（批次1、批次1补充、批次2）均已 `archive`，各自 PRD 验收项全部勾选
 - [x] 两批合计：`go vet ./...`、`go test ./...`（含 `-race` 关键包）、`web type-check/build` 全绿
