@@ -1586,3 +1586,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 用户在面板选 /app/mounts/LitePan-123/bulk-5000-512k 发起大批量上传,跑完可拉终局统计
+
+
+## Session 108: 修复冷却等待孤儿任务,0.0.30
+<!-- trellis-session: v=2 fp=eb9a08736906759d -->
+
+**Date**: 2026-09-10
+**Task**: 修复冷却等待孤儿任务,0.0.30
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户实测发现:bulk5k_0850.bin 卡在'等待中/账号网络冷却中,30秒后自动重试'且35秒无变化(整批4383暂停+616成功+0失败)。根因(0.0.24引入):worker 冷却分支把任务置回 pending 后直接 return,runTask 协程随之退出——pending 任务的执行依赖各自在 acquireRunSlot 等待的协程,无人接管→永久滞留,提示语承诺的自动重试从未发生;附带竞态:冷却分支无条件置 pending 可覆盖同期暂停。修复:①runTask 循环重入(executeUpload 返回 requeue=true 时释放槽位后重新 acquireRunSlot)②executeUpload 返回 requeue bool③新增 canCooldownWait(仅可重试状态才置 pending;等待期间被暂停/取消则保持现状且不重入)。单测3组+既有套件全绿。0.0.30 三tag digest c8aae4f9+release+部署三连;部署后实测孤儿任务被接管并上传成功(617成功)。批次现 4383暂停+617成功=5000,无失败。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1db6d2c` | fix: cooldown wait must requeue the task (no more orphaned waiting tasks), bump to 0.0.30 |
+
+### Testing
+
+- [OK] go vet 全绿;go test 零失败(3组冷却重入测试);check:memo 16 断言;部署后孤儿任务恢复实测
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户可继续上传剩余 4383 个;若仍见冷却提示属正常保护且 30 秒后会自动重试
