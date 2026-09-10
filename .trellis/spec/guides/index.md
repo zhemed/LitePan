@@ -23,6 +23,7 @@ These guides help you **ask the right questions before coding**.
 |-------|---------|-------------|
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
+| [Trellis 强制流程自检指南](./trellis-flow-guide.md) | 九步序列 + 门禁 + 四条硬性禁止 | 会话开始 / 任何写操作前 / 归档前 |
 
 ---
 
