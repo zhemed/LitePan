@@ -107,3 +107,62 @@ func TestUploadLocalLogsCancelAsDebug(t *testing.T) {
 		t.Fatalf("取消不应产生 WARN/INFO：%s", out)
 	}
 }
+
+// recoverableDriver：前 remaining 次返回冷却，之后成功（模拟冷却窗口结束后的恢复）。
+type recoverableDriver struct {
+	cooldownLogDriver
+	remaining int
+}
+
+func (d *recoverableDriver) UploadLocalFile(context.Context, driver.LocalUploadRequest) (*driver.LocalUploadResult, error) {
+	if d.remaining > 0 {
+		d.remaining--
+		return nil, driverexec.CooldownError(30 * time.Second)
+	}
+	return &driver.LocalUploadResult{FileID: "f1", FileName: "cooldown_probe.bin", ParentID: "root"}, nil
+}
+
+// 0.0.32：同一账号同一冷却窗口内不得重复刷 INFO——
+// 生产实测「点一次暂停」在 0.35 秒内刷出 183 条同构日志，必须收敛为 1 条。
+func TestUploadLocalSuppressesCooldownLogBurst(t *testing.T) {
+	const burst = 20
+	svc, buf := newLogCaptureService(t, cooldownLogDriver{})
+	for i := 0; i < burst; i++ {
+		if err := uploadOnce(t, svc); err == nil {
+			t.Fatal("期望冷却错误")
+		}
+	}
+	out := buf.String()
+	if got := strings.Count(out, "，稍后自动重试"); got != 1 {
+		t.Fatalf("冷却窗口内 INFO 只应 1 条，实际 %d 条：%s", got, out)
+	}
+	if got := strings.Count(out, "同一窗口重复命中，已抑制"); got != burst-1 {
+		t.Fatalf("其余 %d 条应降为 Debug，实际 %d 条", burst-1, got)
+	}
+	if strings.Contains(out, "level=WARN") {
+		t.Fatalf("冷却不得产生 WARN：%s", out)
+	}
+}
+
+// 冷却窗口结束后的首次成功必须补一条汇总，保留「影响多少任务」的运维信息。
+func TestUploadLocalLogsCooldownRecoverySummary(t *testing.T) {
+	const burst = 6
+	drv := &recoverableDriver{remaining: burst}
+	svc, buf := newLogCaptureService(t, drv)
+	for i := 0; i < burst; i++ {
+		_ = uploadOnce(t, svc)
+	}
+	if err := uploadOnce(t, svc); err != nil {
+		t.Fatalf("冷却结束后应上传成功，实际 %v", err)
+	}
+	out := buf.String()
+	if got := strings.Count(out, "，稍后自动重试"); got != 1 {
+		t.Fatalf("窗口内 INFO 只应 1 条，实际 %d：%s", got, out)
+	}
+	if got := strings.Count(out, "账号网络冷却已恢复"); got != 1 {
+		t.Fatalf("应恰好 1 条恢复汇总，实际 %d：%s", got, out)
+	}
+	if !strings.Contains(out, "deferred_tasks=6") {
+		t.Fatalf("汇总应带本窗口暂缓任务数：%s", out)
+	}
+}

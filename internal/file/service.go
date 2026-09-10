@@ -29,10 +29,15 @@ type Service struct {
 	settings *settings.Service
 	listHits *cache.HitTracker
 	log      *slog.Logger
+	// cooldownLog 抑制账号冷却日志的重复放大（0.0.32），见 cooldown_log.go。
+	cooldownLog *cooldownLogGate
 }
 
 func NewService(exec *driverexec.Executor, c *cache.Service, accounts domain.AccountRepository, bus *eventbus.Bus, set *settings.Service, listHits *cache.HitTracker) *Service {
-	return &Service{exec: exec, cache: c, accounts: accounts, bus: bus, settings: set, listHits: listHits, log: slog.Default()}
+	return &Service{
+		exec: exec, cache: c, accounts: accounts, bus: bus, settings: set, listHits: listHits,
+		log: slog.Default(), cooldownLog: newCooldownLogGate(),
+	}
 }
 
 // SetLogger 装配期注入 file_op 模块 logger；不调用则回落 slog.Default。
@@ -372,9 +377,22 @@ func (s *Service) UploadLocal(ctx context.Context, accountID int64, req driver.L
 		case isRetryableCooldown(err):
 			// 0.0.31：账号网络冷却是"可等待重试"的瞬时状态，不是失败——
 			// 之前统一记成 WARN「上传文件失败」会误导排查（任务随后会自动重试成功）。
+			// 0.0.32：同一账号同一冷却窗口内只留首条 INFO，其余降 Debug，
+			// 否则一次冷却会被每个待传任务各记一条（生产实测 0.35s/183 条）。
 			seconds, _ := driverexec.IsCooldownError(err)
-			s.log.Info("上传暂缓：账号网络冷却，稍后自动重试",
-				"account_id", accountID, "name", req.FileName, "retry_after_seconds", seconds)
+			first, seq, prev := s.cooldownLog.noteCooldown(accountID, time.Duration(seconds)*time.Second, time.Now())
+			if prev != nil {
+				s.log.Info("账号网络冷却窗口结束",
+					"account_id", accountID, "deferred_tasks", prev.Deferred, "window_seconds", prev.WindowSeconds)
+			}
+			if first {
+				s.log.Info("上传暂缓：账号网络冷却，稍后自动重试",
+					"account_id", accountID, "name", req.FileName, "retry_after_seconds", seconds)
+			} else {
+				s.log.Debug("上传暂缓：账号网络冷却（同一窗口重复命中，已抑制）",
+					"account_id", accountID, "name", req.FileName,
+					"retry_after_seconds", seconds, "window_seq", seq)
+			}
 		default:
 			code := ""
 			if ae, ok := domain.AsAppError(err); ok {
@@ -383,6 +401,10 @@ func (s *Service) UploadLocal(ctx context.Context, accountID int64, req driver.L
 			s.log.Warn("上传文件失败", "account_id", accountID, "name", req.FileName, "code", code, "err", err)
 		}
 		return nil, err
+	}
+	if sum := s.cooldownLog.noteRecovered(accountID, time.Now()); sum != nil {
+		s.log.Info("账号网络冷却已恢复",
+			"account_id", accountID, "deferred_tasks", sum.Deferred, "window_seconds", sum.WindowSeconds)
 	}
 	s.log.Debug("上传文件成功", "account_id", accountID, "name", result.FileName, "size", result.Size)
 	parentID := cache.NormalizeDirParentID(req.ParentID)
