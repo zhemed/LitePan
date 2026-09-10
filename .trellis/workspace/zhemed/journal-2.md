@@ -1162,3 +1162,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 观察:恢复 1620 个暂停任务时冷却应变为等待重试而非批量判死
+
+
+## Session 94: 修复继续上传卡死：批量恢复端点发布0.0.25
+<!-- trellis-session: v=2 fp=7493138ee0e7c8ca -->
+
+**Date**: 2026-09-10
+**Task**: 修复继续上传卡死：批量恢复端点发布0.0.25
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户报告点继续上传卡死网页。实测后端健康(API 0.1s/CPU 0.01%)但列表响应 5.4MB(7814条全量,无分页)。根因:前端 resume 模式对 1620 个暂停任务逐个 await(每次 HTTP+响应式 patch+起调度器)串行风暴阻塞主线程,后端无批量端点。修复:Manager.BatchResume(内部仍逐个走 Resume 排队与并发闸门)+POST /files/upload/tasks/batch-resume+前端远程任务单次请求(本地浏览器任务保持逐个)。测试:去重/缺失/确定性短路+端点实测(3 任务恢复成功)。0.0.25 三tag digest 44999230,部署三连通过。遗留:列表 API 分页/状态汇总(5.4MB 全量对加载与 SSE 快照都重)。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7bd68ec` | fix: batch-resume endpoint so 'continue upload' no longer freezes the page, bump to 0.0.25 |
+
+### Testing
+
+- [OK] 端到端: 批量恢复端点实测+任务转 success;go vet/全模块零失败/web 类型检查与构建
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户刷新页面(Ctrl+F5)后用新的继续上传按钮恢复 1567 个暂停任务;列表分页优化可另建任务
