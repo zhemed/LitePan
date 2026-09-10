@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 114
+- **Total Sessions**: 115
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1778 | Active |
+| `journal-2.md` | ~1814 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 115 | 2026-09-10 | 修复账号冷却日志刷屏,0.0.32 | `8cf6458`, `757feae` | `main` |
 | 114 | 2026-09-10 | 生产机10.0.0.11大面积上传暂缓取证（只读） | `2b7a32e` | `main` |
 | 113 | 2026-09-10 | 按用户要求退役一份废弃档案 | `e19b217` | `main` |
 | 112 | 2026-09-10 | 决策归档:变动文件上传防御暂不实施 | `ac1e822` | `main` |

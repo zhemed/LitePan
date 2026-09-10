@@ -1776,3 +1776,39 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 等用户确认是否开 0.0.32 修复任务（A 日志放大 / B 冷却触发静默 / C 冷却与 pause 竞态 / D 批次熔断键）
+
+
+## Session 115: 修复账号冷却日志刷屏,0.0.32
+<!-- trellis-session: v=2 fp=33f83671f6dacaae -->
+
+**Date**: 2026-09-10
+**Task**: 修复账号冷却日志刷屏,0.0.32
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户反馈一次暂停刷出大量重复日志：新增 cooldownLogGate 按账号抑制冷却窗口日志，窗口内只留首条 INFO（其余 Debug）+恢复/窗口结束汇总 1 条，183 条→1 条；6 组 gate 单测 + 2 组 service 级回归全过；质量门全绿；0.0.32 镜像已推送(github/zhemed/LitePan tag v0.0.32 + release)并本地重建容器验证三连通过
+
+### Main Changes
+
+- internal/file/cooldown_log.go(新), internal/file/service.go, internal/file/{cooldown_log_test.go,upload_log_test.go}, spec/backend/backend/upload-task-api.md §8, README/docker-compose v0.0.32
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8cf6458` | fix: suppress duplicated account-cooldown log burst, bump to 0.0.32 |
+| `757feae` | chore(task): archive 09-10-fix-cooldown-log-amplification |
+
+### Testing
+
+- [OK] go vet ./...; go test ./...; web type-check; web build 全绿；本地容器 health/登录/任务列表三连通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 观察生产机（用户暂未授权部署 10.0.0.11）；如需可在其升级 0.0.32 后复核冷却日志是否收敛
