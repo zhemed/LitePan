@@ -1,0 +1,2 @@
+checked_at=2026-09-10 20:27:22
+note=go vet 全绿/go test 零失败/check:memo 16 断言;3 组冷却重入单测;部署后孤儿任务恢复实测
