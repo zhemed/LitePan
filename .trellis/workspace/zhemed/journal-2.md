@@ -1918,3 +1918,42 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 无待办；如需可复测批量暂停混合选择等未覆盖场景
+
+
+## Session 119: 分批修复：状态一致性+熔断分组，0.0.34/0.0.35
+<!-- trellis-session: v=2 fp=09157ed261e53449 -->
+
+**Date**: 2026-09-10
+**Task**: 分批修复：状态一致性+熔断分组，0.0.34/0.0.35
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户指示『建立任务，分批修复』。父任务 09-10-fix-remaining-two-batches 下三项子任务全部归档：(1) 批次1 fix-cooling-pause-state-consistency → 原子守卫 beginCooldownWait（暂停/取消优先、绝不复写 pending）+ patch 值快照 + 8 组回归测试，发布 0.0.34；(2) 批次1补充 fix-persist-stale-overwrite → persistStateSnapshot（persistMu 串行化 + UpdatedAt 新鲜度丢弃过期快照），patch/beginCooldownWait/pause 统一入口，修正测试未加锁写 map 导致的 race 干扰，-race 连续 12 次通过；(3) 批次2 fix-batch-breaker-key → batchKeyOf 分组键（batch:<id> / acct:<id>|target:<path> / acct:<id>）+ 自动化 run 级批次身份 auto-<ruleID>-<unix>，发布 0.0.35。回归证据均为先失败后通过（旧两步式分叉复现、batchless 熔断『实际 0』）。质量门 vet/test/-race/type-check/build 全绿；两个版本镜像已推送(0.0.34 b22cb42d、0.0.35 b22ce878)+tag+release+本地部署三连通过；spec §8.3/§8.4 同步。过程偏差如实记录：父任务首次 archive 在 pre-archive 门禁报错（PRD 段名不符）后仍执行，已回退修正段名并重跑门禁通过后重新归档。遗留验证项：生产机下次定时运行(每日00:22)后只读抽查新任务 batch_id 是否非空
+
+### Main Changes
+
+- internal/upload/{state.go,worker.go,breaker.go,manager.go,lifecycle.go}, internal/upload/{cooldown_pause_test.go,breaker_key_test.go}, internal/automation/service_run.go, spec §8.3/§8.4, README/docker-compose 0.0.34→0.0.35
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7d7d670` | fix(upload): drop stale state snapshots before persisting |
+| `b8f411e` | fix(upload): make batch breaker work for batch-less automation runs, bump to 0.0.35 |
+| `d931fb6` | chore: rebuild embedded web assets for 0.0.35 |
+| `f8cfe96` | chore(task): archive 09-10-fix-batch-breaker-key |
+| `a4617ea` | chore(task): re-archive parent task with gate-compliant PRD |
+
+### Testing
+
+- [OK] go vet ./...；go test ./...；CGO_ENABLED=1 go test -race -count=1 ./internal/upload/ ./internal/automation/（12 连跑无 flake）；npm run type-check/build；本地容器 0.0.35 health/登录/任务列表(11002 条不变)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 生产机 10.0.0.11 升级 0.0.35（用户操作）；其下次自动化运行后我方可只读抽查 batch_id 与冷却/暂停一致性
