@@ -179,3 +179,36 @@ func TestBatchBreakerIgnoresFileLevelErrors(t *testing.T) {
 		}
 	}
 }
+
+// 0.0.25：批量恢复端点——去重、缺失登记、本地文件缺失时的确定性短路。
+func TestBatchResumeHandlesBatch(t *testing.T) {
+	m := NewManager(Options{})
+	ids := []string{"r-0", "r-1", "r-2"}
+	m.mu.Lock()
+	for _, id := range ids {
+		state := &taskState{Task: Task{
+			TaskID:     id,
+			AccountID:  1,
+			Status:     StatusPaused,
+			SourceType: SourceTypeServerLocal,
+		}}
+		state.localPath = "" // 服务器本地文件缺失 → Resume 走确定性失败短路
+		m.tasks[id] = state
+	}
+	m.mu.Unlock()
+
+	result := m.BatchResume(context.Background(), []string{"r-0", "r-1", "r-1", "r-2", "", "nope"})
+	if len(result.UpdatedTaskIDs) != 3 {
+		t.Fatalf("updated=%v", result.UpdatedTaskIDs)
+	}
+	if len(result.MissingTaskIDs) != 1 || result.MissingTaskIDs[0] != "nope" {
+		t.Fatalf("missing=%v", result.MissingTaskIDs)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, id := range ids {
+		if m.tasks[id].Status == StatusPaused {
+			t.Fatalf("任务 %s 仍处于 paused（批量恢复未生效）", id)
+		}
+	}
+}

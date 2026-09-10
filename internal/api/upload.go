@@ -224,6 +224,16 @@ func (h *Handler) batchDeleteUploadTasks(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, Resp{Success: true, Message: "批量删除上传任务成功", Data: result})
 }
 
+func (h *Handler) batchResumeUploadTasks(w http.ResponseWriter, r *http.Request) {
+	var req batchControlUploadTasksReq
+	if err := decodeJSON(r, &req); err != nil {
+		writeErr(w, err)
+		return
+	}
+	result := h.uploads.BatchResume(r.Context(), req.TaskIDs)
+	writeJSON(w, http.StatusOK, Resp{Success: true, Message: "批量恢复上传任务成功", Data: result})
+}
+
 func (h *Handler) batchPauseUploadTasks(w http.ResponseWriter, r *http.Request) {
 	var req batchControlUploadTasksReq
 	if err := decodeJSON(r, &req); err != nil {

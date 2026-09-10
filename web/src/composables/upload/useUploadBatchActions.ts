@@ -154,8 +154,25 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
     if (!unique.length) return;
     const resumeMode = unique.every((task) => ["paused", "failed", "canceled"].includes(String(task.status)));
     if (resumeMode) {
-      for (const task of unique) {
+      // 本地（浏览器内）任务必须逐个恢复：需要文件句柄与调度器接管。
+      const localTasks = unique.filter(isLocalUploadTask);
+      for (const task of localTasks) {
         await resumeUploadTask(task, true);
+      }
+      // 远程任务一次批量恢复：原先逐任务 1620 次 HTTP + 响应式 patch 会卡死页面。
+      const remoteIds = unique
+        .filter((task) => !isLocalUploadTask(task))
+        .map((task) => String(task.task_id));
+      if (!remoteIds.length) return;
+      for (const id of remoteIds) {
+        store.pendingRemoteResumeTaskIds.delete(id);
+      }
+      try {
+        await uploadApi.batchResume(remoteIds);
+        await stream.fetchUploadTasks();
+      } catch (e) {
+        await stream.fetchUploadTasks();
+        toast.error(getApiErrorMessage(e, "继续上传任务失败"));
       }
       return;
     }

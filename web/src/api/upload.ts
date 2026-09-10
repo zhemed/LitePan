@@ -52,6 +52,14 @@ export const uploadApi = {
     );
   },
 
+  batchResume(taskIds: string[]) {
+    return fetch("/api/files/upload/tasks/batch-resume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_ids: taskIds }),
+    }).then((r) => parseJSON<BatchControlUploadResult>(r));
+  },
+
   batchPause(taskIds: string[]) {
     return fetch("/api/files/upload/tasks/batch-pause", {
       method: "POST",

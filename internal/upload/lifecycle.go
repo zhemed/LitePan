@@ -169,3 +169,30 @@ func progressForBytes(done, total int64) int {
 	}
 	return calcProgress(done, total)
 }
+
+// BatchResume 批量恢复：逐个走单任务 Resume（内部排队与并发闸门不变），
+// 供前端一次请求恢复整批（原先逐任务 1620 次 HTTP + 响应式 patch 会卡死页面）。
+func (m *Manager) BatchResume(ctx context.Context, taskIDs []string) BatchControlResult {
+	result := BatchControlResult{}
+	seen := make(map[string]struct{}, len(taskIDs))
+	for _, taskID := range taskIDs {
+		taskID = strings.TrimSpace(taskID)
+		if taskID == "" {
+			continue
+		}
+		if _, ok := seen[taskID]; ok {
+			continue
+		}
+		seen[taskID] = struct{}{}
+		if err := ctx.Err(); err != nil {
+			result.MissingTaskIDs = append(result.MissingTaskIDs, taskID)
+			continue
+		}
+		if _, ok := m.Resume(ctx, taskID); !ok {
+			result.MissingTaskIDs = append(result.MissingTaskIDs, taskID)
+			continue
+		}
+		result.UpdatedTaskIDs = append(result.UpdatedTaskIDs, taskID)
+	}
+	return result
+}
