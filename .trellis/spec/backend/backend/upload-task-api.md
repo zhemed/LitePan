@@ -69,6 +69,8 @@ func (m *Manager) BatchResume(ctx context.Context, taskIDs []string) BatchContro
 - **绝不**清理未完成任务；**绝不**删除本地/网盘文件（复用 `Manager.Delete`，其本地清理对 `source_type=server_local` 直接跳过）
 - 前端无感：清理通过 SSE `deleted` 通知收敛列表；`summary.counts` 随之下降
 - 选择逻辑为纯函数 `selectRetentionVictims(tasks, cfg, now)`，改动必须同步单测（`retention_test.go`）
+- **跳过 owned 批次根任务**（`result.batch_root_owned && batch_root_id`）：这些记录是"删除云端批次根目录"完整性判据的数据基础，自动清理会削弱该保护（0.0.29）
+- **批次根删除完整性契约**：批次创建时写入 `result.batch_task_total`；`BatchDelete` 删除根目录前要求「选中数 == batch_task_total」（缺失→保守拒绝）。空目录自动清理必须同时满足「显式勾选删除批次根」+「父目录确为 owned 批次根」+「forceRefresh 实时空判定」
 
 **批量控制契约（0.0.25）**：`batch-resume` 与 `batch-pause` 同形，返回 `{updated_task_ids, missing_task_ids}`；服务端逐个走单任务语义（内部仍受并发闸门与排队约束）。
 
