@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 109
+- **Total Sessions**: 110
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1650 | Active |
+| `journal-2.md` | ~1681 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 110 | 2026-09-10 | 调查10.0.0.11实例:定位WAL变动导致的上传失败 | `7336e76` | `main` |
 | 109 | 2026-09-10 | 调查上传失败日志口径并修复前端原因可见性,0.0.31 | `79e801d` | `main` |
 | 108 | 2026-09-10 | 修复冷却等待孤儿任务,0.0.30 | `1db6d2c` | `main` |
 | 107 | 2026-09-10 | 生成5000×512KiB测试文件供大批量上传复测 | `9f54b66` | `main` |
