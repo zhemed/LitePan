@@ -1491,3 +1491,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 无(残留清单全部完成)
+
+
+## Session 105: 事故调查修订：我的维护引入3个缺陷(A高危数据销毁已复现)
+<!-- trellis-session: v=2 fp=5f895512d7b5a656 -->
+
+**Date**: 2026-09-10
+**Task**: 事故调查修订：我的维护引入3个缺陷(A高危数据销毁已复现)
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户指出前版误判(凭据泄露客观存在但非其所指),真因是维护引入的缺陷。定位并复现:\nA【高危·数据销毁】0.0.28 保留策略削弱'批次根目录删除'完整性保护——BatchDelete 的 completeBatch 只看内存中该批次任务是否被全选,保留策略清理部分记录后,用户只选中剩余少数即被误判为整批已选→删除云端批次根目录(连同全部文件)。已用单元测试 retention_guard_test.go 复现(3条清1条→选2条→根目录被删)。\nB【中危】DELETE /api/files/delete 传空 file_ids 返回成功(已删1个项目)但实际未删→'删除无效'体感。\nC【中危·显示】徽标/导航 active=total-success-skipped 把 paused/failed 算成'上传中',数字误导。\nD【自查】排查期间我在用户真实云盘留下 f1/f2/f3.bin/nested_probe.bin/sec_probe_del/sec_root_test/probe2/e2e_probe.bin 等测试物,现已全部清理,root 恢复最初 9 项;教训:真实账号E2E必须用完即清,优先单元测试复现。\n修复设计已给(A 三重保护/B 参数校验/C 计数分桶),待用户批准实施。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2fce877` | chore(task): archive 09-10-investigate-security-incident |
+
+### Testing
+
+- [OK] go vet 全绿;go test 零失败(含缺陷复现测试);云端残留清理核对
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待批准修复 A/B/C(建议立即做 A)
