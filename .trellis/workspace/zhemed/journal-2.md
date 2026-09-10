@@ -1555,3 +1555,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 无(三缺陷闭环)
+
+
+## Session 107: 生成5000×512KiB测试文件供大批量上传复测
+<!-- trellis-session: v=2 fp=40959aef7fdbb894 -->
+
+**Date**: 2026-09-10
+**Task**: 生成5000×512KiB测试文件供大批量上传复测
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户要求生成测试集:路径 /root/LitePan/mounts/LitePan-123/bulk-5000-512k(容器 /app/mounts/LitePan-123/bulk-5000-512k),5000 个 bulk5k_0000~4999.bin,单文件 524288 B,合计 2,621,440,000 B(2.44GiB,Python 精确复核)。生成:单次 head -c 2560M /dev/urandom | split -b 512K -d -a 4(5.2s)→实测 5120 个(把 5000×512KiB 误算成 2560MiB,应为 2500MiB)→裁掉多余 120 个精确到 5000。校验:数量 5000/尺寸集合仅 524288/全量 MD5 5000 行 5000 唯一(3.2s,无秒传风险)/容器内 ls 实测可见。磁盘 225G 可用。复测基准(0.0.29,并发1+500ms门):512KiB 文件预估 1.2-1.8s/个,全批约 100-150 分钟,关注批次树窗口化渲染/批量暂停继续/徽标分桶计数。未自动上传(用户自行操作)。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9f54b66` | chore(task): archive 09-10-generate-bulk-5000-512k-testfiles |
+
+### Testing
+
+- [OK] 四重核验:文件数5000/字节总和精确/尺寸集合唯一值/MD5全量唯一/容器可见;go vet 全绿+go test 零失败(无代码变更)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户在面板选 /app/mounts/LitePan-123/bulk-5000-512k 发起大批量上传,跑完可拉终局统计

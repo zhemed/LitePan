@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 106
+- **Total Sessions**: 107
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1557 | Active |
+| `journal-2.md` | ~1588 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 107 | 2026-09-10 | 生成5000×512KiB测试文件供大批量上传复测 | `9f54b66` | `main` |
 | 106 | 2026-09-10 | 分批修复A/B/C三缺陷,0.0.29 | `5da8c83`, `7e8ad22`, `7ac0d4f` | `main` |
 | 105 | 2026-09-10 | 事故调查修订：我的维护引入3个缺陷(A高危数据销毁已复现) | `2fce877` | `main` |
 | 104 | 2026-09-10 | 批次树记忆化+上传记录保留策略,0.0.28 | `5115192` | `main` |
