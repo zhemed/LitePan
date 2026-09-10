@@ -1812,3 +1812,38 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 观察生产机（用户暂未授权部署 10.0.0.11）；如需可在其升级 0.0.32 后复核冷却日志是否收敛
+
+
+## Session 116: 调查11生产机冷却等待中暂停失效（0.0.32）
+<!-- trellis-session: v=2 fp=ce5a42395faaf7ec -->
+
+**Date**: 2026-09-10
+**Task**: 调查11生产机冷却等待中暂停失效（0.0.32）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户反馈冷却30秒等待中的任务无法暂停，要等恢复才能停。只读取证：生产机已是 v0.0.32(ImageID d6a7451d3333)，0.0.32 抑制生效(1条暂缓+1条恢复，deferred_tasks=1/window_seconds=31)；22:59:06.484 暂停783任务成功，仅 Wub.ini 落在冷却等待中未被暂停，31秒后秒传成功。代码证明 pause() 会 cancel ctx 且冷却等待 select<-ctx.Done() 立即返回⇒服务端有路径可即时暂停，本次未生效说明暂停未送达⇒定位前端：pauseUploadTask 对 pendingRemoteResumeTaskIds 任务只改本地不发 HTTP（useUploadBatchActions.ts:108-113），批量暂停又按本地乐观状态过滤跳过（180-196），刷新后被服务端状态回滚⇒表现为无法暂停。影响面仅1任务、无数据风险但暂停后仍可能续传≤30s。给出修复建议 A/B/C/D 与最小复现/验收点，未实施
+
+### Main Changes
+
+- .trellis/tasks/archive/2026-09/09-10-investigate-cooldown-wait-pause-delay/research.md（取证与修复建议）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9974a5a` | chore(task): archive 09-10-investigate-cooldown-wait-pause-delay |
+
+### Testing
+
+- [OK] 只读：无写入、容器未重启（RestartCount=0/StartedAt 未变）、未登录应用；DB quick_check 未变
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户决定是否开前端修复任务（A 暂停必发 HTTP / B 批量暂停不依赖乐观态 / C 展示层区分待恢复与冷却）
