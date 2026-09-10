@@ -7,8 +7,8 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-2.md`
-- **Total Sessions**: 120
+- **Active File**: `journal-3.md`
+- **Total Sessions**: 121
 - **Last Active**: 2026-09-11
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,8 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1995 | Active |
+| `journal-3.md` | ~42 | Active |
+| `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 121 | 2026-09-11 | 修复终态桶为空+清理任务待命,0.0.37 | `65e91f0` | `main` |
 | 120 | 2026-09-11 | 回退自动化批次分组,0.0.36 | `b8e7222`, `31b9ba7` | `main` |
 | 119 | 2026-09-10 | 分批修复：状态一致性+熔断分组，0.0.34/0.0.35 | `7d7d670`, `b8f411e`, `d931fb6`, `f8cfe96`, `a4617ea` | `main` |
 | 118 | 2026-09-10 | 0.0.33 暂停修复验收通过（用户实测） | `9be20a9` | `main` |
