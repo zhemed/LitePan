@@ -112,8 +112,29 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     return { active, failed, paused, success };
   });
 
+  // 服务端任务级计数（窗口外历史也计入）；有则优先使用，保证徽标数字真实。
+  const uploadTaskCounts = ref<{ total: number; counts: Record<string, number> } | null>(null);
+  function setUploadTaskCounts(next: { total: number; counts: Record<string, number> } | null) {
+    uploadTaskCounts.value = next && next.counts ? next : null;
+  }
+  const uploadTaskTotals = computed(() => {
+    const server = uploadTaskCounts.value;
+    if (server) {
+      const counts = server.counts || {};
+      const active = server.total - Number(counts.success || 0) - Number(counts.skipped || 0);
+      const failed = Number(counts.failed || 0) + Number(counts.canceled || 0);
+      return {
+        active,
+        failed,
+        paused: Number(counts.paused || 0),
+        success: Number(counts.success || 0),
+      };
+    }
+    return uploadTaskStatusCounts.value;
+  });
+
   const uploadTaskBadgeText = computed(() => {
-    const counts = uploadTaskStatusCounts.value;
+    const counts = uploadTaskTotals.value;
     if (counts.active > 0) return `上传中 ${counts.active}`;
     if (counts.failed > 0) return `失败 ${counts.failed}`;
     if (counts.paused > 0) return `已暂停 ${counts.paused}`;
@@ -355,6 +376,8 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
     markDirRefreshBatchCreated,
     resolveDirRefreshBatch,
     displayUploadTasks,
+    uploadTaskTotals,
+    setUploadTaskCounts,
     activeUploadTasks,
     uploadTaskLabel,
     uploadAffectsCurrentDirectory,

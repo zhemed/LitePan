@@ -71,9 +71,28 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
     }
   }
 
+  // 用户显式加载全部历史已完成记录（默认窗口只带最近若干条）。
+  async function loadAllCompletedTasks() {
+    try {
+      const [success, skipped] = await Promise.all([
+        uploadApi.listTasks({ status: "success" }),
+        uploadApi.listTasks({ status: "skipped" }).catch(() => [] as UploadTask[]),
+      ]);
+      store.upsertRemoteUploadTasks([...success, ...skipped]);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   async function fetchUploadTasks() {
     try {
-      const tasks = await uploadApi.listTasks();
+      // 默认窗口：非终态全量 + 最近 500 条已完成（后端窗口语义），
+      // 计数走汇总端点——历史成功记录不再把载荷撑到数 MB（0.0.27）。
+      const [tasks, summary] = await Promise.all([
+        uploadApi.listTasks(),
+        uploadApi.tasksSummary().catch(() => null),
+      ]);
+      if (summary) store.setUploadTaskCounts(summary);
       store.replaceRemoteUploadTasks(tasks);
       uploadAuthDenied = false;
       tasks.forEach(store.ensureUploadTaskDisplayOrder);
@@ -133,8 +152,13 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
           kind?: "snapshot" | "delta";
           tasks?: UploadTask[];
           deleted_task_ids?: string[];
+          counts?: Record<string, number>;
+          total?: number;
         };
         const tasks = payload.tasks || [];
+        if (payload.counts) {
+          store.setUploadTaskCounts({ total: Number(payload.total || 0), counts: payload.counts });
+        }
         if (payload.kind === "delta") {
           store.upsertRemoteUploadTasks(tasks);
           store.removeRemoteUploadTasks(payload.deleted_task_ids || []);
@@ -192,6 +216,7 @@ export function useUploadTaskStream(deps: UploadTaskDeps, store: UploadTaskStore
 
   return {
     fetchUploadTasks,
+    loadAllCompletedTasks,
     refreshUploadTaskServerConcurrency,
     startUploadTaskPolling,
     bumpKeepPolling,

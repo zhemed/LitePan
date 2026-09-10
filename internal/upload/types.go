@@ -152,6 +152,19 @@ type BatchDeleteResult struct {
 	FailedMessages map[string]string `json:"failed_messages"`
 }
 
+// TaskSummary 任务级汇总（与列表窗口无关的真实总数），供前端导航计数与徽标。
+type TaskSummary struct {
+	Total  int            `json:"total"`
+	Counts map[string]int `json:"counts"`
+}
+
+// ListFilter 列表过滤/分页；Statuses 为空表示全部状态。
+type ListFilter struct {
+	Statuses []string
+	Limit    int
+	Offset   int
+}
+
 type BatchControlResult struct {
 	UpdatedTaskIDs []string `json:"updated_task_ids"`
 	MissingTaskIDs []string `json:"missing_task_ids"`

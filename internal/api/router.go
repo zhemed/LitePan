@@ -259,6 +259,7 @@ func NewRouter(d Deps) http.Handler {
 				r.Put("/upload/runtime", h.updateUploadRuntime)
 				r.Get("/upload/tasks", h.listUploadTasks)
 				r.Get("/upload/tasks/stream", h.streamUploadTasks)
+				r.Get("/upload/tasks/summary", h.summarizeUploadTasks)
 				r.Get("/upload/tasks/{taskID}", h.getUploadTask)
 				r.Post("/upload/tasks/{taskID}/pause", h.pauseUploadTask)
 				r.Post("/upload/tasks/{taskID}/resume", h.resumeUploadTask)

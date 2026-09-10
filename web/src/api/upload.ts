@@ -17,6 +17,11 @@ export interface UploadRuntimeConfig {
   builtin_temp_dir?: string;
 }
 
+export interface UploadTaskSummary {
+  total: number;
+  counts: Record<string, number>;
+}
+
 export interface BatchControlUploadResult {
   updated_task_ids: string[];
   missing_task_ids: string[];
@@ -35,9 +40,21 @@ export const uploadApi = {
     }).then((r) => parseJSON<UploadRuntimeConfig>(r));
   },
 
-  listTasks(accountId?: number) {
+  listTasks(params?: { accountId?: number; status?: string; limit?: number; offset?: number }) {
+    const qs = new URLSearchParams();
+    if (params?.accountId != null) qs.set("account_id", String(params.accountId));
+    if (params?.status) qs.set("status", params.status);
+    if (params?.limit != null) qs.set("limit", String(params.limit));
+    if (params?.offset != null) qs.set("offset", String(params.offset));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return fetch(`/api/files/upload/tasks${suffix}`).then((r) => parseJSON<UploadTask[]>(r));
+  },
+
+  tasksSummary(accountId?: number) {
     const qs = accountId != null ? `?account_id=${accountId}` : "";
-    return fetch(`/api/files/upload/tasks${qs}`).then((r) => parseJSON<UploadTask[]>(r));
+    return fetch(`/api/files/upload/tasks/summary${qs}`).then((r) =>
+      parseJSON<UploadTaskSummary>(r),
+    );
   },
 
   pauseTask(taskId: string) {

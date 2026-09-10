@@ -154,8 +154,52 @@ func (h *Handler) listUploadTasks(w http.ResponseWriter, r *http.Request) {
 		}
 		accountID = id
 	}
-	tasks := h.uploads.List(r.Context(), accountID)
+	query := r.URL.Query()
+	rawStatus := strings.TrimSpace(query.Get("status"))
+	rawLimit := strings.TrimSpace(query.Get("limit"))
+	rawOffset := strings.TrimSpace(query.Get("offset"))
+	if rawStatus == "" && rawLimit == "" && rawOffset == "" {
+		// 默认窗口：非终态全量 + 最近 DefaultTaskWindow 条已完成（与 SSE 快照一致）
+		tasks, _ := h.uploads.WindowTasks(r.Context(), accountID, upload.DefaultTaskWindow)
+		writeJSON(w, http.StatusOK, Resp{Success: true, Message: "获取上传任务成功", Data: tasks})
+		return
+	}
+	filter := upload.ListFilter{}
+	if rawStatus != "" {
+		filter.Statuses = strings.Split(rawStatus, ",")
+	}
+	if rawLimit != "" {
+		limit, err := strconv.Atoi(rawLimit)
+		if err != nil || limit < 0 {
+			writeErr(w, domain.Errorf(domain.CodeValidation, "非法 limit"))
+			return
+		}
+		filter.Limit = limit
+	}
+	if rawOffset != "" {
+		offset, err := strconv.Atoi(rawOffset)
+		if err != nil || offset < 0 {
+			writeErr(w, domain.Errorf(domain.CodeValidation, "非法 offset"))
+			return
+		}
+		filter.Offset = offset
+	}
+	tasks := h.uploads.ListFiltered(r.Context(), accountID, filter)
 	writeJSON(w, http.StatusOK, Resp{Success: true, Message: "获取上传任务成功", Data: tasks})
+}
+
+func (h *Handler) summarizeUploadTasks(w http.ResponseWriter, r *http.Request) {
+	var accountID int64
+	if raw := strings.TrimSpace(r.URL.Query().Get("account_id")); raw != "" {
+		id, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			writeErr(w, domain.Errorf(domain.CodeValidation, "非法 account_id"))
+			return
+		}
+		accountID = id
+	}
+	summary := h.uploads.Summary(r.Context(), accountID)
+	writeJSON(w, http.StatusOK, Resp{Success: true, Message: "获取上传任务汇总成功", Data: summary})
 }
 
 func (h *Handler) streamUploadTasks(w http.ResponseWriter, r *http.Request) {

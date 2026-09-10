@@ -125,6 +125,8 @@ export function useUploadTasks(deps: UploadTaskDeps) {
     uploadTaskPanelLoadingText: store.uploadTaskPanelLoadingText,
     uploadTaskServerConcurrency: store.uploadTaskServerConcurrency,
     displayUploadTasks: store.displayUploadTasks,
+    uploadTaskTotals: store.uploadTaskTotals,
+    loadAllCompletedTasks: stream.loadAllCompletedTasks,
     activeUploadTasks: store.activeUploadTasks,
     uploadTaskLabel: store.uploadTaskLabel,
     getUploadTaskStatusText,

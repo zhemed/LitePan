@@ -120,6 +120,20 @@
               <button type="button" class="task-path-crumb" @click="goTaskFolder(crumb.path)">{{ crumb.name }}</button>
             </template>
           </div>
+          <div
+            v-if="completedWindowTruncated && uploadStateFilter === 'done'"
+            style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px; opacity: 0.75"
+          >
+            <span>仅显示最近 {{ completedWindowSize }} 条已完成记录（共 {{ uploadTaskTotals.success }} 条）</span>
+            <button
+              type="button"
+              style="border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; font-size: 12px; padding: 0"
+              @click="loadAllCompletedTasks"
+            >
+              加载全部
+            </button>
+          </div>
+
           <div v-if="visibleRows.length > 0" class="table-head">
             <div>文件名</div>
             <div>来源</div>
@@ -254,6 +268,8 @@ const api = props.uploadApi;
 
 const {
   displayUploadTasks,
+  uploadTaskTotals,
+  loadAllCompletedTasks,
   uploadTaskPanelLoading,
   uploadTaskPanelLoadingText,
   getUploadTaskDriverBadge,
@@ -675,9 +691,28 @@ const emptyText = computed(() => {
 const showLoading = computed(() => taskPanelCategory.value === "upload" && uploadTaskPanelLoading?.value);
 const loadingText = computed(() => uploadTaskPanelLoadingText?.value || "正在加载上传任务...");
 
+// 导航计数：任务级真实总数（来自服务端汇总，窗口外历史也计入），
+// 不再按可见批次行计数——窗口化后行数会少于真实任务数（0.0.27）。
 function countByState(_category: CategoryKey, state: StateKey) {
-  return uploadRootRows.value.filter((row) => row.state === state).length;
+  const totals = uploadTaskTotals.value;
+  switch (state) {
+    case "done":
+      return totals.success;
+    case "failed":
+      return totals.failed;
+    default:
+      return totals.active;
+  }
 }
+
+// 已完成窗口截断提示（默认只带最近若干条已完成记录）。
+const completedWindowSize = 500;
+const completedWindowTruncated = computed(() => {
+  const present = uploadTasks.value.filter(
+    (task) => task.status === "success" || task.status === "skipped",
+  ).length;
+  return uploadTaskTotals.value.success > present;
+});
 
 const navCategories = computed(() => [
   {

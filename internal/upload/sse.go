@@ -24,8 +24,15 @@ func (m *Manager) Unsubscribe(ch chan []byte) {
 }
 
 func (m *Manager) SnapshotPayload() []byte {
-	tasks := m.List(context.Background(), 0)
-	payload, _ := json.Marshal(map[string]any{"kind": "snapshot", "tasks": tasks})
+	// 窗口化快照：非终态全量 + 最近 DefaultTaskWindow 条已完成 + 任务级计数，
+	// 避免历史成功记录把首帧撑到数 MB（0.0.27）。
+	tasks, summary := m.WindowTasks(context.Background(), 0, DefaultTaskWindow)
+	payload, _ := json.Marshal(map[string]any{
+		"kind":   "snapshot",
+		"tasks":  tasks,
+		"counts": summary.Counts,
+		"total":  summary.Total,
+	})
 	return payload
 }
 
@@ -149,10 +156,13 @@ func (m *Manager) deltaPayload(full bool, dirty, deleted []string) []byte {
 			deleted = append(deleted, taskID)
 		}
 	}
+	summary := m.Summary(context.Background(), 0)
 	payload, _ := json.Marshal(map[string]any{
 		"kind":             "delta",
 		"tasks":            tasks,
 		"deleted_task_ids": deleted,
+		"counts":           summary.Counts,
+		"total":            summary.Total,
 	})
 	return payload
 }

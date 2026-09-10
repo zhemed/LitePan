@@ -583,6 +583,87 @@ func (m *Manager) List(_ context.Context, accountID int64) []Task {
 	return out
 }
 
+// ListFiltered 过滤/分页列表（排序语义与 List 一致：新→旧）。
+func (m *Manager) ListFiltered(_ context.Context, accountID int64, f ListFilter) []Task {
+	want := make(map[string]struct{}, len(f.Statuses))
+	for _, s := range f.Statuses {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			want[s] = struct{}{}
+		}
+	}
+	m.mu.Lock()
+	out := make([]Task, 0, len(m.tasks))
+	for _, st := range m.tasks {
+		if accountID > 0 && st.AccountID != accountID {
+			continue
+		}
+		if len(want) > 0 {
+			if _, ok := want[st.Status]; !ok {
+				continue
+			}
+		}
+		out = append(out, *m.snapshot(st))
+	}
+	m.mu.Unlock()
+	sortTasksDesc(out)
+	if f.Offset > 0 {
+		if f.Offset >= len(out) {
+			return []Task{}
+		}
+		out = out[f.Offset:]
+	}
+	if f.Limit > 0 && f.Limit < len(out) {
+		out = out[:f.Limit]
+	}
+	return out
+}
+
+// Summary 任务级汇总（各状态计数）。
+func (m *Manager) Summary(_ context.Context, accountID int64) TaskSummary {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	summary := TaskSummary{Counts: make(map[string]int)}
+	for _, st := range m.tasks {
+		if accountID > 0 && st.AccountID != accountID {
+			continue
+		}
+		summary.Total++
+		summary.Counts[st.Status]++
+	}
+	return summary
+}
+
+// DefaultTaskWindow 默认窗口的“已完成”保留条数（列表与 SSE 快照共用）。
+const DefaultTaskWindow = 500
+
+// WindowTasks 默认窗口：全部非终态任务 + 最近 window 条终态（成功/跳过）任务。
+// 避免历史成功记录把列表/快照撑到数 MB（7814 任务时 4.5MB → 约 1.1MB）。
+func (m *Manager) WindowTasks(_ context.Context, accountID int64, window int) ([]Task, TaskSummary) {
+	all := m.List(context.Background(), accountID)
+	summary := TaskSummary{Counts: make(map[string]int), Total: len(all)}
+	for _, t := range all {
+		summary.Counts[t.Status]++
+	}
+	if window <= 0 {
+		window = DefaultTaskWindow
+	}
+	active := make([]Task, 0, len(all))
+	terminal := make([]Task, 0, window)
+	for _, t := range all {
+		switch t.Status {
+		case StatusSuccess, StatusSkipped:
+			terminal = append(terminal, t)
+		default:
+			active = append(active, t)
+		}
+	}
+	if len(terminal) > window {
+		terminal = terminal[:window]
+	}
+	return append(active, terminal...), summary
+}
+
 func (m *Manager) Get(_ context.Context, taskID string) (*Task, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
