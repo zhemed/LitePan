@@ -1,0 +1,2 @@
+checked_at=2026-09-10 19:31:58
+note=go vet 全绿/go test 零失败/web type-check 通过;flow_gate 短名自测 6/6;spec 契约文档 7 段齐全并登记索引

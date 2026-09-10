@@ -22,6 +22,7 @@ LitePan backend is a monolithic Go service that mounts as single binary `./cmd/l
 | [Logging Guidelines](./logging-guidelines.md) | `internal/logx.Manager`, `slog`, levels, module tags | Ready |
 | [Quality Guidelines](./quality-guidelines.md) | `make lint`, `golangci-lint`, `go test -race`, `depguard` rules | Ready |
 | [Concurrency & Scheduling](./concurrency-and-scheduling.md) | `DelayController`, `singleflight`, `automation`, task lifecycles | Ready |
+| [Upload Task API 契约](./upload-task-api.md) | 窗口化列表/汇总/SSE 载荷/批量控制/冷却等待语义（0.0.23~0.0.27 跨层契约） | Ready |
 
 ---
 

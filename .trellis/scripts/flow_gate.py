@@ -33,11 +33,24 @@ def find_task_dir(tasks_root: Path, name: str) -> Path:
     direct = tasks_root / name
     if direct.is_dir():
         return direct
+    # 短名回退：任务目录带日期前缀（如 09-10-xxx），按唯一后缀匹配
+    suffix_hits = [p for p in sorted(tasks_root.glob(f"*-{name}")) if p.is_dir()]
+    if len(suffix_hits) == 1:
+        return suffix_hits[0]
+    if len(suffix_hits) > 1:
+        names = ", ".join(p.name for p in suffix_hits)
+        raise GateError(f"任务名 {name} 有歧义，匹配到多个：{names}（请用全名）")
     archive = tasks_root / "archive"
     if archive.is_dir():
         hits = sorted(p for p in archive.glob(f"*/{name}") if p.is_dir())
         if hits:
             return hits[-1]
+        suffix_arch = [p for p in sorted(archive.glob(f"*/*-{name}")) if p.is_dir()]
+        if len(suffix_arch) == 1:
+            return suffix_arch[0]
+        if len(suffix_arch) > 1:
+            names = ", ".join(p.name for p in suffix_arch)
+            raise GateError(f"任务名 {name} 有歧义，匹配到多个：{names}（请用全名）")
     raise GateError(f"找不到任务目录：{name}（在 {tasks_root} 与 {tasks_root}/archive/* 下均未命中）")
 
 
