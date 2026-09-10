@@ -31,14 +31,14 @@
 
 ## Acceptance Criteria
 
-- [ ] R1：`beginCooldownWait` 在 5 类不可等待场景下返回 false 且字段零变更（断言覆盖）
-- [ ] R1：worker 冷却分支不再出现「检查后无条件写回 pending」
-- [ ] R2：`patch()` 持久化使用值快照（`grep` 可验证，且测试覆盖）
-- [ ] R3：等待结束后 `canCooldownWait == false` 时不重入队（测试覆盖）
-- [ ] R4：新增测试在修复前失败、修复后通过（并发/竞态场景）
-- [ ] R5：`git diff --name-only` 仅含 `internal/upload/**`、`.trellis/spec/**`、版本文件
-- [ ] R6：`go vet`、`go test ./...`（`internal/upload` 加 `-race`）、`web type-check/build` 全绿；`0.0.34` 镜像推送 + tag/release + 本地部署三连
-- [ ] spec 同步：`upload-task-api.md` §8 第 3 条更新为「暂停优先 + 原子守卫 + 值快照」的实现契约
+- [x] R1：`beginCooldownWait` 在 5 类不可等待场景下返回 false 且字段零变更（断言覆盖）
+- [x] R1：worker 冷却分支不再出现「检查后无条件写回 pending」
+- [x] R2：`patch()` 持久化使用值快照（`grep` 可验证，且测试覆盖）
+- [x] R3：等待结束后 `canCooldownWait == false` 时不重入队（测试覆盖）
+- [x] R4：新增测试在修复前失败、修复后通过（并发/竞态场景）
+- [x] R5：`git diff --name-only` 仅含 `internal/upload/**`、`.trellis/spec/**`、版本文件
+- [x] R6：`go vet`、`go test ./...`（`internal/upload` 加 `-race`）、`web type-check/build` 全绿；`0.0.34` 镜像推送 + tag/release + 本地部署三连
+- [x] spec 同步：`upload-task-api.md` §8 第 3 条更新为「暂停优先 + 原子守卫 + 值快照」的实现契约
 
 ## Notes
 
