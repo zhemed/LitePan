@@ -2,11 +2,16 @@ package upload
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"litepan/internal/core/driverexec"
 	"litepan/internal/domain"
+	"litepan/internal/driver"
 	"litepan/internal/file"
 )
 
@@ -167,4 +172,114 @@ func deletedContains(calls [][]string, target string) bool {
 		}
 	}
 	return false
+}
+
+// ---- 0.0.30：冷却等待不得产生孤儿任务，也不得覆盖暂停 ----
+
+type cooldownThenSuccessDriver struct {
+	calls int32
+}
+
+func (d *cooldownThenSuccessDriver) Config() driver.Config      { return driver.Config{Name: "mock"} }
+func (d *cooldownThenSuccessDriver) GetAddition() any           { return &struct{}{} }
+func (d *cooldownThenSuccessDriver) Init(context.Context) error { return nil }
+func (d *cooldownThenSuccessDriver) Drop(context.Context) error { return nil }
+func (d *cooldownThenSuccessDriver) Ping(context.Context) error { return nil }
+func (d *cooldownThenSuccessDriver) ListFiles(context.Context, string) ([]domain.FileItem, error) {
+	return nil, nil
+}
+
+func (d *cooldownThenSuccessDriver) UploadLocalFile(context.Context, driver.LocalUploadRequest) (*driver.LocalUploadResult, error) {
+	if atomic.AddInt32(&d.calls, 1) == 1 {
+		return nil, driverexec.CooldownError(0) // 首次返回冷却（1 秒等待）
+	}
+	return &driver.LocalUploadResult{FileID: "fid", FileName: "a.bin", Size: 4, Message: "上传成功"}, nil
+}
+
+func newCooldownTestManager(t *testing.T, drv driver.Driver) (*Manager, string) {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "a.bin")
+	if err := os.WriteFile(path, []byte("data"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	exec := driverexec.New(fakeProvider{drv: drv}, nil)
+	files := file.NewService(exec, nil, nil, nil, nil, nil)
+	m := NewManager(Options{Exec: exec, Files: files, DataDir: t.TempDir()})
+	m.mu.Lock()
+	state := &taskState{Task: Task{
+		TaskID: "c1", AccountID: 1, Status: StatusPending, TotalBytes: 4,
+		TargetPath: "root", FileName: "a.bin",
+	}}
+	state.localPath = path
+	m.tasks["c1"] = state
+	m.mu.Unlock()
+	return m, path
+}
+
+// 冷却等待结束后必须返回 requeue=true（否则 runTask 协程退出 → 孤儿任务）。
+func TestCooldownReturnsRequeueTrue(t *testing.T) {
+	drv := &cooldownThenSuccessDriver{}
+	m, _ := newCooldownTestManager(t, drv)
+
+	requeue := m.executeUpload(context.Background(), "c1")
+	if !requeue {
+		t.Fatal("冷却等待结束后应返回 requeue=true（0.0.30 修复点）")
+	}
+	m.mu.Lock()
+	status, msg, priority := m.tasks["c1"].Status, m.tasks["c1"].Message, m.tasks["c1"].resumePriority
+	m.mu.Unlock()
+	if status != StatusPending {
+		t.Fatalf("冷却后应回到 pending，实际 %s", status)
+	}
+	if !strings.Contains(msg, "冷却") {
+		t.Fatalf("提示应说明冷却等待，实际 %q", msg)
+	}
+	if !priority {
+		t.Fatal("冷却任务应置顶（resumePriority）")
+	}
+}
+
+// 任务处于暂停态时，冷却分支不得覆盖其状态，且不重入队列。
+func TestCooldownDoesNotOverridePause(t *testing.T) {
+	drv := &cooldownThenSuccessDriver{}
+	m, _ := newCooldownTestManager(t, drv)
+	m.mu.Lock()
+	m.tasks["c1"].Status = StatusPaused
+	m.tasks["c1"].cancelMode = "pause"
+	m.tasks["c1"].Message = "上传已暂停"
+	m.mu.Unlock()
+
+	if m.canCooldownWait("c1") {
+		t.Fatal("暂停态不应允许进入冷却等待")
+	}
+	requeue := m.executeUpload(context.Background(), "c1")
+	if requeue {
+		t.Fatal("暂停态不得重入队列")
+	}
+	m.mu.Lock()
+	status, msg := m.tasks["c1"].Status, m.tasks["c1"].Message
+	m.mu.Unlock()
+	if status != StatusPaused || msg != "上传已暂停" {
+		t.Fatalf("暂停态被冷却分支覆盖：status=%s msg=%q", status, msg)
+	}
+}
+
+// 取消/停止态同样不可进入冷却等待。
+func TestCanCooldownWaitRejectsCanceledAndStopped(t *testing.T) {
+	m, _ := newCooldownTestManager(t, &cooldownThenSuccessDriver{})
+	m.mu.Lock()
+	m.tasks["c1"].Status = StatusCanceled
+	m.mu.Unlock()
+	if m.canCooldownWait("c1") {
+		t.Fatal("取消态不应允许冷却等待")
+	}
+	m.mu.Lock()
+	m.tasks["c1"].Status = StatusPending
+	m.tasks["c1"].cancelMode = ""
+	m.stopping = true
+	m.mu.Unlock()
+	if m.canCooldownWait("c1") {
+		t.Fatal("停止中不应允许冷却等待")
+	}
 }

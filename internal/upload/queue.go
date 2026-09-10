@@ -179,6 +179,20 @@ func (m *Manager) runTask(taskID string) {
 	if !ok {
 		return
 	}
-	m.executeUpload(runCtx, taskID)
-	m.releaseSlot(slotKind)
+	for {
+		requeue := m.executeUpload(runCtx, taskID)
+		m.releaseSlot(slotKind)
+		if !requeue {
+			return
+		}
+		// 0.0.30：冷却等待等"重新排队"场景必须重入队列等待。
+		// 若不重入，执行本任务的协程会退出，任务虽为 pending 却无人接管
+		// → 永久滞留"等待中"（提示语承诺的自动重试不会发生）。
+		// acquireRunSlot 内部会在任务已暂停/取消/不存在时返回 false，天然安全。
+		var acquired bool
+		slotKind, acquired = m.acquireRunSlot(taskID, done, cancel)
+		if !acquired {
+			return
+		}
+	}
 }

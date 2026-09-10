@@ -11,12 +11,15 @@ import (
 	"litepan/internal/eventbus"
 )
 
-func (m *Manager) executeUpload(ctx context.Context, taskID string) {
+// executeUpload 执行一次上传尝试。
+// 返回 requeue=true 表示任务已被置回 pending（如账号网络冷却等待），
+// 调用方（runTask）应重新进入队列等待，否则该任务将无人接管。
+func (m *Manager) executeUpload(ctx context.Context, taskID string) bool {
 	m.mu.Lock()
 	st, ok := m.tasks[taskID]
 	if !ok {
 		m.mu.Unlock()
-		return
+		return false
 	}
 	resume := cloneMap(st.resumeData)
 	resuming := len(resume) > 0
@@ -50,7 +53,7 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 		st.speed.Reset()
 	})
 	if !started {
-		return
+		return false
 	}
 
 	entryName := uploadEntryName(fileName)
@@ -73,7 +76,7 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 	st, ok = m.tasks[taskID]
 	if !ok {
 		m.mu.Unlock()
-		return
+		return false
 	}
 	mode := st.cancelMode
 	m.mu.Unlock()
@@ -86,7 +89,7 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 					st.SpeedBytesPerSecond = 0
 					st.Message = "上传已暂停"
 				})
-				return
+				return false
 			}
 			m.patch(taskID, func(st *taskState) {
 				st.Status = StatusCanceled
@@ -94,12 +97,17 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 				st.Message = "上传任务已取消"
 				st.Error = "上传任务已取消"
 			})
-			return
+			return false
 		}
 		// 账号网络冷却：可等待的瞬时状态，不是任务终态失败。
-		// 退回 pending（置顶、保留进度/resumeData），原地等到冷却结束再继续——
+		// 退回 pending（置顶、保留进度/resumeData），等冷却结束再继续——
 		// 并发=1 时天然让整条队列等待，避免"零 I/O 空转"秒级判死整批（0.0.24）。
+		// 0.0.30：仅在任务仍可重试时置 pending（不得覆盖同期暂停），
+		// 且等待结束后返回 requeue=true 让 runTask 重入队列（否则任务成为孤儿）。
 		if seconds, cooling := driverexec.IsCooldownError(err); cooling {
+			if !m.canCooldownWait(taskID) {
+				return false
+			}
 			m.patch(taskID, func(st *taskState) {
 				st.Status = StatusPending
 				st.SpeedBytesPerSecond = 0
@@ -110,12 +118,12 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 			m.mu.Lock()
 			m.runCond.Broadcast()
 			m.mu.Unlock()
-			wait := time.Duration(seconds) * time.Second
 			select {
 			case <-ctx.Done():
-			case <-time.After(wait):
+				return false
+			case <-time.After(time.Duration(seconds) * time.Second):
 			}
-			return
+			return m.canCooldownWait(taskID)
 		}
 		if shouldResetResumeState(err.Error()) {
 			m.patch(taskID, func(st *taskState) {
@@ -127,10 +135,10 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 				st.UploadedBytes = 0
 				st.Progress = 0
 			})
-			return
+			return false
 		}
 		m.failTask(taskID, err)
-		return
+		return false
 	}
 
 	status := StatusSuccess
@@ -172,8 +180,8 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 			FileID:    result.FileID,
 		})
 	}
+	return false
 }
-
 func shouldResetResumeState(errMsg string) bool {
 	lower := strings.ToLower(errMsg)
 	return strings.Contains(lower, "invalidpartorder") || strings.Contains(lower, "previous part hash context")
@@ -244,4 +252,19 @@ func (m *Manager) publishUploadedFileDeleted(st *taskState, fileID string) {
 		ParentID:  parentID,
 		FileIDs:   []string{fileID},
 	})
+}
+
+
+// canCooldownWait 判断任务此刻是否适合进入"冷却等待"（可重试且未被暂停/取消/停止）。
+func (m *Manager) canCooldownWait(taskID string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	st, ok := m.tasks[taskID]
+	if !ok || m.stopping {
+		return false
+	}
+	if st.cancelMode == "pause" || st.Status == StatusPaused || st.Status == StatusCanceled {
+		return false
+	}
+	return st.Status == StatusRunning || st.Status == StatusPending
 }
