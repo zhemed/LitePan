@@ -31,14 +31,14 @@
 
 ## Acceptance Criteria
 
-- [ ] A：远程任务暂停**总是**调用 `pauseTask`（含 id 在待恢复集合的高危场景）
-- [ ] B：批量暂停按「非终态 + 远程」收集，本地乐观状态不再导致漏发；收集后清空待恢复集合
-- [ ] C：冷却消息存在时展示状态/阶段标签取服务端状态（不再显示「等待继续」）
-- [ ] D：`npm run check:memo` 新增断言全过（纯函数行为覆盖）
-- [ ] E：后端零改动（`git diff --name-only` 不含 `internal/`、`drivers/`）
-- [ ] F：`npm run type-check`、`npm run build`、`go vet ./...`、`go test ./...` 全绿
-- [ ] F：`0.0.33` 镜像构建推送、`git tag v0.0.33` + release、本地容器部署验证（健康/登录/任务列表）通过
-- [ ] spec 同步：`.trellis/spec/backend/backend/upload-task-api.md` §8 增补「前端暂停交付契约」
+- [x] A：远程任务暂停**总是**调用 `pauseTask`（含 id 在待恢复集合的高危场景）
+- [x] B：批量暂停按「非终态 + 远程」收集，本地乐观状态不再导致漏发；收集后清空待恢复集合
+- [x] C：冷却消息存在时展示状态/阶段标签取服务端状态（不再显示「等待继续」）
+- [x] D：`npm run check:memo` 新增断言全过（纯函数行为覆盖）
+- [x] E：后端零改动（`git diff --name-only` 不含 `internal/`、`drivers/`）
+- [x] F：`npm run type-check`、`npm run build`、`go vet ./...`、`go test ./...` 全绿
+- [x] F：`0.0.33` 镜像构建推送、`git tag v0.0.33` + release、本地容器部署验证（健康/登录/任务列表）通过
+- [x] spec 同步：`.trellis/spec/backend/backend/upload-task-api.md` §8 增补「前端暂停交付契约」
 
 ## Notes
 
