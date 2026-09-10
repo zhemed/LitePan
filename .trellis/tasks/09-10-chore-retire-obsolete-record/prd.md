@@ -21,8 +21,8 @@
 
 ## Acceptance Criteria
 
-- [ ] 归档任务目录删除
-- [ ] journal 对应会话条目与引用删除
-- [ ] 索引引用清理
-- [ ] 全仓 `grep` 复核：除本次移除说明外无残留引用
-- [ ] 门禁 + 归档 + journal + push
+- [x] 归档任务目录已删除（git rm）
+- [x] journal 对应会话条目（904 字符）与引用已删除
+- [x] 索引引用清理完毕（grep 复核 0 命中）
+- [x] 全仓 grep 复核：除本次移除说明外无残留
+- [x] 门禁 + 归档 + journal + push
