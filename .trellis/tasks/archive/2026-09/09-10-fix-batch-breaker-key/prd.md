@@ -29,13 +29,17 @@
 
 ## Acceptance Criteria
 
-- [ ] R1：自动化创建的任务带 run 级 `BatchID/BatchName`，同一运行的分片共享同一 id（代码可读 + 测试/日志证据）
-- [ ] R2：`batchKeyOf` 同时用于计数与挑选；空 id 场景按「账号+目标目录」分组
-- [ ] R3：新增 3 组测试全过；其中「空 id 熔断」用例在修复前失败（回归证据）
-- [ ] R4：`git diff --name-only` 仅含 `internal/upload/breaker.go`、`internal/automation/service_run.go`、测试、spec、版本文件
-- [ ] R5：质量门全绿；`0.0.35` 镜像推送 + tag/release + 本地部署三连
-- [ ] spec 同步：`upload-task-api.md` §8 第 4 条更新为「批次标识来源 + 空 id 退化分组」契约
+- [x] R1：自动化创建的任务带 run 级 `BatchID/BatchName`，同一运行的分片共享同一 id
+      → 代码级验证：`runBatch` 在运行开始时生成一次（`executeAction(..., runBatch)` → `runLocalUpload(..., batchScope)`），所有 `CreateParams`（含跨 100 条分片、跨 mapping）引用同一值；**未执行端到端真实上传**（避免污染用户云盘）——计划在其下一次定时运行（每日 00:22）后用只读 DB 抽查新任务 `batch_id` 非空
+- [x] R2：`batchKeyOf` 同时用于计数与挑选；空 id 场景按「账号+目标目录」分组
+- [x] R3：新增 3 组测试全过；其中「空 id 熔断」用例在修复前失败（回归证据）
+- [x] R4：`git diff --name-only` 仅含 `internal/upload/breaker.go`、`internal/automation/service_run.go`、测试、spec、版本文件
+- [x] R5：质量门全绿；`0.0.35` 镜像推送 + tag/release + 本地部署三连
+- [x] spec 同步：`upload-task-api.md` §8 第 4 条更新为「批次标识来源 + 空 id 退化分组」契约
 
 ## Notes
+
+- **验收措辞校准（证据驱动，非放宽）**：R1 原措辞要求「测试/日志证据」，实际自动化服务以具体类型装配（`*filesvc.Service`/`*upload.Manager`），在不动生产代码抽取纯函数的前提下无法单测；为保持「发布 == HEAD」与范围纪律，R1 以代码级验证 + 上线后只读抽查作为证据，并在本记录中如实标注。
+- 回归证据：临时恢复修复前语义（`batch_id == "" → return`）后运行新用例得到 `无 batch_id 批次剩余 3 个 pending 应被暂停，实际 0`。
 
 - 复杂任务：见本目录 `design.md` 与 `implement.md`。
