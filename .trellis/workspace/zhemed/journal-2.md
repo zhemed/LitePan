@@ -1847,3 +1847,39 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 等用户决定是否开前端修复任务（A 暂停必发 HTTP / B 批量暂停不依赖乐观态 / C 展示层区分待恢复与冷却）
+
+
+## Session 117: 修复前端暂停不送达,0.0.33
+<!-- trellis-session: v=2 fp=802a4df6901bd6cc -->
+
+**Date**: 2026-09-10
+**Task**: 修复前端暂停不送达,0.0.33
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户反馈冷却等待中任务点暂停无效（要等恢复才停）。取证结论：服务端可即时暂停（pause 会 cancel ctx），实测任务跑完30秒等待后仍上传成功⇒暂停未送达；前端两条静默失效路径已修：A pauseUploadTask 删除『id 在待恢复集合时只改本地不发 HTTP』捷径，远程任务一律发 pauseTask；B 新增纯函数 collectRemotePauseIds（只排除终态与浏览器内本地任务、去重），批量暂停不再按本地乐观状态过滤并清空待恢复集合；C 新增 resolveUploadDisplayStatus/isCooldownMessage，冷却消息存在时展示取服务端真值、阶段标签显示『重试中』。断言脚本 +11 条用例（MEMO-ALL-PASS）；type-check/build/vet/test 全绿；后端零改动；0.0.33 已推送(digest 38309c34)并本地部署验证三连通过；spec §8.6 记录前端暂停交付契约
+
+### Main Changes
+
+- web/src/composables/upload/uploadPausePlan.ts(新), useUploadBatchActions.ts, uploadTaskFormatters.ts, web/scripts/check-upload-memo.mjs, spec §8.6, README/docker-compose v0.0.33
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4769c0e` | fix(frontend): always deliver pause to server, bump to 0.0.33 |
+| `910bb47` | chore(task): archive 09-10-fix-pause-not-delivered-frontend |
+
+### Testing
+
+- [OK] npm run type-check/build/check:memo 全绿；go vet/go test 全绿；本地容器 health/登录/任务列表(11002 条不变)通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户在生产机 10.0.0.11 升级 0.0.33 后复测『冷却等待中点暂停立即生效』；若需我复核可只读检查
