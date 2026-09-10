@@ -1460,3 +1460,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 残留清单 P2 按需项(批次树记忆化/工作集保留策略)仍待决策
+
+
+## Session 104: 批次树记忆化+上传记录保留策略,0.0.28
+<!-- trellis-session: v=2 fp=de79b0af29e98a9a -->
+
+**Date**: 2026-09-10
+**Task**: 批次树记忆化+上传记录保留策略,0.0.28
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+①前端记忆化:新增 uploadRowMemo.ts(行按 task_id+updated_at、批次节点按 条目数|最大updated_at|首任务|状态分布 签名复用,上限6000/2000,FIFO淘汰)+TaskPanel 接入+onUnmounted清理;新增可复跑校验 web/scripts/check-upload-memo.mjs(npm run check:memo,TS编译器转译+Node断言)9/9:5000任务第二轮零重建、3变化精确重建3、上限淘汰、节点签名复用与失效。②保留策略:设置项 upload_retention_days(30)/upload_retention_max(0=不限)入 registry(设置页可见,分类system);internal/upload/retention.go:RetentionConfig+纯函数 selectRetentionVictims+pruneRetainedTasks(复用 Manager.Delete,server_local 跳过本地清理,仅清记录)+retentionLoop(启动即一次+每小时,随 runCtx 退出);单测5组(超期/超量/组合/禁用/边界)全过。端到端实测:备份DB→设 max=6003→重启触发启动清扫→日志 removed=1 且 6004→6003(精确)→恢复默认(0/30);默认配置启动清扫未误删。spec 同步 upload-task-api.md 增补保留契约段。0.0.28 三tag digest 2bdcb0a9,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5115192` | feat: batch tree memoization + upload record retention policy, bump to 0.0.28 |
+
+### Testing
+
+- [OK] go vet 全绿;go test 零失败(含5组保留策略单测);web check:memo 9/9;type-check+build;端到端清理实测;设置API核验;门禁放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无(残留清单全部完成)
