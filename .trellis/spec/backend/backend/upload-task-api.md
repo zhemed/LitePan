@@ -128,3 +128,13 @@ for (const task of paused) { await uploadApi.resumeTask(task.task_id); }  // ❌
 ```ts
 await uploadApi.batchResume(paused.map(t => t.task_id));   // ✅ 一次请求
 ```
+
+## 8. 账号级冷却的运维契约（0.0.31 生产取证，2026-09-10）
+
+**来源**：`10.0.0.11` 真实批次（822 任务 / 115 网盘）出现「大面积上传暂缓：账号网络冷却，稍后自动重试」，取证见任务记录 `09-10-investigate-11-cooldown-storm`。
+
+1. **放大律**：冷却来自 `internal/core/driverexec/exec.go` 的账号级网络退避（连续 `netFailThreshold=3` 次网络失败 → `netBackoff=30s`）。退避窗口内 `Run()` 在入口短路返回 `CooldownError(30s)`，**不访问上游**；于是「1 次冷却 × N 个被派发任务 = N 条 `上传暂缓` INFO 日志」。生产实测：**183 条 / 0.35 秒 / 183 个不同文件 / 同一 `account_id`**。→ 看到大量「暂缓」先判断是不是**单账号单事件放大**，不要当成批量真实失败。
+2. **触发源静默**：`recordNetFail` 进入/退出退避均无日志 → 生产日志里只有「后果」没有「原因」。排查顺序：`docker logs --since N h <容器> | grep -v 上传暂缓`；若除启动/认证/配置行外**无任何 WARN/ERROR**，即为冷却短路而非真实失败；此时触发源**不可归因**，应作为可观测性缺陷登记（见 §6B 建议）。
+3. **状态一致性**：冷却分支（`worker.go:107-127` 置 `pending` + 「N 秒后自动重试」）与 `pause()`（`lifecycle.go:41-76` 置 `paused` + 「上传已暂停」）并发时会写同一任务：内存最终态与 DB 最终行可能**不一致**（实测 19 条：DB `pending` vs 界面 `paused`，相差 0.3ms）。由于 `persist.go:80-91` 启动恢复会把 `pending` 行 `go m.runTask`，**重启后这些任务会自行续传**——与界面「已暂停」矛盾。改冷却分支时必须保持「pause 优先级更高」并在 `ctx.Done()` 分支落库终态。
+4. **熔断前置条件**：`internal/upload/breaker.go:61-65` 的批次熔断要求任务 `batch_id` 非空；自动化（`automation_rules` → `local_upload`）创建的批次目前 `batch_id` 为空，**不享受熔断保护**。
+5. **验证口径**：判定「暂缓是否安全」的三条硬指标——`failed=0`、任务进度/`resume_data` 未丢、`pragma quick_check=ok`；三者通过即无需紧急处置，冷却 30 秒自愈。
