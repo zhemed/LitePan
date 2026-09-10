@@ -99,6 +99,27 @@ func (m *Manager) BatchDelete(ctx context.Context, taskIDs []string, deleteUploa
 				if !completeBatch {
 					continue
 				}
+				// 第二层保护（0.0.29）：要求选中数 == 该批历史总数（result.batch_task_total）。
+				// 历史批次缺该字段 → 保守拒绝根删除（仍可逐文件删除），避免记录被清理后
+				// "部分选择"被误判为"整批选择"而误删云端目录。
+				total := 0
+				consistentTotal := true
+				for _, it := range batchItems {
+					if v := batchTaskTotalOf(it.task.Result); v > 0 {
+						if total == 0 {
+							total = v
+						} else if total != v {
+							consistentTotal = false
+							break
+						}
+					}
+				}
+				if !consistentTotal {
+					total = 0
+				}
+				if total <= 0 || len(batchItems) != total {
+					continue
+				}
 
 				accountID := batchItems[0].task.AccountID
 				rootID, rootParentID := "", ""
@@ -202,6 +223,32 @@ func (m *Manager) BatchDelete(ctx context.Context, taskIDs []string, deleteUploa
 			if g.parent == "" || m.files == nil {
 				continue
 			}
+			// 0.0.29 安全加固：空目录自动清理必须同时满足
+			//   ①用户显式勾选"同时删除批次根目录"（deleteBatchRoots）
+			//   ②该父目录确为本次删除任务记录的 owned 批次根（元数据一致）
+			// 否则只删文件、保留目录——避免"用户只删了几条记录却把文件夹删掉"，
+			// 也避免误删用户自建/复用的目录。
+			if !deleteBatchRoots {
+				continue
+			}
+			groupRootID, groupOwned := "", false
+			for _, it := range items {
+				if it.task.AccountID != g.accountID || it.task.TargetPath != g.parent {
+					continue
+				}
+				if it.task.Result == nil {
+					continue
+				}
+				rootID, _ := it.task.Result["batch_root_id"].(string)
+				owned, _ := it.task.Result["batch_root_owned"].(bool)
+				if strings.TrimSpace(rootID) == g.parent && owned {
+					groupRootID, groupOwned = g.parent, true
+					break
+				}
+			}
+			if !groupOwned || groupRootID == "" {
+				continue
+			}
 			groupFailed := false
 			for _, it := range items {
 				if it.task.AccountID == g.accountID && it.task.TargetPath == g.parent && it.fileID != "" {
@@ -214,7 +261,8 @@ func (m *Manager) BatchDelete(ctx context.Context, taskIDs []string, deleteUploa
 			if groupFailed {
 				continue
 			}
-			entries, lerr := m.files.List(ctx, g.accountID, g.parent, false)
+			// 空判定强制走云端实时列表（forceRefresh），避免缓存导致的"假空"误删。
+			entries, lerr := m.files.List(ctx, g.accountID, g.parent, true)
 			if lerr != nil || len(entries) > 0 {
 				continue
 			}
@@ -264,4 +312,20 @@ func (m *Manager) cleanupLocalSourceAfterDelete(st *taskState) {
 		return
 	}
 	m.removeLocalFile(st.localPath)
+}
+
+// batchTaskTotalOf 读取批次历史总数（创建时写入 result.batch_task_total）。
+func batchTaskTotalOf(result map[string]any) int {
+	if result == nil {
+		return 0
+	}
+	switch v := result["batch_task_total"].(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	}
+	return 0
 }

@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"sort"
+	"strings"
 	"time"
 
 	"litepan/internal/settings"
@@ -48,6 +49,11 @@ func selectRetentionVictims(tasks []Task, cfg RetentionConfig, now time.Time) []
 	}
 	candidates := make([]Task, 0, len(tasks))
 	for _, task := range tasks {
+		if ownsBatchRoot(task) {
+			// 第一层保护（0.0.29）：owned 批次根任务的记录是"删除云端批次根目录"
+			// 完整性判据的数据基础，自动清理会削弱该保护 → 一律保留。
+			continue
+		}
 		switch task.Status {
 		case StatusSuccess, StatusSkipped, StatusCanceled:
 			candidates = append(candidates, task)
@@ -130,4 +136,17 @@ func (m *Manager) retentionLoop(ctx context.Context) {
 			run()
 		}
 	}
+}
+
+// ownsBatchRoot 判断任务是否携带 owned 批次根元数据（其记录必须保留）。
+func ownsBatchRoot(task Task) bool {
+	if task.Result == nil {
+		return false
+	}
+	owned, _ := task.Result["batch_root_owned"].(bool)
+	if !owned {
+		return false
+	}
+	rootID, _ := task.Result["batch_root_id"].(string)
+	return strings.TrimSpace(rootID) != ""
 }

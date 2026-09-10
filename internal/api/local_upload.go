@@ -364,6 +364,12 @@ func (h *Handler) createLocalUploadTasksSync(
 			break
 		}
 	}
+	// 该批次文件总数（batchRootName 为空表示非单批次上传 → 不做根删除保护性判据）
+	batchTaskTotal := 0
+	if batchRootName != "" {
+		batchTaskTotal = len(sources)
+	}
+
 	for _, s := range sources {
 		if err := ctx.Err(); err != nil {
 			return tasks, err
@@ -402,6 +408,8 @@ func (h *Handler) createLocalUploadTasksSync(
 			BatchRootID:       targetDirs[batchRootName],
 			BatchRootParentID: targetRoot,
 			BatchRootOwned:    batchRootName != "" && createdDirs[batchRootName],
+			// 本批文件总数：供"删除云端批次根目录"的完整性判据（0.0.29）
+			BatchTaskTotal:    batchTaskTotal,
 			AccountID:         accountID,
 			AccountName:       accountName,
 			DriverType:        driverType,

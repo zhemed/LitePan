@@ -348,6 +348,8 @@ func TestBatchDeleteOwnedFolderRemovesBatchRootOnce(t *testing.T) {
 					"batch_root_id":        "uploaded-folder",
 					"batch_root_parent_id": "target-parent",
 					"batch_root_owned":     true,
+					// 0.0.29：完整性判据要求批次记录历史总数（完整选择时方可删根）
+					"batch_task_total": 2,
 				},
 			},
 			runDone: make(chan struct{}),
@@ -1000,4 +1002,3 @@ func TestCreateServerLocalTaskRejectsDirectory(t *testing.T) {
 		t.Fatalf("应返回校验类错误: %v", err)
 	}
 }
-

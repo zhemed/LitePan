@@ -408,6 +408,9 @@ func (m *Manager) newTaskStateLocked(p CreateParams) *taskState {
 			"batch_root_parent_id": strings.TrimSpace(p.BatchRootParentID),
 			"batch_root_owned":     p.BatchRootOwned,
 		}
+		if p.BatchTaskTotal > 0 {
+			initialResult["batch_task_total"] = p.BatchTaskTotal
+		}
 	}
 	st := &taskState{
 		Task: Task{
@@ -704,5 +707,3 @@ func (m *Manager) RemoveTasksByAccount(ctx context.Context, accountID int64) (in
 	}
 	return removed, nil
 }
-
-

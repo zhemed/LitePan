@@ -42,11 +42,11 @@ type Task struct {
 	Error               string         `json:"error,omitempty"`
 	Result              map[string]any `json:"result,omitempty"`
 	// 清理相关字段仅服务端使用（前端零引用），不进 API/SSE 载荷（0.0.26 瘦身）
-	CleanupLocalMode    string         `json:"-"`
-	CleanupLocalPath    string         `json:"-"`
-	QueueOrder          int            `json:"queue_order"`
-	CreatedAt           float64        `json:"created_at"`
-	UpdatedAt           float64        `json:"updated_at"`
+	CleanupLocalMode string  `json:"-"`
+	CleanupLocalPath string  `json:"-"`
+	QueueOrder       int     `json:"queue_order"`
+	CreatedAt        float64 `json:"created_at"`
+	UpdatedAt        float64 `json:"updated_at"`
 }
 
 const (
@@ -102,6 +102,9 @@ type CreateParams struct {
 	BatchRootID       string
 	BatchRootParentID string
 	BatchRootOwned    bool
+	// BatchTaskTotal 该批次的历史任务总数（含已清理记录），用于"删除云端批次根目录"
+	// 的完整性判据：选中数必须等于该值（缺失=0 → 保守拒绝根删除，0.0.29）。
+	BatchTaskTotal    int
 	AccountID         int64
 	AccountName       string
 	DriverType        string
@@ -174,8 +177,8 @@ func retainBatchRootMetadata(result map[string]any) map[string]any {
 	if len(result) == 0 {
 		return nil
 	}
-	metadata := make(map[string]any, 3)
-	for _, key := range []string{"batch_root_id", "batch_root_parent_id", "batch_root_owned"} {
+	metadata := make(map[string]any, 4)
+	for _, key := range []string{"batch_root_id", "batch_root_parent_id", "batch_root_owned", "batch_task_total"} {
 		if value, ok := result[key]; ok {
 			metadata[key] = value
 		}
