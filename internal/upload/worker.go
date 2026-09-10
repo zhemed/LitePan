@@ -2,7 +2,6 @@ package upload
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -105,19 +104,12 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) bool {
 		// 0.0.30：仅在任务仍可重试时置 pending（不得覆盖同期暂停），
 		// 且等待结束后返回 requeue=true 让 runTask 重入队列（否则任务成为孤儿）。
 		if seconds, cooling := driverexec.IsCooldownError(err); cooling {
-			if !m.canCooldownWait(taskID) {
+			// 0.0.34：守卫与写回合并为一次原子操作——暂停/取消优先，
+			// 绝不在「已暂停」的任务上复写 pending（否则库内残留 pending，
+			// 重启后会被 restoreTasks 自动续传）。
+			if !m.beginCooldownWait(taskID, seconds) {
 				return false
 			}
-			m.patch(taskID, func(st *taskState) {
-				st.Status = StatusPending
-				st.SpeedBytesPerSecond = 0
-				st.Message = fmt.Sprintf("账号网络冷却中，%d 秒后自动重试", seconds)
-				st.Error = ""
-				st.resumePriority = true
-			})
-			m.mu.Lock()
-			m.runCond.Broadcast()
-			m.mu.Unlock()
 			select {
 			case <-ctx.Done():
 				return false

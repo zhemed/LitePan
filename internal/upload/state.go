@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"sort"
 	"time"
 
@@ -27,10 +28,47 @@ func (m *Manager) patch(taskID string, fn func(*taskState)) {
 	}
 	fn(st)
 	st.UpdatedAt = timeutil.UnixFloat(time.Now())
-	snap := st
+	// 0.0.34：持久化改用值快照——此前传活体指针，落库内容会被并发迁移改写，
+	// 产生「内存已暂停、库内仍 pending」的分叉（重启恢复会据此自行续传）。
+	snap := *st
 	m.mu.Unlock()
-	_ = m.persistTask(snap)
+	_ = m.persistTask(&snap)
 	m.broadcast(taskID)
+}
+
+// beginCooldownWait 原子进入「账号网络冷却等待」：在锁内一次性判定任务此刻是否
+// 仍可重试，满足才写回 pending + 冷却文案 + resumePriority，并返回 true。
+//
+// 返回 false 表示任务已暂停/取消/停止/不存在——调用方必须保持其现有状态
+// （暂停优先），不得把任务改回 pending。0.0.34 修复：先前 canCooldownWait()
+// 与 patch() 之间存在窗口，期间落地的 pause() 会被随后的 patch 覆盖。
+func (m *Manager) beginCooldownWait(taskID string, seconds int) bool {
+	m.mu.Lock()
+	st, ok := m.tasks[taskID]
+	if !ok || m.stopping {
+		m.mu.Unlock()
+		return false
+	}
+	if st.cancelMode == "pause" || st.Status == StatusPaused || st.Status == StatusCanceled {
+		m.mu.Unlock()
+		return false
+	}
+	if st.Status != StatusRunning && st.Status != StatusPending {
+		m.mu.Unlock()
+		return false
+	}
+	st.Status = StatusPending
+	st.SpeedBytesPerSecond = 0
+	st.Message = fmt.Sprintf("账号网络冷却中，%d 秒后自动重试", seconds)
+	st.Error = ""
+	st.resumePriority = true
+	st.UpdatedAt = timeutil.UnixFloat(time.Now())
+	snap := *st
+	m.runCond.Broadcast()
+	m.mu.Unlock()
+	_ = m.persistTask(&snap)
+	m.broadcast(taskID)
+	return true
 }
 
 func (m *Manager) failTask(taskID string, err error) {
