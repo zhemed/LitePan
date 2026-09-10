@@ -86,15 +86,38 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
       (task) => task.status === "pending" || task.status === "running",
     ),
   );
+  // 单遍统计（原先最多 4 次全量 filter，7814 任务规模下每次 delta 都要重扫）
+  const uploadTaskStatusCounts = computed(() => {
+    let active = 0;
+    let failed = 0;
+    let paused = 0;
+    let success = 0;
+    for (const task of displayUploadTasks.value) {
+      switch (task.status) {
+        case "pending":
+        case "running":
+          active++;
+          break;
+        case "failed":
+          failed++;
+          break;
+        case "paused":
+          paused++;
+          break;
+        case "success":
+          success++;
+          break;
+      }
+    }
+    return { active, failed, paused, success };
+  });
+
   const uploadTaskBadgeText = computed(() => {
-    const running = activeUploadTasks.value.length;
-    if (running > 0) return `上传中 ${running}`;
-    const failed = displayUploadTasks.value.filter((t) => t.status === "failed").length;
-    if (failed > 0) return `失败 ${failed}`;
-    const paused = displayUploadTasks.value.filter((t) => t.status === "paused").length;
-    if (paused > 0) return `已暂停 ${paused}`;
-    const success = displayUploadTasks.value.filter((t) => t.status === "success").length;
-    if (success > 0) return `上传完成 ${success}`;
+    const counts = uploadTaskStatusCounts.value;
+    if (counts.active > 0) return `上传中 ${counts.active}`;
+    if (counts.failed > 0) return `失败 ${counts.failed}`;
+    if (counts.paused > 0) return `已暂停 ${counts.paused}`;
+    if (counts.success > 0) return `上传完成 ${counts.success}`;
     return "";
   });
 

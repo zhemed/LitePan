@@ -51,6 +51,12 @@ func (m *Manager) failTask(taskID string, err error) {
 func (m *Manager) snapshot(st *taskState) *Task {
 	t := st.Task
 	t.Result = cloneMap(st.Result)
+	// 瘦身：result 内 file_name/size 与顶层 file_name/total_bytes 重复，
+	// 前端均有回退取值（result?.file_name || file_name），API/SSE 载荷不再重复传输。
+	if t.Result != nil {
+		delete(t.Result, "file_name")
+		delete(t.Result, "size")
+	}
 	return &t
 }
 

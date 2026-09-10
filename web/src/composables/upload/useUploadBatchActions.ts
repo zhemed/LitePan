@@ -177,7 +177,9 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
       return;
     }
 
-    const remote: UploadTask[] = [];
+    // 远程任务只收集 ID，单次批量请求后统一刷新——原先对每个任务逐个
+    // 响应式 patch，1620 个任务的规模下会卡死主线程（0.0.26）。
+    const remoteIds: string[] = [];
     for (const task of unique) {
       if (!["pending", "running"].includes(String(task.status))) continue;
       if (isLocalUploadTask(task) || isQueuedRemoteResumeTask(task)) {
@@ -185,12 +187,11 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
         continue;
       }
       store.pendingRemoteResumeTaskIds.delete(String(task.task_id));
-      store.patchRemoteUploadTask(task.task_id, { status: "paused", message: getPausedMessage(task), error: "" });
-      remote.push(task);
+      remoteIds.push(String(task.task_id));
     }
-    if (!remote.length) return;
+    if (!remoteIds.length) return;
     try {
-      await uploadApi.batchPause(remote.map((task) => task.task_id));
+      await uploadApi.batchPause(remoteIds);
       await stream.fetchUploadTasks();
     } catch (e) {
       await stream.fetchUploadTasks();

@@ -41,8 +41,9 @@ type Task struct {
 	Message             string         `json:"message"`
 	Error               string         `json:"error,omitempty"`
 	Result              map[string]any `json:"result,omitempty"`
-	CleanupLocalMode    string         `json:"cleanup_local_mode,omitempty"`
-	CleanupLocalPath    string         `json:"cleanup_local_path,omitempty"`
+	// 清理相关字段仅服务端使用（前端零引用），不进 API/SSE 载荷（0.0.26 瘦身）
+	CleanupLocalMode    string         `json:"-"`
+	CleanupLocalPath    string         `json:"-"`
 	QueueOrder          int            `json:"queue_order"`
 	CreatedAt           float64        `json:"created_at"`
 	UpdatedAt           float64        `json:"updated_at"`
