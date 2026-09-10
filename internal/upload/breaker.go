@@ -11,6 +11,25 @@ import (
 // 任务（熔断安全网）。目的：账号级故障（网络/认证/内部）下不再成百地无效判死。
 const batchBreakerThreshold = 5
 
+// batchKeyOf 返回熔断分组键：优先批次 id；空批次退化为「账号 + 目标目录」，
+// 两者都没有时退化为账号级。
+//
+// 0.0.35：此前直接要求 BatchID 非空才计数，而自动化（local_upload）创建的任务
+// batch_id 为空，导致这批任务完全没有熔断保护（账号级故障时可成百地无效判死）。
+func batchKeyOf(st *taskState) string {
+	if st == nil {
+		return ""
+	}
+	if id := strings.TrimSpace(st.BatchID); id != "" {
+		return "batch:" + id
+	}
+	if target := strings.TrimSpace(st.TargetPath); target != "" {
+		return fmt.Sprintf("acct:%d|target:%s", st.AccountID, target)
+	}
+	return fmt.Sprintf("acct:%d", st.AccountID)
+}
+
+// batchFailureRecord 记录同一分组键的连续同因失败。
 type batchFailureRecord struct {
 	sig   string
 	count int
@@ -46,7 +65,8 @@ func systemicFailure(err error) bool {
 	return false
 }
 
-// observeBatchFailure 累计同批次连续同因失败；达到阈值时暂停该批次剩余任务。
+// observeBatchFailure 累计同一熔断分组（见 batchKeyOf）的连续同因失败；
+// 达到阈值时暂停该分组剩余任务。计数与挑选必须使用同一个键。
 func (m *Manager) observeBatchFailure(taskID string, err error) {
 	sig := failureSignature(err)
 	if sig == "" || !systemicFailure(err) {
@@ -58,29 +78,29 @@ func (m *Manager) observeBatchFailure(taskID string, err error) {
 		m.mu.Unlock()
 		return
 	}
-	batchID := strings.TrimSpace(st.BatchID)
-	if batchID == "" {
+	key := batchKeyOf(st)
+	if key == "" {
 		m.mu.Unlock()
 		return
 	}
 	if m.batchFailures == nil {
 		m.batchFailures = make(map[string]batchFailureRecord)
 	}
-	rec := m.batchFailures[batchID]
+	rec := m.batchFailures[key]
 	if rec.sig != sig {
 		rec = batchFailureRecord{sig: sig}
 	}
 	rec.count++
 	tripped := rec.count >= batchBreakerThreshold
 	if tripped {
-		delete(m.batchFailures, batchID)
+		delete(m.batchFailures, key)
 	} else {
-		m.batchFailures[batchID] = rec
+		m.batchFailures[key] = rec
 	}
 	var pending []string
 	if tripped {
 		for id, other := range m.tasks {
-			if strings.TrimSpace(other.BatchID) == batchID && other.Status == StatusPending {
+			if other.Status == StatusPending && batchKeyOf(other) == key {
 				pending = append(pending, id)
 			}
 		}

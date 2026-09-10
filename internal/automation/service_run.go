@@ -61,6 +61,12 @@ func (s *Service) runRule(id int64, triggerSource string) {
 	previousSuccess := true
 	message := "执行完成"
 	status := domain.AutomationRunSuccess
+	// 0.0.35：同一次运行使用统一的批次标识——此前不写 batch_id，导致上传任务的
+	// 批次熔断（连续同因系统级失败 → 暂停批次剩余）对自动化批次完全失效。
+	runBatch := uploadBatchScope{
+		ID:   fmt.Sprintf("auto-%d-%d", rule.ID, run.StartedAt.Unix()),
+		Name: fmt.Sprintf("定时任务 %s", strings.TrimSpace(rule.Name)),
+	}
 	for i, action := range actions {
 		step := map[string]any{
 			"index":     i,
@@ -73,7 +79,7 @@ func (s *Service) runRule(id int64, triggerSource string) {
 		}
 		if shouldRunAction(action.Condition, previousSuccess, i) {
 			s.setRunningStep(id, i, actionDisplayName(action), action.Type)
-			result := s.executeAction(ctx, action)
+			result := s.executeAction(ctx, action, runBatch)
 			for k, v := range result {
 				step[k] = v
 			}
@@ -106,10 +112,16 @@ func (s *Service) runRule(id int64, triggerSource string) {
 	_ = s.rules.Update(ctx, rule)
 }
 
-func (s *Service) executeAction(ctx context.Context, action RuleAction) map[string]any {
+// uploadBatchScope 是单次自动化运行的上传批次标识（写入任务 batch_id/batch_name）。
+type uploadBatchScope struct {
+	ID   string
+	Name string
+}
+
+func (s *Service) executeAction(ctx context.Context, action RuleAction, batch uploadBatchScope) map[string]any {
 	switch action.Type {
 	case domain.AutomationActionLocalUpload:
-		return s.runLocalUpload(ctx, action.Params)
+		return s.runLocalUpload(ctx, action.Params, batch)
 	default:
 		return map[string]any{"status": "failed", "success": false, "message": "动作类型不支持"}
 	}
@@ -160,7 +172,7 @@ func saveLocalUploadState(dataDir, mapping string, state map[string]string) {
 	_ = os.WriteFile(fpath, data, 0644)
 }
 
-func (s *Service) runLocalUpload(ctx context.Context, params map[string]any) map[string]any {
+func (s *Service) runLocalUpload(ctx context.Context, params map[string]any, batchScope uploadBatchScope) map[string]any {
 	if s.uploads == nil {
 		return map[string]any{"status": "failed", "success": false, "message": "上传服务未就绪"}
 	}
@@ -480,6 +492,8 @@ func (s *Service) runLocalUpload(ctx context.Context, params map[string]any) map
 			}
 			batch = append(batch, upload.CreateParams{
 				AccountID:         accountID,
+				BatchID:           batchScope.ID,
+				BatchName:         batchScope.Name,
 				FileName:          filepath.Base(sc.abs),
 				TargetPath:        parent,
 				TargetDisplayPath: func() string {
