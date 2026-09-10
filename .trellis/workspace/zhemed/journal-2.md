@@ -1741,3 +1741,38 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 如需连本次移除记录也一并清除,或彻底重写历史,告知即可
+
+
+## Session 114: 生产机10.0.0.11大面积上传暂缓取证（只读）
+<!-- trellis-session: v=2 fp=51bc794f4802528f -->
+
+**Date**: 2026-09-10
+**Task**: 生产机10.0.0.11大面积上传暂缓取证（只读）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户授权只读排查 10.0.0.11：现象=单账号30s网络退避×183任务放大（0.35s 183条INFO，全部account_id=2/115）；生产 v0.0.31 与本地同 ImageID，修复已含；failed=0、DB quick_check=ok；触发源无日志（可观测性缺口）；附带 DB/内存分叉19条（重启会自行续传）与自动化批次无 batch_id 不参与熔断；spec §8 记录冷却运维契约
+
+### Main Changes
+
+- research.md 取证记录；spec/backend/backend/upload-task-api.md §8
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2b7a32e` | chore(task): archive 09-10-investigate-11-cooldown-storm |
+
+### Testing
+
+- [OK] go vet/go test/npm type-check/npm build 全绿（本次无代码改动）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户确认是否开 0.0.32 修复任务（A 日志放大 / B 冷却触发静默 / C 冷却与 pause 竞态 / D 批次熔断键）
