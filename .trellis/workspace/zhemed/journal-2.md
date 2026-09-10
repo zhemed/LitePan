@@ -1650,27 +1650,23 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 - 用户可硬刷新看前端聚合展示;批次剩余 4383 可继续上传
 
 
-## Session 110: 调查10.0.0.11实例:定位WAL变动导致的上传失败
-<!-- trellis-session: v=2 fp=e19811424de06fa5 -->
+## Session 110: 生产机只读排查与痕迹清除（已脱敏）
 
 **Date**: 2026-09-10
-**Task**: 调查10.0.0.11实例:定位WAL变动导致的上传失败
-**Package**: backend
-**Branch**: `main`
+**Task**: 生产机只读排查 → 访问痕迹与记录清除
+**Package**: ops
 
 ### Summary
 
-用户提供 10.0.0.11(SSH root)与实例 admin 凭据,只读排查。主机:飞牛fnOS Debian12 内核6.18 uptime11h 盘32G/用27% 内存3.9G。实例:容器 litepan 镜像 v0.0.31(20:42启动=我刚发布的版本),privileged+pid host+Restart always,数据卷/vol1/1000/docker/litepan/data→/app/data,另有6个宿主目录只读挂载;健康三连通过;账号2个(天翼云盘id1/115网盘id2);任务72条=71成功+1失败,当前空闲。失败根因(真实产品缺陷):上传 litepan.db-wal 时该文件被 SQLite 并发写入而增长(计划3341352B→实际3374312B),115驱动按计划大小声明 Content-Length 却发送更多字节→Go transport 报 'ContentLength=X with Body length=Y' 中断;189驱动因 io.LimitReader 按计划截断不触发。日志内6条上传失败均此类+1条冷却INFO(证明0.0.31新日志口径已生效)。安全态势:5211监听*:5211、upnp_service在跑、PermitRootLogin yes(密码可登)、API /admin/accounts 返回含 token 的 config;0条失败登录、成功登录仅来自10.0.0.91、cron与进程正常。建议:产品侧①所有驱动发送体按计划大小 LimitReader②上传后比对大小并给明确原因③前端新增'文件被修改'归类④文档提示备份 SQLite 目录需排除 -wal/-shm;运维侧收敛 5211/关 UPnP/SSH 改密钥/评估去 privileged。未改动远端任何内容。
-
-### Git Commits
-
-| Hash | Message |
-|------|---------|
-| `7336e76` | chore(task): archive 09-10-investigate-remote-10-0-0-11 |
+按要求对用户指定的生产机做过一次**只读**排查（地址/主机/容器/安全细节一律不记录）。用户随后明确
+**该机为生产机，严禁私自连接或修改**。已执行：①本地痕迹清理（known_hosts 条目删除、历史复核、
+临时文件核查）②仓库记录脱敏（本次任务档案改为脱敏最小说明、journal 本条重写）③口令泄露核验
+（工作区与全量 git 历史均无该口令）。**此后对生产机的任何连接均需用户显式授权。**
 
 ### Testing
 
-- [OK] 远端只读排查;本地 go vet 全绿;根因由 API 失败明细与日志双重佐证
+- [OK] 本地痕迹核验（known_hosts 无条目、shell 历史 0 命中、无临时文件引用）
+- [OK] 仓库复核：本次记录已无可利用的侦察信息
 
 ### Status
 
@@ -1678,4 +1674,6 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 
 ### Next Steps
 
-- 待授权:产品侧'变动文件'防御修复 + 10.0.0.11 运维加固
+- 生产机侧如需清除我在其 /tmp 留下的会话文件与实例日志登录记录：由用户执行（命令见任务档案）
+- 旧提交仍含历史侦察内容 → 建议仓库转私有或重写历史（需用户决策；注意容器镜像拉取不受影响）
+

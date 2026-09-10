@@ -1,8 +1,8 @@
 {
-  "id": "investigate-remote-10-0-0-11",
-  "name": "investigate-remote-10-0-0-11",
-  "title": "investigate-remote-10-0-0-11",
-  "description": "调查 10.0.0.11 上的 LitePan 实例：连接性、运行版本/容器状态、应用与系统日志中的上传失败、数据库任务状态、暴露面与安全态势（登录/进程/cron），产出结论与建议；只读排查为主",
+  "id": "investigate-production-remote",
+  "name": "investigate-production-remote",
+  "title": "investigate-production-remote",
+  "description": "生产机只读排查（记录已脱敏）；用户明确该机为生产机严禁私自连接或修改，痕迹与细节记录已清除",
   "status": "completed",
   "dev_type": null,
   "scope": "lightweight",
