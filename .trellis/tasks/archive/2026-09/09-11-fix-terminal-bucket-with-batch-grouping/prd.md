@@ -29,13 +29,13 @@
 
 ## Acceptance Criteria
 
-- [ ] R1：`buildUploadTaskLevel` 支持 `groupBatches` 且默认行为与旧版一致
-- [ ] R2：`TaskPanel` 的 `uploadRootRows` 按 `uploadStateFilter` 决定是否分组
-- [ ] R3：徽标口径未改动（`uploadTaskTotals` 无 diff）
-- [ ] R4：`npm run check:memo` 新增断言全过
-- [ ] R5：`git diff --name-only` 仅含前端两文件 + 断言脚本 + spec + 版本文件
-- [ ] R6：`npm run type-check`/`build`、`go vet`/`go test` 全绿；`0.0.37` 镜像推送 + tag/release + 本地部署三连
-- [ ] spec §8.4 的「已知缺陷」条目更新为「已修复（0.0.37）」
+- [x] R1：`buildUploadTaskLevel` 支持 `groupBatches` 且默认行为与旧版一致
+- [x] R2：`TaskPanel` 的 `uploadRootRows` 按 `uploadStateFilter` 决定是否分组
+- [x] R3：徽标口径未改动（`uploadTaskTotals` 无 diff）
+- [x] R4：`npm run check:memo` 新增断言全过
+- [x] R5：`git diff --name-only` 仅含前端两文件 + 断言脚本 + spec + 版本文件
+- [x] R6：`npm run type-check`/`build`、`go vet`/`go test` 全绿；`0.0.37` 镜像推送 + tag/release + 本地部署三连
+- [x] spec §8.4 的「已知缺陷」条目更新为「已修复（0.0.37）」
 
 ## Notes
 
