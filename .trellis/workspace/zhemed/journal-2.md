@@ -1222,3 +1222,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 待用户挑选实施项(建议先做①前半+②,半天级)
+
+
+## Session 96: 载荷瘦身-15.8%+批量暂停批量化,0.0.26
+<!-- trellis-session: v=2 fp=61094e887308033b -->
+
+**Date**: 2026-09-10
+**Task**: 载荷瘦身-15.8%+批量暂停批量化,0.0.26
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+实施优化报告①前半+②:①载荷瘦身(Task.CleanupLocalMode/Path 改 json:"-"前端零引用;snapshot 投影剔除 result.file_name/size 与顶层重复,持久化保留原始 result)②前端徽标最多4次全量filter→单遍状态计数③批量暂停逐个响应式patch(1620规模卡主线程)→单次batchPause+一次刷新。实测:列表 5408334→4556545 B(-852KB/-15.8%),SSE首帧同降,cleanup_local 不再外发,result 仅剩 file_id/parent_id。测试:载荷瘦身断言+全模块零失败。0.0.26 三tag digest 1476ff2d,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `459012b` | perf: slim task payload and batch pause flow, bump to 0.0.26 |
+
+### Testing
+
+- [OK] 实测载荷对比(-15.8%)+字段核查+go vet/全模块测试/web 构建
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 可选后续:报告③分页/汇总(根治)、树记忆化
