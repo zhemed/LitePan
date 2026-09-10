@@ -32,15 +32,19 @@
 
 ## Cross-Batch Acceptance Criteria（跨批次验收）
 
-- [ ] 两批子任务均已 `archive`，且各自 PRD 验收项全部勾选
-- [ ] 两批合计：`go vet ./...`、`go test ./...`（含 `-race` 关键包）、`web type-check/build` 全绿
-- [ ] 修复前可复现、修复后通过的回归测试各至少 1 条（批次 1：冷却与暂停并发；批次 2：空 `batch_id` 熔断）
-- [ ] `git diff --name-only` 不包含 `drivers/`、`web/`（仅 `internal/upload`、`internal/automation`、spec、版本文件）
-- [ ] spec 同步：`upload-task-api.md` §8 更新「状态一致性」与「熔断分组」两条契约
-- [ ] 两个版本镜像构建/推送/tag/release + 本地部署验证三连通过
-- [ ] 父任务范围内无遗留未处理项（阻塞项须写明原因）
+- [x] 三个子任务（批次1、批次1补充、批次2）均已 `archive`，各自 PRD 验收项全部勾选
+- [x] 两批合计：`go vet ./...`、`go test ./...`（含 `-race` 关键包）、`web type-check/build` 全绿
+- [x] 修复前可复现、修复后通过的回归测试各至少 1 条（批次 1：冷却与暂停并发；批次 2：空 `batch_id` 熔断）
+- [x] `git diff --name-only` 不包含 `drivers/`、`web/`（仅 `internal/upload`、`internal/automation`、spec、版本文件）
+- [x] spec 同步：`upload-task-api.md` §8 更新「状态一致性」与「熔断分组」两条契约
+- [x] 两个版本镜像构建/推送/tag/release + 本地部署验证三连通过
+- [x] 父任务范围内无遗留未处理项（阻塞项须写明原因）
 
 ## Notes
+
+- **集成复核**：三项改动文件集互不重叠（批次1：worker/state；补充：manager/state/lifecycle + 测试；批次2：breaker/automation），`go vet`/`go test`/`-race`/`web` 全绿；契约自洽（spec §8.3 暂停优先 + 内存==落库；§8.4 熔断分组键）。
+- **验证计划（未完成但不阻塞）**：生产机下一次自动化运行（每日 00:22）后，只读抽查新任务 `batch_id` 是否非空，以确认 R1 端到端成立。
+- 本批次遗留：无。
 
 - 本父任务**不直接实施**，仅承载需求与验收；实施落在两个子任务。
 - 两批完成后由父任务做一次集成复核（改动是否互相干扰、契约是否自洽），再归档。
