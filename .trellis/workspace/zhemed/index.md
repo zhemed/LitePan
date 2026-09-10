@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 119
-- **Last Active**: 2026-09-10
+- **Total Sessions**: 120
+- **Last Active**: 2026-09-11
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1959 | Active |
+| `journal-2.md` | ~1995 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 120 | 2026-09-11 | 回退自动化批次分组,0.0.36 | `b8e7222`, `31b9ba7` | `main` |
 | 119 | 2026-09-10 | 分批修复：状态一致性+熔断分组，0.0.34/0.0.35 | `7d7d670`, `b8f411e`, `d931fb6`, `f8cfe96`, `a4617ea` | `main` |
 | 118 | 2026-09-10 | 0.0.33 暂停修复验收通过（用户实测） | `9be20a9` | `main` |
 | 117 | 2026-09-10 | 修复前端暂停不送达,0.0.33 | `4769c0e`, `910bb47` | `main` |

@@ -1957,3 +1957,39 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 生产机 10.0.0.11 升级 0.0.35（用户操作）；其下次自动化运行后我方可只读抽查 batch_id 与冷却/暂停一致性
+
+
+## Session 120: 回退自动化批次分组,0.0.36
+<!-- trellis-session: v=2 fp=b27b5f8f3c6a07ff -->
+
+**Date**: 2026-09-11
+**Task**: 回退自动化批次分组,0.0.36
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户截图提问『为什么变成这个样子』：0.0.35 为自动化运行写入批次身份后，任务面板按 batch_id 把 819 个文件折叠成一行『定时任务 定时全局备份（传输中 13/819）』，且「已完成 13」桶变空（既有缺陷：批次行取聚合状态，桶过滤看不到批次内终态文件，TaskPanel.vue:563-567/629）。用户环境确认=生产机 10.0.0.11 已升 0.0.35；用户决策方案 B：回退分组恢复平铺。已移除 automation 侧批次身份写入（git diff v0.0.34 为空、grep 残留 0），熔断靠 0.0.35 的退化分组键 batchKeyOf 继续生效（测试全绿）；前端零改动；spec §8.4 登记『批次分组下终态桶为空』缺陷与修复方向。质量门 vet/test/-race/type-check/build 全绿；0.0.36 镜像推送(baoeb7...) + tag + release + 本地部署三连。存量：生产机 819 条已建任务仍带批次字段，恢复平铺需改生产数据（需单独授权，research.md §5 给出 SQL 与三处读取方风险评估）
+
+### Main Changes
+
+- internal/automation/service_run.go（回退）, spec §8.4, README/docker-compose v0.0.36, .trellis/tasks/archive/2026-09/09-11-revert-automation-batch-grouping/{prd.md,research.md}
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b8e7222` | revert(automation): stop writing batch identity for scheduled runs, bump to 0.0.36 |
+| `31b9ba7` | chore(task): archive 09-11-revert-automation-batch-grouping |
+
+### Testing
+
+- [OK] git diff v0.0.34 -- internal/automation/service_run.go 无差异；go vet/test（30 包）/race（upload+automation）/web type-check+build 全绿；本地容器 0.0.36 health/登录/任务列表通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户授权后清理生产机存量 819 条任务的 batch_id/batch_name（需备份+只改两列）；方案 A（保留分组并修终态桶）仍为待办
