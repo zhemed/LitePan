@@ -366,10 +366,21 @@ func (s *Service) UploadLocal(ctx context.Context, accountID int64, req driver.L
 		return nil
 	})
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
+		switch {
+		case errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled):
 			s.log.Debug("上传文件已取消", "account_id", accountID, "name", req.FileName)
-		} else {
-			s.log.Warn("上传文件失败", "account_id", accountID, "name", req.FileName, "err", err)
+		case isRetryableCooldown(err):
+			// 0.0.31：账号网络冷却是"可等待重试"的瞬时状态，不是失败——
+			// 之前统一记成 WARN「上传文件失败」会误导排查（任务随后会自动重试成功）。
+			seconds, _ := driverexec.IsCooldownError(err)
+			s.log.Info("上传暂缓：账号网络冷却，稍后自动重试",
+				"account_id", accountID, "name", req.FileName, "retry_after_seconds", seconds)
+		default:
+			code := ""
+			if ae, ok := domain.AsAppError(err); ok {
+				code = string(ae.Code)
+			}
+			s.log.Warn("上传文件失败", "account_id", accountID, "name", req.FileName, "code", code, "err", err)
 		}
 		return nil, err
 	}
@@ -496,4 +507,10 @@ func parseCacheTTLMinutes(configJSON string) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+// isRetryableCooldown 判定错误是否为账号网络冷却（可等待重试，非失败）。
+func isRetryableCooldown(err error) bool {
+	_, cooling := driverexec.IsCooldownError(err)
+	return cooling
 }

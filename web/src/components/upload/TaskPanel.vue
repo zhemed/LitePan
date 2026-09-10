@@ -134,6 +134,13 @@
             </button>
           </div>
 
+          <div
+            v-if="uploadFailureSummary.total > 0"
+            style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px; opacity: 0.75"
+          >
+            <span>失败/取消 {{ uploadFailureSummary.total }} 条：{{ uploadFailureSummary.parts.join(" · ") }}</span>
+          </div>
+
           <div v-if="visibleRows.length > 0" class="table-head">
             <div>文件名</div>
             <div>来源</div>
@@ -225,6 +232,10 @@ import UploadTaskSettingsPanel from "@/components/upload/UploadTaskSettingsPanel
 import { getUploadTaskStableKey } from "@/composables/upload/uploadTaskFormatters";
 import { buildUploadTaskLevel, uploadTaskPathParts, type UploadTaskTreeNode } from "@/composables/upload/uploadTaskTree";
 import { createNodeMemo, createRowMemo } from "@/composables/upload/uploadRowMemo";
+import {
+  isCooldownRetrying,
+  summarizeUploadFailures,
+} from "@/composables/upload/uploadFailureSummary";
 import { formatSize } from "@/utils/format";
 import type { UploadTask } from "@/types/upload";
 import type { useUploadTasks } from "@/composables/useUploadTasks";
@@ -378,6 +389,8 @@ function uploadStatusLabel(task: UploadTask) {
   }
   if (displayStatus === "paused") return progress !== "0.0" ? `已暂停 ${progress}%` : "已暂停";
   if (displayStatus === "pending") {
+    // 0.0.31：账号冷却等待不是"排队"，而是自动重试中（原因在详情里）
+    if (isCooldownRetrying(task)) return "重试中";
     if (isLocalDispatchMessage(message)) return stageLabel || message;
     if (phaseLabel && phaseLabel !== "等待继续") return phaseLabel;
     return "等待上传";
@@ -716,6 +729,9 @@ function countByState(_category: CategoryKey, state: StateKey) {
       return totals.active;
   }
 }
+
+// 0.0.31：失败原因聚合——让"为什么失败"一眼可见（按原因归类，取前 3）。
+const uploadFailureSummary = computed(() => summarizeUploadFailures(uploadTasks.value));
 
 // 已完成窗口截断提示（默认只带最近若干条已完成记录）。
 const completedWindowSize = 500;

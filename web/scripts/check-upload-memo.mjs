@@ -7,12 +7,18 @@ import ts from "typescript";
 
 const memoSource = readFileSync(new URL("../src/composables/upload/uploadRowMemo.ts", import.meta.url), "utf8");
 const totalsSource = readFileSync(new URL("../src/composables/upload/uploadTaskTotals.ts", import.meta.url), "utf8");
+const failureSource = readFileSync(new URL("../src/composables/upload/uploadFailureSummary.ts", import.meta.url), "utf8");
 const { outputText: totalsJs } = ts.transpileModule(totalsSource, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
 });
 const totalsPath = join(tmpdir(), "litepan-totals-check.mjs");
 writeFileSync(totalsPath, totalsJs);
 const { computeUploadTaskTotals, uploadTaskBadgeText } = await import(totalsPath);
+const failurePath = join(tmpdir(), "litepan-failure-check.mjs");
+writeFileSync(failurePath, ts.transpileModule(failureSource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
+}).outputText);
+const { classifyUploadFailure, summarizeUploadFailures, isCooldownRetrying } = await import(failurePath);
 
 const { outputText } = ts.transpileModule(memoSource, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
@@ -70,6 +76,24 @@ check(uploadTaskBadgeText(mixedCase) === "上传中 5", `徽标优先级（运�
 check(mixedCase.active === 6, `active=运行中+暂停 应为 6，实际 ${mixedCase.active}`);
 const failedOnly = computeUploadTaskTotals({ failed: 2, canceled: 1 });
 check(uploadTaskBadgeText(failedOnly) === "失败 3", `仅失败时徽标实际"${uploadTaskBadgeText(failedOnly)}"`);
+
+// 5) 失败原因归类与聚合（0.0.31）
+check(classifyUploadFailure("DRIVER_ERROR: 该账号网络异常，约 30 秒后自动重试") === "网络异常" || classifyUploadFailure("DRIVER_ERROR: 该账号网络异常，约 30 秒后自动重试") === "冷却重试", "冷却/网络错误可归类");
+check(classifyUploadFailure("PERMISSION_DENIED: 权限不足") === "权限不足", "权限错误归类");
+check(classifyUploadFailure("AUTH_EXPIRED: 认证会话已失效") === "认证失效", "认证错误归类");
+check(classifyUploadFailure("莫名其妙的东西") === "其他", "未知错误归其他");
+const summary = summarizeUploadFailures([
+  { status: "failed", error: "该账号网络异常，约 30 秒后自动重试" },
+  { status: "failed", error: "该账号网络异常，约 30 秒后自动重试" },
+  { status: "failed", error: "PERMISSION_DENIED: 权限不足" },
+  { status: "success", error: "" },
+  { status: "paused", error: "" },
+]);
+check(summary.total === 3, `聚合只统计失败/取消（实际 ${summary.total}）`);
+check(summary.parts.length <= 3 && summary.parts[0].includes("2"), `原因按数量排序并限 3 类：${JSON.stringify(summary.parts)}`);
+check(isCooldownRetrying({ status: "pending", message: "账号网络冷却中，30 秒后自动重试" }), "冷却等待判定为重试中");
+check(!isCooldownRetrying({ status: "paused", message: "账号网络冷却中" }), "暂停态不算重试中");
+check(!isCooldownRetrying({ status: "running", message: "上传中" }), "正常上传不算重试中");
 
 console.log(fail === 0 ? "MEMO-ALL-PASS" : `MEMO-FAILURES=${fail}`);
 process.exit(fail === 0 ? 0 : 1);
