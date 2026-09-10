@@ -3,6 +3,7 @@ package cloud189
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -186,7 +187,7 @@ func (d *Driver) DeleteFiles(ctx context.Context, fileIDs []string) error {
 	if err != nil {
 		return err
 	}
-	if err := d.waitBatchTask(ctx, "DELETE", taskID, 300*time.Millisecond, 30*time.Second); err != nil {
+	if err := d.waitBatchTaskAccepted(ctx, "DELETE", taskID, 300*time.Millisecond, deleteConfirmWindow); err != nil {
 		return err
 	}
 	if strings.EqualFold(strings.TrimSpace(d.add.DeleteMode), "delete") {
@@ -194,7 +195,7 @@ func (d *Driver) DeleteFiles(ctx context.Context, fileIDs []string) error {
 		if err != nil {
 			return err
 		}
-		if err := d.waitBatchTask(ctx, "CLEAR_RECYCLE", clearID, time.Second, 40*time.Second); err != nil {
+		if err := d.waitBatchTaskAccepted(ctx, "CLEAR_RECYCLE", clearID, time.Second, deleteConfirmWindow); err != nil {
 			return err
 		}
 		d.forgetItems(ids)
@@ -317,6 +318,26 @@ func (d *Driver) createBatchTask(ctx context.Context, taskType string, taskInfos
 	return taskID, nil
 }
 
+// errBatchTaskTimeout：批量任务确认窗口超时（受理成功但未在窗口内完成）。
+var errBatchTaskTimeout = domain.Errorf(domain.CodeDriverError, "等待批量任务完成超时")
+
+// deleteConfirmWindow：删除类批任务的快速确认窗口。删除是异步安全的——
+// 189 受理后会继续完成；大目录（数千文件）删除常超旧实现 30s/70s 确认
+// 窗口并被误报"超时"（UI 报错保留条目，实测删除实际成功）。受理即成功：
+// 窗口内未确认完也返回成功；显式失败（冲突/failedCount>0）与请求错误仍报错。
+const deleteConfirmWindow = 5 * time.Second
+
+// waitBatchTaskAccepted 受理即成功语义：仅确认窗口超时视为已受理。
+func (d *Driver) waitBatchTaskAccepted(ctx context.Context, taskType, taskID string, interval, confirmWindow time.Duration) error {
+	if err := d.waitBatchTask(ctx, taskType, taskID, interval, confirmWindow); err != nil {
+		if errors.Is(err, errBatchTaskTimeout) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
 func (d *Driver) waitBatchTask(ctx context.Context, taskType, taskID string, interval, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for {
@@ -338,7 +359,7 @@ func (d *Driver) waitBatchTask(ctx context.Context, taskType, taskID string, int
 			return domain.Errorf(domain.CodeValidation, "批量任务存在冲突")
 		}
 		if time.Now().After(deadline) {
-			return domain.Errorf(domain.CodeDriverError, "等待批量任务完成超时")
+			return errBatchTaskTimeout
 		}
 		select {
 		case <-ctx.Done():
