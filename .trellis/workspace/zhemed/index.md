@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 94
+- **Total Sessions**: 95
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1195 | Active |
+| `journal-2.md` | ~1224 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 95 | 2026-09-10 | 调查优化空间：载荷/前端热路径/分页四类 | - | `main` |
 | 94 | 2026-09-10 | 修复继续上传卡死：批量恢复端点发布0.0.25 | `7bd68ec` | `main` |
 | 93 | 2026-09-10 | 修复冷却期秒级判死并发布0.0.24 | `5902cea` | `main` |
 | 92 | 2026-09-10 | 调查暂停后批量失败风暴：冷却×worker空转判死 | - | `main` |

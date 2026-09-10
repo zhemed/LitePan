@@ -1193,3 +1193,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 用户刷新页面(Ctrl+F5)后用新的继续上传按钮恢复 1567 个暂停任务;列表分页优化可另建任务
+
+
+## Session 95: 调查优化空间：载荷/前端热路径/分页四类
+<!-- trellis-session: v=2 fp=0a6ef68a1cdbd4f3 -->
+
+**Date**: 2026-09-10
+**Task**: 调查优化空间：载荷/前端热路径/分页四类
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+7814 任务实测:列表 API 5.41MB/服务端95ms(后端非瓶颈);SSE 订阅首帧=5.41MB 全量快照;DB 索引齐备。字段占比:result 23.3%(file_name/size 与顶层重复可瘦)、cleanup_local_path 14.3%(前端0引用可直接砍)、message/timestamps 等。优化项排序:①前端计算热路径(徽标 4 次全量 filter→单遍;批量暂停 N 个响应式 patch→单批;树每次 delta 全量分组)②载荷瘦身-11%③分页/过滤/汇总(5.41MB→0.3-0.6MB,根治)④工作集保留策略。不建议动:吞吐(并发1+500ms门是用户设定,60/分钟已近设计上限)、序列化、DB。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] API/SSE 实测体积与耗时+字段字节归因+前端引用核查(grep 确认 cleanup_local_path 0 引用),全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户挑选实施项(建议先做①前半+②,半天级)
