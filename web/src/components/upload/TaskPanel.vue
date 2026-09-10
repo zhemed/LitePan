@@ -609,7 +609,13 @@ onUnmounted(() => {
   nodeMemo.clear();
 });
 
-const uploadRootRows = computed(() => buildUploadTaskLevel(uploadTasks.value).map((node) => nodeMemo.get(node)));
+// 0.0.37：仅「进行中」桶按批次折叠；终态桶（已完成/失败）展开为逐文件行，
+// 否则批次内的终态文件在根层级不可见（徽标有数字、列表为空）。
+const uploadRootRows = computed(() =>
+  buildUploadTaskLevel(uploadTasks.value, "", "", {
+    groupBatches: uploadStateFilter.value === "active",
+  }).map((node) => nodeMemo.get(node)),
+);
 const uploadRows = computed(() =>
   currentBatchId.value
     ? buildUploadTaskLevel(uploadTasks.value, currentBatchId.value, currentFolderPath.value).map((node) =>

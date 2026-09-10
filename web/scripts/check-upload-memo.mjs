@@ -141,5 +141,28 @@ check(
   "普通状态原样返回",
 );
 
+// 7) 批次折叠开关（0.0.37）：终态桶必须展开为逐文件行，否则「已完成 13」桶恒为空
+const treePath = join(tmpdir(), "litepan-tree-check.mjs");
+const treeSource = readFileSync(new URL("../src/composables/upload/uploadTaskTree.ts", import.meta.url), "utf8");
+writeFileSync(treePath, ts.transpileModule(treeSource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
+}).outputText);
+const { buildUploadTaskLevel } = await import(treePath);
+
+const batchTasks = [
+  { task_id: "b1", batch_id: "batch-1", batch_name: "备份", file_name: "done.bin", status: "success", rel_path: "备份/done.bin" },
+  { task_id: "b2", batch_id: "batch-1", batch_name: "备份", file_name: "live.bin", status: "pending", rel_path: "备份/live.bin" },
+  { task_id: "s1", batch_id: "", file_name: "loose.bin", status: "success" },
+];
+const grouped = buildUploadTaskLevel(batchTasks);
+check(grouped.length === 2, `默认按批次折叠（2 个顶层节点，实际 ${grouped.length}）`);
+check(grouped.some((n) => n.isFolder && n.batchId === "batch-1"), "默认包含批次文件夹节点");
+const flat = buildUploadTaskLevel(batchTasks, "", "", { groupBatches: false });
+check(flat.length === 3 && flat.every((n) => !n.isFolder), `groupBatches:false 应展开为 3 行文件（实际 ${flat.length}）`);
+check(flat.some((n) => n.name === "done.bin"), "展开后批次内的已完成文件可见");
+check(flat.some((n) => n.name === "loose.bin"), "展开后非批次文件同样可见");
+const insideBatch = buildUploadTaskLevel(batchTasks, "batch-1", "", { groupBatches: false });
+check(insideBatch.length > 0, "进入批次目录时路径级构建不受 groupBatches 影响");
+
 console.log(fail === 0 ? "MEMO-ALL-PASS" : `MEMO-FAILURES=${fail}`);
 process.exit(fail === 0 ? 0 : 1);
