@@ -20,7 +20,8 @@
   "subtasks": [],
   "children": [
     "09-10-fix-cooling-pause-state-consistency",
-    "09-10-fix-batch-breaker-key"
+    "09-10-fix-batch-breaker-key",
+    "09-10-fix-persist-stale-overwrite"
   ],
   "parent": null,
   "relatedFiles": [],
