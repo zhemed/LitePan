@@ -1313,3 +1313,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 等用户决定 D(流程门脚本)与 E(写入 AGENTS.md 规范)
+
+
+## Session 99: 强化Trellis严格执行：规则+门禁+加载
+<!-- trellis-session: v=2 fp=8e96016da03bf0de -->
+
+**Date**: 2026-09-10
+**Task**: 强化Trellis严格执行：规则+门禁+加载
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户要求严格执行不得忽略。①全局规则 ~/.dsh/AGENTS.md 新增第五节:适用任何含 .trellis 的项目,任何写操作必须先到 task.py start,九步强制序列+四条硬性禁止+门禁命令+压缩恢复特别要求(摘要流程≠规则原文)②项目 AGENTS.md 强制规则段改写为九步序列表+每步完成判据+四条禁止(先实施后补PRD/自建三连顶替check/跳过start上下文载入/未标scope缺三件套就start)③新增 .trellis/scripts/flow_gate.py:pre-start 拒 TBD 与复杂任务缺 design/implement,mark-check 打质量门标记,pre-archive 拒未勾选验收与缺标记,--force 显式跳过并记录原因;自测 8/8④新增 spec/guides/trellis-flow-guide.md 并登记索引(会话恢复自检清单)⑤本会话已加载 trellis-start/trellis-check/trellis-finish-work/trellis-update-spec 技能,两个规则文件被系统重新载入生效⑥本任务全程按新规范执行:PRD+design+implement 先行→set-scope cross-layer→start→实施→check→门禁→归档。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `260d7ea` | chore(process): enforce trellis strict flow with rules and gates |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败;web type-check+build 通过;flow_gate 自测 8/8;门禁 pre-start/pre-archive 实测放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续任务按九步序列执行,start 前/archive 前调用门禁
