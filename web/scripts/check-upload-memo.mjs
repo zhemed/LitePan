@@ -95,5 +95,51 @@ check(isCooldownRetrying({ status: "pending", message: "账号网络冷却中，
 check(!isCooldownRetrying({ status: "paused", message: "账号网络冷却中" }), "暂停态不算重试中");
 check(!isCooldownRetrying({ status: "running", message: "上传中" }), "正常上传不算重试中");
 
+// 6) 暂停交付与展示状态（0.0.33）：冷却等待中必须能暂停、且不被掩码
+const pausePlanPath = join(tmpdir(), "litepan-pause-plan-check.mjs");
+const pausePlanSource = readFileSync(
+  new URL("../src/composables/upload/uploadPausePlan.ts", import.meta.url),
+  "utf8",
+);
+writeFileSync(pausePlanPath, ts.transpileModule(pausePlanSource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
+}).outputText);
+const { collectRemotePauseIds, resolveUploadDisplayStatus, isCooldownMessage, isTerminalUploadStatus } =
+  await import(pausePlanPath);
+
+const isLocalTask = (t) => String(t.task_id || "").startsWith("local-");
+const pauseCandidates = [
+  { task_id: "cooling1", status: "pending", message: "账号网络冷却中，30 秒后自动重试" },
+  { task_id: "stale2", status: "paused" }, // 本地乐观态可能过期，仍必须发暂停（服务端幂等）
+  { task_id: "running3", status: "running" },
+  { task_id: "local-4", status: "pending" },
+  { task_id: "done5", status: "success" },
+  { task_id: "skip6", status: "skipped" },
+  { task_id: "cooling1", status: "pending" }, // 重复 id
+  { task_id: "", status: "pending" },
+  { status: "pending" }, // 无 id
+];
+const remotePauseIds = collectRemotePauseIds(pauseCandidates, isLocalTask);
+check(
+  JSON.stringify(remotePauseIds) === JSON.stringify(["cooling1", "stale2", "running3"]),
+  `批量暂停只排除本地/终态/空 id 并去重：${JSON.stringify(remotePauseIds)}`,
+);
+check(remotePauseIds.includes("cooling1"), "冷却等待中的任务必须参与批量暂停");
+check(!remotePauseIds.includes("done5") && !remotePauseIds.includes("skip6"), "终态任务不发暂停");
+check(isTerminalUploadStatus("success") && isTerminalUploadStatus("skipped") && !isTerminalUploadStatus("pending"), "终态判定");
+check(isCooldownMessage("上传暂缓：账号网络冷却，稍后自动重试") && !isCooldownMessage("上传已暂停"), "冷却文案判定");
+check(
+  resolveUploadDisplayStatus("paused", { waitingResume: true, cooling: true }) === "paused",
+  "冷却消息存在时不得被待恢复集合掩码成 pending",
+);
+check(
+  resolveUploadDisplayStatus("paused", { waitingResume: true, cooling: false }) === "pending",
+  "非冷却场景维持既有「待恢复显示为等待」语义",
+);
+check(
+  resolveUploadDisplayStatus("running", { waitingResume: false, cooling: false }) === "running",
+  "普通状态原样返回",
+);
+
 console.log(fail === 0 ? "MEMO-ALL-PASS" : `MEMO-FAILURES=${fail}`);
 process.exit(fail === 0 ? 0 : 1);

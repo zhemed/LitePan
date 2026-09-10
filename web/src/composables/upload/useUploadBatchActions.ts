@@ -6,6 +6,7 @@ import {
   confirmUploadTaskDelete,
 } from "@/composables/confirmUpload";
 import { getUploadTaskStableKey, isLocalUploadTask, buildUploadTaskBreadcrumb } from "@/composables/upload/uploadTaskFormatters";
+import { collectRemotePauseIds } from "@/composables/upload/uploadPausePlan";
 import type { UploadActionsCtx } from "@/composables/upload/useUploadPanelActions";
 import type { UploadTask } from "@/types/upload";
 
@@ -106,11 +107,8 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
       store.updateLocalUploadTask(task.task_id, { status: "paused", message: "上传已暂停", error: "" });
       return;
     }
-    if (isQueuedRemoteResumeTask(task)) {
-      store.pendingRemoteResumeTaskIds.delete(String(task.task_id));
-      store.patchRemoteUploadTask(task.task_id, { status: "paused", message: getPausedMessage(task), error: "" });
-      return;
-    }
+    // 0.0.33：远程任务暂停必须送达服务端。此前「id 在待恢复集合时只改本地、不发 HTTP」
+    // 会让服务端继续执行（冷却等待中的任务最明显：界面看着已暂停，实际仍会续传完成）。
     try {
       store.pendingRemoteResumeTaskIds.delete(String(task.task_id));
       store.patchRemoteUploadTask(task.task_id, { status: "paused", message: getPausedMessage(task), error: "" });
@@ -179,16 +177,13 @@ export function useUploadBatchActions(ctx: UploadActionsCtx, closePanel: () => v
 
     // 远程任务只收集 ID，单次批量请求后统一刷新——原先对每个任务逐个
     // 响应式 patch，1620 个任务的规模下会卡死主线程（0.0.26）。
-    const remoteIds: string[] = [];
+    // 0.0.33：收集规则改为「非终态 + 远程」（collectRemotePauseIds），不再按本地
+    // 乐观状态过滤——本地状态过期会让处于冷却等待的任务被整条漏掉，点暂停看似无效。
     for (const task of unique) {
-      if (!["pending", "running"].includes(String(task.status))) continue;
-      if (isLocalUploadTask(task) || isQueuedRemoteResumeTask(task)) {
-        await pauseUploadTask(task, true);
-        continue;
-      }
-      store.pendingRemoteResumeTaskIds.delete(String(task.task_id));
-      remoteIds.push(String(task.task_id));
+      if (isLocalUploadTask(task)) await pauseUploadTask(task, true);
     }
+    const remoteIds = collectRemotePauseIds(unique, isLocalUploadTask);
+    for (const id of remoteIds) store.pendingRemoteResumeTaskIds.delete(id);
     if (!remoteIds.length) return;
     try {
       await uploadApi.batchPause(remoteIds);

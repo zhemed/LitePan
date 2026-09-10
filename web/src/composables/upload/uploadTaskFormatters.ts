@@ -2,6 +2,7 @@ import type { Account } from "@/api/types";
 import { filesApi } from "@/api/files";
 import type { UploadTask } from "@/types/upload";
 import type { UploadCrumb } from "@/composables/upload/uploadTaskTypes";
+import { isCooldownMessage, resolveUploadDisplayStatus } from "@/composables/upload/uploadPausePlan";
 
 export const SYSTEM_JUNK_FILES = new Set([".ds_store", ".localized", "thumbs.db", "desktop.ini"]);
 export const SYSTEM_JUNK_DIRS = new Set([
@@ -30,13 +31,12 @@ export function isRemoteTaskWaitingResume(task: UploadTask, pendingRemoteResumeT
 }
 
 export function getUploadTaskDisplayStatus(task: UploadTask, pendingRemoteResumeTaskIds: Set<string>) {
-  if (
-    isRemoteTaskWaitingResume(task, pendingRemoteResumeTaskIds) &&
-    ["paused", "failed", "canceled"].includes(task.status)
-  ) {
-    return "pending";
-  }
-  return task.status;
+  // 0.0.33：冷却等待以服务端状态为准——待恢复集合不得把「冷却重试中」掩码成
+  // 假 pending（否则用户点暂停后仍看到“等待继续”，分不清是否生效）。
+  return resolveUploadDisplayStatus(String(task.status || ""), {
+    waitingResume: isRemoteTaskWaitingResume(task, pendingRemoteResumeTaskIds),
+    cooling: isCooldownMessage(task.message),
+  });
 }
 
 export function isUploadTaskActive(task: UploadTask) {
@@ -89,6 +89,8 @@ export function getUploadTaskPhaseLabel(
   if (displayStatus === "paused") return "已暂停";
   if (displayStatus === "running") return "上传到网盘";
   if (displayStatus === "pending") {
+    // 0.0.33：冷却等待优先于「等待继续」——服务端正在自动重试，不是等用户点继续。
+    if (isCooldownMessage(task.message)) return "重试中";
     if (isRemoteTaskWaitingResume(task, pendingRemoteResumeTaskIds)) return "等待继续";
     if (isSendingToLitePanServerTask(task)) {
       const progress = Number(task.progress || 0);
