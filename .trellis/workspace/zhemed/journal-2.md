@@ -1344,3 +1344,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 后续任务按九步序列执行,start 前/archive 前调用门禁
+
+
+## Session 100: 残留维护盘点：16GB缓存/190云端/2G本地等待清理
+<!-- trellis-session: v=2 fp=5f64b00130221464 -->
+
+**Date**: 2026-09-10
+**Task**: 残留维护盘点：16GB缓存/190云端/2G本地等待清理
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+七类只读盘点:①仓库干净(仅任务目录,TODO=0)②Docker 构建缓存 17.05GB(可回收16.03GB)+镜像39个(1.15GB,86%可回收:litepan 28版本tag+litepan-go 20实验tag+litepan-own:0.0.8)+悬空3个+残留容器 litepan-auto(Exited 2周)③DB 4.2M+WAL 4M+旧备份 litepan.db.bak.1788077861(229K,8-30)+任务7814行(success 6004/paused 1810)④云端 bulk-test-2000 残留190个测试文件(root探针已清除)⑤宿主 mounts/LitePan-123=2.0G(1810暂停任务引用中,删除会致任务失败)+/tmp杂物⑥Trellis 103归档任务/journal 3319行/spec 缺口:0.0.27窗口化API契约未沉淀⑦未完成:批次树记忆化/工作集保留策略/115实测阻塞/防重复触发决策/flow_gate短名不识别。产出 P0-P3 可执行清单(16GB 回收命令等),待用户批准。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] go vet 全绿+全模块零失败+门禁 pre-start/pre-archive 实测放行;全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户批准 P0(构建缓存/悬空镜像)与 P1(云端190/本地2G/残留容器)清理
