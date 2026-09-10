@@ -70,7 +70,9 @@ func TestBeginCooldownWaitRejectsNonRunnableStates(t *testing.T) {
 		tc.prep(st)
 		beforeStatus, beforeMessage := st.Status, st.Message
 		beforePriority := st.resumePriority
+		m.mu.Lock()
 		m.tasks["t1"] = st
+		m.mu.Unlock()
 
 		if m.beginCooldownWait("t1", 30) {
 			t.Fatalf("%s：守卫应拒绝冷却重入队", tc.name)
@@ -96,7 +98,9 @@ func TestBeginCooldownWaitRejectsMissingAndStopping(t *testing.T) {
 	if m.beginCooldownWait("missing", 30) {
 		t.Fatal("任务不存在应拒绝")
 	}
+	m.mu.Lock()
 	m.tasks["t1"] = &taskState{Task: Task{TaskID: "t1", Status: StatusPending}}
+	m.mu.Unlock()
 	m.mu.Lock()
 	m.stopping = true
 	m.mu.Unlock()
@@ -110,7 +114,9 @@ func TestBeginCooldownWaitAllowsRunnableAndRecordsMessage(t *testing.T) {
 	for _, status := range []string{StatusRunning, StatusPending} {
 		m := NewManager(Options{})
 		st := &taskState{Task: Task{TaskID: "t1", AccountID: 2, Status: status}}
+		m.mu.Lock()
 		m.tasks["t1"] = st
+		m.mu.Unlock()
 		if !m.beginCooldownWait("t1", 30) {
 			t.Fatalf("状态 %s 应放行冷却等待", status)
 		}
@@ -130,7 +136,9 @@ func TestBeginCooldownWaitAllowsRunnableAndRecordsMessage(t *testing.T) {
 func TestPauseDuringCooldownWaitWinsAndDoesNotRequeue(t *testing.T) {
 	m := NewManager(Options{})
 	st := &taskState{Task: Task{TaskID: "t1", AccountID: 2, Status: StatusRunning}}
+	m.mu.Lock()
 	m.tasks["t1"] = st
+	m.mu.Unlock()
 
 	if !m.beginCooldownWait("t1", 30) {
 		t.Fatal("首次应放行")
@@ -158,7 +166,9 @@ func TestCooldownWaitAndPauseOrderingBothEndPaused(t *testing.T) {
 	for _, pauseFirst := range []bool{true, false} {
 		m := NewManager(Options{})
 		st := &taskState{Task: Task{TaskID: "t1", AccountID: 2, Status: StatusRunning}}
+		m.mu.Lock()
 		m.tasks["t1"] = st
+		m.mu.Unlock()
 
 		pause := func() {
 			m.mu.Lock()
@@ -189,7 +199,9 @@ func TestCooldownWaitAndPauseOrderingBothEndPaused(t *testing.T) {
 func TestLegacyTwoStepOverwritesPauseButGuardDoesNot(t *testing.T) {
 	m := NewManager(Options{})
 	st := &taskState{Task: Task{TaskID: "t1", AccountID: 2, Status: StatusRunning}}
+	m.mu.Lock()
 	m.tasks["t1"] = st
+	m.mu.Unlock()
 
 	if !m.canCooldownWait("t1") {
 		t.Fatal("旧实现第一步判定应通过")
@@ -226,7 +238,9 @@ func TestLegacyTwoStepOverwritesPauseButGuardDoesNot(t *testing.T) {
 func TestCooldownWaitPersistsValueSnapshot(t *testing.T) {
 	repo := newRecordingRepo()
 	m := NewManager(Options{Repo: repo})
+	m.mu.Lock()
 	m.tasks["t1"] = &taskState{Task: Task{TaskID: "t1", Status: StatusRunning, Message: "正在上传"}}
+	m.mu.Unlock()
 
 	if !m.beginCooldownWait("t1", 30) {
 		t.Fatal("应放行")
@@ -254,7 +268,9 @@ func TestCooldownPauseConcurrentConsistency(t *testing.T) {
 	repo := newRecordingRepo()
 	m := NewManager(Options{Repo: repo})
 	st := &taskState{Task: Task{TaskID: "t1", AccountID: 2, Status: StatusRunning}}
+	m.mu.Lock()
 	m.tasks["t1"] = st
+	m.mu.Unlock()
 
 	var wg sync.WaitGroup
 	wg.Add(2)

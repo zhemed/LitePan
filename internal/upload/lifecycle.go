@@ -63,13 +63,15 @@ func (m *Manager) pause(taskID string) (*Task, bool, bool) {
 	st.Error = ""
 	st.UpdatedAt = timeutil.UnixFloat(time.Now())
 	cancel := st.cancel
-	snap := st
+	// 0.0.34：值快照 + 新鲜度守卫落库——暂停是对冷却等待的「后来者」，
+	// 必须保证它不会被更早迁移的过期快照在库中覆盖。
+	snap := *st
 	m.mu.Unlock()
 	if cancel != nil {
 		cancel()
 	}
 	m.runCond.Broadcast()
-	_ = m.persistTask(snap)
+	m.persistStateSnapshot(taskID, &snap)
 	m.broadcast(taskID)
 	task, found := m.Get(context.Background(), taskID)
 	return task, found, true

@@ -72,6 +72,10 @@ type Manager struct {
 	// 批次目录预热去重：同一 (账号, 根目录) 同时只有一个预热协程。
 	batchFailures map[string]batchFailureRecord
 
+	// persistMu 串行化状态落库（0.0.34）：保证「更晚的迁移」一定在「更早的迁移」
+	// 之后写库，避免过期快照覆盖新状态（内存 paused / 库内 pending 分叉的来源）。
+	persistMu sync.Mutex
+
 	batchWarmingMu sync.Mutex
 	batchWarming   map[batchWarmKey]struct{}
 }

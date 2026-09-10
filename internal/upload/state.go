@@ -32,8 +32,29 @@ func (m *Manager) patch(taskID string, fn func(*taskState)) {
 	// 产生「内存已暂停、库内仍 pending」的分叉（重启恢复会据此自行续传）。
 	snap := *st
 	m.mu.Unlock()
-	_ = m.persistTask(&snap)
+	m.persistStateSnapshot(taskID, &snap)
 	m.broadcast(taskID)
+}
+
+// persistStateSnapshot 按新鲜度落库：串行化写入，并丢弃过期快照。
+//
+// 为什么需要：持久化在 m.mu 之外执行，两次并发迁移的写库顺序可能倒置，
+// 过期快照（例如冷却写回 pending）会覆盖较新的状态（暂停），造成 DB 与内存分叉，
+// 而启动恢复会把 DB 的 pending 行重新入队 ⇒ 已暂停任务在重启后自行续传。
+func (m *Manager) persistStateSnapshot(taskID string, snap *taskState) {
+	if m == nil || snap == nil || m.repo == nil {
+		return
+	}
+	m.persistMu.Lock()
+	defer m.persistMu.Unlock()
+	m.mu.Lock()
+	cur, ok := m.tasks[taskID]
+	stale := ok && cur.UpdatedAt > snap.UpdatedAt
+	m.mu.Unlock()
+	if stale {
+		return
+	}
+	_ = m.persistTask(snap)
 }
 
 // beginCooldownWait 原子进入「账号网络冷却等待」：在锁内一次性判定任务此刻是否
@@ -66,7 +87,7 @@ func (m *Manager) beginCooldownWait(taskID string, seconds int) bool {
 	snap := *st
 	m.runCond.Broadcast()
 	m.mu.Unlock()
-	_ = m.persistTask(&snap)
+	m.persistStateSnapshot(taskID, &snap)
 	m.broadcast(taskID)
 	return true
 }
