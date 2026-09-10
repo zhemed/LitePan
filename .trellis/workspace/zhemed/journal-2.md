@@ -1013,3 +1013,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 无
+
+
+## Session 89: 调查删除后文件夹需强刷才消失：189批删超时误报
+<!-- trellis-session: v=2 fp=fbe6ba433912f154 -->
+
+**Date**: 2026-09-10
+**Task**: 调查删除后文件夹需强刷才消失：189批删超时误报
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+08:32:31 实证：用户 UI 删除 bulk-test-2000(2000文件) → 189 批删异步任务 waitBatchTask 30s 轮询超时(DeleteMode=delete 还追加40s清回收站等待,大删除总窗口70s) → API 返回 502 '等待批量任务完成超时' → 前端 catch 报错保留条目；189 实际继续异步完成删除(实测云端 root 无 bulk 残留)。删除从未失败,只是确认等待超时被当失败。次要因素排除:缓存失效链完好(parent_id 有传+InvalidateDirKeys),前端成功路径本地移除正确。修复建议(未实施):受理即成功——createBatchTask 受理后快速确认窗口3-5s,超时返回成功+Info日志;显式冲突/failedCount>0 仍报错。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 原始日志取证(502+超时错误与操作时间吻合)+云端List实测删除已生效+驱动/前端链路逐段核实,全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户拍板是否实施'受理即成功'
