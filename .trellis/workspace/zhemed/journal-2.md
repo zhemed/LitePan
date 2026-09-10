@@ -1102,3 +1102,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 配置115账号后可做删除回环实测
+
+
+## Session 92: 调查暂停后批量失败风暴：冷却×worker空转判死
+<!-- trellis-session: v=2 fp=1d9054e3f2ddb3ad -->
+
+**Date**: 2026-09-10
+**Task**: 调查暂停后批量失败风暴：冷却×worker空转判死
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+14:20:17 建 2000 任务→14:20:20-22 暂停1620+失败379(1秒451条日志)。根因:driverexec 3连网络失败→30s冷却,冷却期 Run() 零IO立即返回'该账号网络异常约N秒后自动重试',而 worker 对非取消错误一律 failTask 判死→毫秒级烧队列,379个2秒内判死(451/秒实证)。暂停排除:5次运行中暂停实验均未触发冷却,时间线为同秒误读。379/379错误全是冷却提示,3次触发失败无日志(静默路径不可归因,如实说明)。恢复实验:重传2个失败任务均成功。风险:修复前任何3连瞬时错都会重演风暴,提示语'自动重试'名不副实。修复建议:①worker识别冷却错误(typed+retry_after)退回队列等待重试②IsNetworkError去'网络'中文自指③批次熔断安全网(连续同因失败自动暂停批次)。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 时间线/错误文本/日志直方图/451每秒风暴+5次暂停实验+2次恢复实验,含受控实测
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待拍板实施三步修复
