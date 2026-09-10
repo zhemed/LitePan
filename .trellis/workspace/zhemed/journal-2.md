@@ -1402,3 +1402,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - P1(云端190+本地2G+残留容器)待用户批准
+
+
+## Session 102: P1残留清理：云端树/1810任务/2G本地/75镜像tag
+<!-- trellis-session: v=2 fp=312e39e0962477fa -->
+
+**Date**: 2026-09-10
+**Task**: P1残留清理：云端树/1810任务/2G本地/75镜像tag
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户批准完成 P1:①云端 bulk-test-2000 树(外层 723041273726025674+190文件)删除,root List 复查无残留(进 189 回收站,账号 trash 模式,App 无清空入口,已如实记录)②DB 先备份(manual-pre-p1-20260910-192849.db 4.2M)再分5块批量删除 1810 个暂停任务记录(7814→6004,失败0)③本地 mounts/LitePan-123/bulk-test-2000 2.0G 删除,磁盘 11G→8.8G④残留容器 litepan-auto + 镜像 litepan-own:0.0.8 删除(容器2→1)⑤镜像 tag 治理:清 75 个历史 tag(保留 latest/0.0.27/0.0.26/litepan-go:dev),镜像 36→3、1.059GB→169.7MB(回收≈890MB)。全程未触碰运行容器/其镜像/卷,服务三连通过、StartedAt 未变。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] go vet 全绿+全模块零失败;逐步前后核验表;服务三连与容器完整性;门禁放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- P2/P3 待决:旧DB备份/spec 窗口化契约缺口//tmp 杂物;云端回收站可择机清空
