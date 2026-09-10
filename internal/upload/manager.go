@@ -70,6 +70,8 @@ type Manager struct {
 	resumePersist   map[string]*time.Timer
 
 	// 批次目录预热去重：同一 (账号, 根目录) 同时只有一个预热协程。
+	batchFailures map[string]batchFailureRecord
+
 	batchWarmingMu sync.Mutex
 	batchWarming   map[batchWarmKey]struct{}
 }

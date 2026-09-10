@@ -33,13 +33,19 @@ func (m *Manager) patch(taskID string, fn func(*taskState)) {
 	m.broadcast(taskID)
 }
 
-func (m *Manager) failTask(taskID, errMsg string) {
+func (m *Manager) failTask(taskID string, err error) {
+	errMsg := ""
+	if err != nil {
+		errMsg = err.Error()
+	}
 	m.patch(taskID, func(st *taskState) {
 		st.Status = StatusFailed
 		st.SpeedBytesPerSecond = 0
 		st.Message = "上传失败"
 		st.Error = translateError(errMsg)
 	})
+	// 熔断安全网：同批次连续同因系统级失败 → 自动暂停批次剩余任务（0.0.24）。
+	m.observeBatchFailure(taskID, err)
 }
 
 func (m *Manager) snapshot(st *taskState) *Task {

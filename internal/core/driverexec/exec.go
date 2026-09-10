@@ -41,14 +41,46 @@ func (e *Executor) Check(ctx context.Context, accountID int64) error {
 	return e.gate.Check(ctx, accountID)
 }
 
+// CooldownError 账号网络冷却错误：可等待重试，非任务终态失败。
+// 详情供上层机器识别（worker 等待重试、批次熔断），文案保持面向用户不变。
+func CooldownError(retryAfter time.Duration) *domain.AppError {
+	seconds := int((retryAfter + time.Second - 1) / time.Second)
+	if seconds < 1 {
+		seconds = 1
+	}
+	return domain.Errorf(domain.CodeDriverError, "该账号网络异常，约 %d 秒后自动重试", seconds).
+		WithDetails(map[string]any{"account_cooldown": true, "retry_after_seconds": seconds})
+}
+
+// IsCooldownError 判定冷却错误并返回建议等待秒数。
+func IsCooldownError(err error) (int, bool) {
+	ae, ok := domain.AsAppError(err)
+	if !ok {
+		return 0, false
+	}
+	if cooling, _ := ae.Details["account_cooldown"].(bool); !cooling {
+		return 0, false
+	}
+	switch v := ae.Details["retry_after_seconds"].(type) {
+	case int:
+		if v > 0 {
+			return v, true
+		}
+	case float64:
+		if v > 0 {
+			return int(v), true
+		}
+	}
+	return 1, true
+}
+
 // Run 在认证闸门与被动刷新保护下执行驱动调用。
 func (e *Executor) Run(ctx context.Context, accountID int64, fn func(driver.Driver) error) error {
 	if e == nil {
 		return domain.Errorf(domain.CodeInternal, "驱动执行器未初始化")
 	}
 	if rem := e.backoffRemaining(accountID); rem > 0 {
-		seconds := int((rem + time.Second - 1) / time.Second)
-		return domain.Errorf(domain.CodeDriverError, "该账号网络异常，约 %d 秒后自动重试", seconds)
+		return CooldownError(rem)
 	}
 	if e.gate != nil {
 		if err := e.gate.Check(ctx, accountID); err != nil {

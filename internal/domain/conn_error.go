@@ -90,6 +90,13 @@ func IsNetworkError(err error) bool {
 	if IsAuthExpiredError(err) {
 		return false
 	}
+	// 账号网络冷却错误自带"网络"字样，必须排除以免自指反馈
+	// （冷却错误再次喂回熔断计数，0.0.24）。
+	if ae, ok := AsAppError(err); ok {
+		if cooling, _ := ae.Details["account_cooldown"].(bool); cooling {
+			return false
+		}
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}

@@ -2,7 +2,9 @@ package upload
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"litepan/internal/core/driverexec"
 	"litepan/internal/driver"
@@ -94,6 +96,27 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 			})
 			return
 		}
+		// 账号网络冷却：可等待的瞬时状态，不是任务终态失败。
+		// 退回 pending（置顶、保留进度/resumeData），原地等到冷却结束再继续——
+		// 并发=1 时天然让整条队列等待，避免"零 I/O 空转"秒级判死整批（0.0.24）。
+		if seconds, cooling := driverexec.IsCooldownError(err); cooling {
+			m.patch(taskID, func(st *taskState) {
+				st.Status = StatusPending
+				st.SpeedBytesPerSecond = 0
+				st.Message = fmt.Sprintf("账号网络冷却中，%d 秒后自动重试", seconds)
+				st.Error = ""
+				st.resumePriority = true
+			})
+			m.mu.Lock()
+			m.runCond.Broadcast()
+			m.mu.Unlock()
+			wait := time.Duration(seconds) * time.Second
+			select {
+			case <-ctx.Done():
+			case <-time.After(wait):
+			}
+			return
+		}
 		if shouldResetResumeState(err.Error()) {
 			m.patch(taskID, func(st *taskState) {
 				st.Status = StatusFailed
@@ -106,7 +129,7 @@ func (m *Manager) executeUpload(ctx context.Context, taskID string) {
 			})
 			return
 		}
-		m.failTask(taskID, err.Error())
+		m.failTask(taskID, err)
 		return
 	}
 
