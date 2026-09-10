@@ -1,0 +1,2 @@
+checked_at=2026-09-10 19:40:08
+note=记忆化 9/9(node)+保留策略单测 5/5;go vet/test 全绿;web type-check/build/check:memo 通过;端到端实测 removed=1(6004→6003)后已恢复默认配置
