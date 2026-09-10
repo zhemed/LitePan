@@ -1284,3 +1284,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 用户硬刷新体验;报告剩余项:批次树记忆化/工作集保留策略
+
+
+## Session 98: 调查流程合规缺口：漏掉两个门及根因
+<!-- trellis-session: v=2 fp=0bcf7c36ebd854b3 -->
+
+**Date**: 2026-09-10
+**Task**: 调查流程合规缺口：漏掉两个门及根因
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+以 AGENTS.md 与 workflow.md 原文+两个技能内容为权威核对,发现7项偏差:①design.md/implement.md 0/42(workflow.md:167 要求复杂任务 start 前必备)②PRD mtime=归档提交时刻(事后补写,规划门失效)③未调用 trellis-check 技能,自建 vet/test/build 替代,缺 spec 同步/覆盖核对/范围纪律④未跑 get_context.py 与会话开始上下文载入⑤dev_type/scope 全为 None→复杂任务判定从未发生⑥implement.jsonl/check.jsonl 0 个⑦会话号漂1。根因5条,最关键:从压缩摘要恢复时,摘要里的流程定义本就缺 trellis-start 与 trellis-check 两步,我遵守了一份被削弱的规范且未回原文核对;CLI 无阶段门校验,流程没有牙齿;任务导向压力使 PRD 沦为收尾手续;完成判据里没有 check。纠正措施 A-F(A 会话开始载入上下文/B 先 PRD 后 start+set-scope/C 归档前跑 check/D 流程门脚本需同意/E 写入规范需同意/F 会话号以 journal 为准)。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] vet 全绿+全模块零失败+类型检查;本任务为文档调查无代码变更
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户决定 D(流程门脚本)与 E(写入 AGENTS.md 规范)
