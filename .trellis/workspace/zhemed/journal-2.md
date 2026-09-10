@@ -1131,3 +1131,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 待拍板实施三步修复
+
+
+## Session 93: 修复冷却期秒级判死并发布0.0.24
+<!-- trellis-session: v=2 fp=8cbc0157029fe46e -->
+
+**Date**: 2026-09-10
+**Task**: 修复冷却期秒级判死并发布0.0.24
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+四步修复:①driverexec 冷却错误类型化(account_cooldown/retry_after_seconds 详情,文案不变)+IsCooldownError②domain.IsNetworkError 去自指(冷却消息含'网络'不再喂回熔断计数)③worker 冷却错误不判死→任务退回 pending(置顶/保留进度与 resumeData/message 说明等待),原地等冷却结束,并发=1 天然整队等待,期间暂停可中断④批次熔断安全网:同批次连续5个同因系统级失败→自动暂停剩余任务并注明原因(文件级错误不触发)。测试:冷却往返/网络去自指/熔断签名与阈值行为/worker 冷却返回pending保留resumeData,全模块零失败。0.0.24 三tag digest dacbed7b,部署三连通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5902cea` | fix: wait out account network cooldown instead of mass-failing tasks, bump to 0.0.24 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败(含4组新测试);web type-check+build;health/登录/列表三连
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 观察:恢复 1620 个暂停任务时冷却应变为等待重试而非批量判死
