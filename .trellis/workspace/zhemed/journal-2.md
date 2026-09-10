@@ -1073,3 +1073,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 无
+
+
+## Session 91: 核查删除修复对115适用性：同步API无此问题
+<!-- trellis-session: v=2 fp=dc510699caaeebd2 -->
+
+**Date**: 2026-09-10
+**Task**: 核查删除修复对115适用性：同步API无此问题
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+115_Open DeleteFiles 为同步 API(trashFiles 单次 POST 响应即结果,无批任务/无轮询)→不存在 189 式确认超时误报模式;0.0.23 改动全在 189Cloud 驱动内,115 零接触也无需移植。permanentDelete(deleteMode) 的回收站确认轮询(~5s/8次)在索引滞后时报错'回收站记录尚未同步请手动清空'——trash 已成功、消息诚实可恢复,属提示非缺陷。实测不可行:cloud_accounts 仅天翼云盘一个账号,无 115 账号(如实说明,后续配置可回环实测)。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 115_Open ops.go 逐段核实+账号表实测,全程只读
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 配置115账号后可做删除回环实测
