@@ -1373,3 +1373,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 等用户批准 P0(构建缓存/悬空镜像)与 P1(云端190/本地2G/残留容器)清理
+
+
+## Session 101: P0磁盘清理：回收17GB，服务无损
+<!-- trellis-session: v=2 fp=9826aeddf75f1717 -->
+
+**Date**: 2026-09-10
+**Task**: P0磁盘清理：回收17GB，服务无损
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户批准执行 P0：docker builder prune -f(构建缓存 17.05GB→1.01GB,回收16.03GB) + docker image prune -f(悬空 3→0,+20.72MB)。根分区 28G→11G 已用(可用 211G→228G),实测回收≈17GB。安全复核:运行容器 StartedAt 未变(未重启)、带 tag 镜像 78→78 无损失(latest/0.0.27/0.0.26/0.0.25 在位)、卷未触碰、服务三连通过。未用 -a 参数。P1(云端190文件/本地2G/残留容器 litepan-auto/litepan-go 历史tag/旧DB备份/spec缺口)未动,待决策。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] go vet 全绿+全模块零失败;服务三连;容器/镜像/卷完整性核验;门禁实测放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- P1(云端190+本地2G+残留容器)待用户批准

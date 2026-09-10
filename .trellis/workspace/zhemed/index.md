@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 100
+- **Total Sessions**: 101
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1375 | Active |
+| `journal-2.md` | ~1404 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 101 | 2026-09-10 | P0磁盘清理：回收17GB，服务无损 | - | `main` |
 | 100 | 2026-09-10 | 残留维护盘点：16GB缓存/190云端/2G本地等待清理 | - | `main` |
 | 99 | 2026-09-10 | 强化Trellis严格执行：规则+门禁+加载 | `260d7ea` | `main` |
 | 98 | 2026-09-10 | 调查流程合规缺口：漏掉两个门及根因 | - | `main` |
