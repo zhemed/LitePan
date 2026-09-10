@@ -1883,3 +1883,38 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 等用户在生产机 10.0.0.11 升级 0.0.33 后复测『冷却等待中点暂停立即生效』；若需我复核可只读检查
+
+
+## Session 118: 0.0.33 暂停修复验收通过（用户实测）
+<!-- trellis-session: v=2 fp=bfa7ed9526cb94af -->
+
+**Date**: 2026-09-10
+**Task**: 0.0.33 暂停修复验收通过（用户实测）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户反馈【验收成功】。记录：生产机 10.0.0.11 已升级 v0.0.33(ImageID 372352cf6675，23:17:27 CST 启动，RestartCount=0)；只读复核近 2h 冷却/暂停日志 0 条、日志总量 7 行、任务 paused 781/success 41/failed 0；边界标注：暂停生效由用户实测，我方未独立观察其操作，仅证明版本已部署+窗口内无冷却事件+零失败。本任务无代码改动（git diff 不含 web/internal/drivers）
+
+### Main Changes
+
+- .trellis/tasks/archive/2026-09/09-10-record-pause-fix-acceptance/{prd.md,research.md, task.json}
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9be20a9` | chore(task): record 0.0.33 pause fix acceptance |
+
+### Testing
+
+- [OK] 只读复核：docker inspect/ps/logs + SQLite mode=ro；未重启/未改配置/未改数据/未部署
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无待办；如需可复测批量暂停混合选择等未覆盖场景
