@@ -24,6 +24,8 @@ const (
 	KeyLogLevel                    = "log_level"
 	KeyLogRetentionDays            = "log_retention_days"
 	KeyLogErrorAckAt               = "log_error_ack_at"
+	KeyUploadRetentionDays         = "upload_retention_days"
+	KeyUploadRetentionMax          = "upload_retention_max"
 	KeyLocalUploadEnabled          = "local_upload_enabled"
 	KeyLocalUploadMappings         = "local_upload_mappings"
 )
@@ -111,6 +113,8 @@ func defaultSpecs() []Spec {
 			{Value: "warn", Label: "Warn（警告）"},
 			{Value: "error", Label: "Error（错误）"},
 		}),
+		intSpec(KeyUploadRetentionDays, "system", "上传成功记录保留天数", "已完成（成功/跳过/取消）的上传任务记录超过该天数后由后台自动清理，仅清记录，不删除网盘或本地文件。", "30", "天", 1, 3650),
+		intSpec(KeyUploadRetentionMax, "system", "上传成功记录最大保留条数", "已完成记录最多保留的条数（保留最新的），0 表示不限制；与保留天数同时生效时按更严格者清理。", "0", "条", 0, 100000),
 		intSpec(KeyLogRetentionDays, "system", "日志保留天数", "本地日志文件的最长保留天数，超出后自动清理；在日志页面也可手动触发清理。", "30", "天", 1, 365),
 		{
 			Key:         KeyOAuthServerURL,

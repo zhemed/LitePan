@@ -112,6 +112,10 @@ func NewManager(opts Options) *Manager {
 	_ = m.RefreshConcurrencyLimit(context.Background())
 	m.restoreTasks()
 	m.initTempCleanup()
+	// 0.0.28：上传记录保留策略（启动即清理一次，之后每小时；随 runCtx 退出）
+	if m.repo != nil {
+		go m.retentionLoop(runCtx)
+	}
 	return m
 }
 

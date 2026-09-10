@@ -63,6 +63,13 @@ func (m *Manager) BatchResume(ctx context.Context, taskIDs []string) BatchContro
 
 **冷却契约（0.0.24）**：账号网络冷却错误 = `CodeDriverError` + `Details{"account_cooldown":true,"retry_after_seconds":N}`，文案仍为「该账号网络异常，约 N 秒后自动重试」；`domain.IsNetworkError` 对该错误返回 **false**（防自指反馈）。
 
+**工作集保留契约（0.0.28）**：设置项 `upload_retention_days`（默认 30，1-3650）与 `upload_retention_max`（默认 0=不限，0-100000）。
+
+- 后台每小时（启动即执行一次）清理**终态成功类**记录（`success/skipped/canceled`）：超期或超出条数上限者
+- **绝不**清理未完成任务；**绝不**删除本地/网盘文件（复用 `Manager.Delete`，其本地清理对 `source_type=server_local` 直接跳过）
+- 前端无感：清理通过 SSE `deleted` 通知收敛列表；`summary.counts` 随之下降
+- 选择逻辑为纯函数 `selectRetentionVictims(tasks, cfg, now)`，改动必须同步单测（`retention_test.go`）
+
 **批量控制契约（0.0.25）**：`batch-resume` 与 `batch-pause` 同形，返回 `{updated_task_ids, missing_task_ids}`；服务端逐个走单任务语义（内部仍受并发闸门与排队约束）。
 
 ## 4. Validation & Error Matrix

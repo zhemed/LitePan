@@ -224,6 +224,7 @@ import UploadProgressInner from "@/components/upload/UploadProgressInner.vue";
 import UploadTaskSettingsPanel from "@/components/upload/UploadTaskSettingsPanel.vue";
 import { getUploadTaskStableKey } from "@/composables/upload/uploadTaskFormatters";
 import { buildUploadTaskLevel, uploadTaskPathParts, type UploadTaskTreeNode } from "@/composables/upload/uploadTaskTree";
+import { createNodeMemo, createRowMemo } from "@/composables/upload/uploadRowMemo";
 import { formatSize } from "@/utils/format";
 import type { UploadTask } from "@/types/upload";
 import type { useUploadTasks } from "@/composables/useUploadTasks";
@@ -497,7 +498,8 @@ function batchDisplayStatus(tasks: UploadTask[]) {
 
 function buildUploadNodeRow(node: UploadTaskTreeNode): PanelRow {
   if (!node.isFolder && node.tasks.length === 1) {
-    const row = buildUploadRow(node.tasks[0]);
+    // 单任务节点经行记忆化：未变化复用，避免每次增量重建行对象
+    const row = rowMemo.get(node.tasks[0]);
     row.id = node.id;
     row.name = node.name;
     row.tasks = node.tasks;
@@ -586,10 +588,20 @@ function buildUploadNodeRow(node: UploadTaskTreeNode): PanelRow {
   };
 }
 
-const uploadRootRows = computed(() => buildUploadTaskLevel(uploadTasks.value).map(buildUploadNodeRow));
+// 0.0.28：记忆化——SSE 增量只重建变化的任务行与批次行（未变化直接复用）。
+const rowMemo = createRowMemo<PanelRow>((task) => buildUploadRow(task));
+const nodeMemo = createNodeMemo<PanelRow>((node) => buildUploadNodeRow(node));
+onUnmounted(() => {
+  rowMemo.clear();
+  nodeMemo.clear();
+});
+
+const uploadRootRows = computed(() => buildUploadTaskLevel(uploadTasks.value).map((node) => nodeMemo.get(node)));
 const uploadRows = computed(() =>
   currentBatchId.value
-    ? buildUploadTaskLevel(uploadTasks.value, currentBatchId.value, currentFolderPath.value).map(buildUploadNodeRow)
+    ? buildUploadTaskLevel(uploadTasks.value, currentBatchId.value, currentFolderPath.value).map((node) =>
+        nodeMemo.get(node),
+      )
     : uploadRootRows.value,
 );
 
