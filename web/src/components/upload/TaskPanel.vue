@@ -124,7 +124,7 @@
             v-if="completedWindowTruncated && uploadStateFilter === 'done'"
             style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px; opacity: 0.75"
           >
-            <span>仅显示最近 {{ completedWindowSize }} 条已完成记录（共 {{ uploadTaskTotals.success }} 条）</span>
+            <span>仅显示最近 {{ completedWindowSize }} 条已完成记录（共 {{ uploadTaskTotals.done }} 条）</span>
             <button
               type="button"
               style="border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; font-size: 12px; padding: 0"
@@ -709,7 +709,7 @@ function countByState(_category: CategoryKey, state: StateKey) {
   const totals = uploadTaskTotals.value;
   switch (state) {
     case "done":
-      return totals.success;
+      return totals.done;
     case "failed":
       return totals.failed;
     default:
@@ -723,7 +723,7 @@ const completedWindowTruncated = computed(() => {
   const present = uploadTasks.value.filter(
     (task) => task.status === "success" || task.status === "skipped",
   ).length;
-  return uploadTaskTotals.value.success > present;
+  return uploadTaskTotals.value.done > present;
 });
 
 const navCategories = computed(() => [

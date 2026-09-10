@@ -1,4 +1,8 @@
 import { computed, reactive, ref } from "vue";
+import {
+  computeUploadTaskTotals,
+  uploadTaskBadgeText as badgeTextOfTotals,
+} from "@/composables/upload/uploadTaskTotals";
 import type { UploadTask } from "@/types/upload";
 import { getUploadTaskStableKey } from "@/composables/upload/uploadTaskFormatters";
 import type { LocalUploadPayload, UploadTaskDeps } from "@/composables/upload/uploadTaskTypes";
@@ -113,34 +117,24 @@ export function useUploadTaskStore(deps: UploadTaskDeps) {
   });
 
   // 服务端任务级计数（窗口外历史也计入）；有则优先使用，保证徽标数字真实。
+  // 0.0.29：分桶计算（paused/failed 不再混入"上传中"），逻辑抽为纯函数便于校验。
   const uploadTaskCounts = ref<{ total: number; counts: Record<string, number> } | null>(null);
   function setUploadTaskCounts(next: { total: number; counts: Record<string, number> } | null) {
     uploadTaskCounts.value = next && next.counts ? next : null;
   }
-  const uploadTaskTotals = computed(() => {
-    const server = uploadTaskCounts.value;
-    if (server) {
-      const counts = server.counts || {};
-      const active = server.total - Number(counts.success || 0) - Number(counts.skipped || 0);
-      const failed = Number(counts.failed || 0) + Number(counts.canceled || 0);
-      return {
-        active,
-        failed,
-        paused: Number(counts.paused || 0),
-        success: Number(counts.success || 0),
-      };
-    }
-    return uploadTaskStatusCounts.value;
-  });
+  const uploadTaskTotals = computed(() =>
+    uploadTaskCounts.value
+      ? computeUploadTaskTotals(uploadTaskCounts.value.counts)
+      : {
+          running: uploadTaskStatusCounts.value.active,
+          paused: 0,
+          failed: uploadTaskStatusCounts.value.failed,
+          done: uploadTaskStatusCounts.value.success,
+          active: uploadTaskStatusCounts.value.active,
+        },
+  );
 
-  const uploadTaskBadgeText = computed(() => {
-    const counts = uploadTaskTotals.value;
-    if (counts.active > 0) return `上传中 ${counts.active}`;
-    if (counts.failed > 0) return `失败 ${counts.failed}`;
-    if (counts.paused > 0) return `已暂停 ${counts.paused}`;
-    if (counts.success > 0) return `上传完成 ${counts.success}`;
-    return "";
-  });
+  const uploadTaskBadgeText = computed(() => badgeTextOfTotals(uploadTaskTotals.value));
 
   const uploadTaskLabel = computed(() => uploadTaskBadgeText.value || "暂无传输任务");
   function createLocalUploadTask(file: File, options: Partial<UploadTask> = {}): UploadTask {

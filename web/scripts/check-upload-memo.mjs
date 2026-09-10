@@ -5,8 +5,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ts from "typescript";
 
-const source = readFileSync(new URL("../src/composables/upload/uploadRowMemo.ts", import.meta.url), "utf8");
-const { outputText } = ts.transpileModule(source, {
+const memoSource = readFileSync(new URL("../src/composables/upload/uploadRowMemo.ts", import.meta.url), "utf8");
+const totalsSource = readFileSync(new URL("../src/composables/upload/uploadTaskTotals.ts", import.meta.url), "utf8");
+const { outputText: totalsJs } = ts.transpileModule(totalsSource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
+});
+const totalsPath = join(tmpdir(), "litepan-totals-check.mjs");
+writeFileSync(totalsPath, totalsJs);
+const { computeUploadTaskTotals, uploadTaskBadgeText } = await import(totalsPath);
+
+const { outputText } = ts.transpileModule(memoSource, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, isolatedModules: true },
 });
 const modulePath = join(tmpdir(), "litepan-memo-check.mjs");
@@ -51,6 +59,17 @@ const s1 = nodeSignature(folderA), s2 = nodeSignature(folderB);
 check(s1 !== s2, "文件夹节点签名捕获内部任务状态变化");
 const same = nodeSignature(folderA);
 check(same === s1, "同结构签名稳定");
+
+// 4) 计数分桶（0.0.29）：暂停任务不得被算作"上传中"
+const pausedCase = computeUploadTaskTotals({ paused: 1810, success: 6003 });
+check(pausedCase.running === 0 && pausedCase.paused === 1810, `paused 单列（running=${pausedCase.running} paused=${pausedCase.paused}）`);
+check(uploadTaskBadgeText(pausedCase) === "已暂停 1810", `徽标应为"已暂停 1810"，实际"${uploadTaskBadgeText(pausedCase)}"`);
+const mixedCase = computeUploadTaskTotals({ pending: 3, running: 2, paused: 1, failed: 4, canceled: 1, success: 10, skipped: 2 });
+check(mixedCase.running === 5 && mixedCase.paused === 1 && mixedCase.failed === 5 && mixedCase.done === 12, `分桶正确 ${JSON.stringify(mixedCase)}`);
+check(uploadTaskBadgeText(mixedCase) === "上传中 5", `徽标优先级（运行中优先）实际"${uploadTaskBadgeText(mixedCase)}"`);
+check(mixedCase.active === 6, `active=运行中+暂停 应为 6，实际 ${mixedCase.active}`);
+const failedOnly = computeUploadTaskTotals({ failed: 2, canceled: 1 });
+check(uploadTaskBadgeText(failedOnly) === "失败 3", `仅失败时徽标实际"${uploadTaskBadgeText(failedOnly)}"`);
 
 console.log(fail === 0 ? "MEMO-ALL-PASS" : `MEMO-FAILURES=${fail}`);
 process.exit(fail === 0 ? 0 : 1);
