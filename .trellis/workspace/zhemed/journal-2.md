@@ -1042,3 +1042,34 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - 待用户拍板是否实施'受理即成功'
+
+
+## Session 90: 实施删除受理即成功并发布0.0.23
+<!-- trellis-session: v=2 fp=2038e59be44157b9 -->
+
+**Date**: 2026-09-10
+**Task**: 实施删除受理即成功并发布0.0.23
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+承接删除误报调查：waitBatchTask 超时改哨兵 errBatchTaskTimeout(消息不变)；新增 waitBatchTaskAccepted(确认超时→受理即成功返回nil,显式失败/请求错误仍报错)；DeleteFiles 的 DELETE+CLEAR_RECYCLE 确认窗口 30s/40s→5s(大目录删除不再误报502,UI 即刻移除条目)；MOVE/COPY 保持原语义。单测哨兵映射,全模块零失败,0.0.23 三tag digest d56ecd9d,部署三连通过。实测验证待下一次真实大目录删除。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `060d4bd` | fix: 189 delete accepted-as-success semantics, bump to 0.0.23 |
+
+### Testing
+
+- [OK] go vet 全绿;go test ./... 零失败(含新哨兵映射单测);health/登录/列表三连
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无
