@@ -36,13 +36,25 @@ func (h *Handler) deleteFiles(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, domain.Errorf(domain.CodeValidation, "file_ids 不能为空"))
 		return
 	}
-	if err := h.files.DeleteFiles(r.Context(), req.AccountID, req.FileIDs, req.ParentID); err != nil {
+	// 0.0.29：过滤空白 ID。此前 [" "] 会被当作 1 个项目"删除成功"（实际什么都没删），
+	// 让用户误以为已删除；这里收敛为显式校验错误。
+	fileIDs := make([]string, 0, len(req.FileIDs))
+	for _, id := range req.FileIDs {
+		if trimmed := strings.TrimSpace(id); trimmed != "" {
+			fileIDs = append(fileIDs, trimmed)
+		}
+	}
+	if len(fileIDs) == 0 {
+		writeErr(w, domain.Errorf(domain.CodeValidation, "请选择要删除的文件"))
+		return
+	}
+	if err := h.files.DeleteFiles(r.Context(), req.AccountID, fileIDs, req.ParentID); err != nil {
 		writeErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, Resp{
 		Success: true,
-		Message: "已删除到回收站 " + strconv.Itoa(len(req.FileIDs)) + " 个项目",
+		Message: "已删除到回收站 " + strconv.Itoa(len(fileIDs)) + " 个项目",
 		Data: map[string]any{
 			"file_ids": req.FileIDs,
 		},
