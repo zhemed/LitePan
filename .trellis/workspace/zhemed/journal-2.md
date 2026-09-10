@@ -1708,3 +1708,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 待用户:执行生产侧命令、轮换口令、决定旧提交处置(转私有/重写历史)
+
+
+## Session 112: 决策归档:变动文件上传防御暂不实施
+<!-- trellis-session: v=2 fp=06ae1950c1e1489d -->
+
+**Date**: 2026-09-10
+**Task**: 决策归档:变动文件上传防御暂不实施
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户决定:对'上传途中文件被修改'（ContentLength 不符）的修复暂不实施,直接归档备查。已查明根因(代码级):计划阶段 StatLocalFile 记录大小,驱动按该值声明 Content-Length,而 115 单分片路径(drivers/115_Open/upload.go:1007-1023)直接包住文件句柄未用 io.LimitReader→文件途中增长(典型 SQLite -wal)即超发字节→Go transport 中断;115 分片路径与 189 驱动因 LimitReader 不触发。四层备选方案记录在案:A 长度恒定(补 LimitReader,~30行)、B 一致性校验+明确原因(~半天)、C 默认排除 *.db-wal/*.db-shm(*.db-journal)(~半天)、D 一致性快照(VACUUM INTO/源侧快照,1-3天)。关键判断:即使修好传输,活的 WAL 也非有效备份,备份 SQLite 目录的真正解法是 C+D。未来触发条件三条已写入档案。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ac1e822` | chore(task): archive 09-10-defer-unstable-file-upload-guard |
+
+### Testing
+
+- [OK] 决策记录任务:无代码变更;门禁 pre-start/pre-archive 放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无(触发条件满足时再开任务)
