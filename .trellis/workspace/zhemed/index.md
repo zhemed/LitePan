@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 102
+- **Total Sessions**: 103
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1433 | Active |
+| `journal-2.md` | ~1462 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 103 | 2026-09-10 | 完成P2+P3：契约spec/备份归档/门禁短名/tmp清理 | - | `main` |
 | 102 | 2026-09-10 | P1残留清理：云端树/1810任务/2G本地/75镜像tag | - | `main` |
 | 101 | 2026-09-10 | P0磁盘清理：回收17GB，服务无损 | - | `main` |
 | 100 | 2026-09-10 | 残留维护盘点：16GB缓存/190云端/2G本地等待清理 | - | `main` |

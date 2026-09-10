@@ -1431,3 +1431,32 @@ rawJSON/rawForm 非200与429错误附加结构化 http_status 详情；retryable
 ### Next Steps
 
 - P2/P3 待决:旧DB备份/spec 窗口化契约缺口//tmp 杂物;云端回收站可择机清空
+
+
+## Session 103: 完成P2+P3：契约spec/备份归档/门禁短名/tmp清理
+<!-- trellis-session: v=2 fp=b3719249b435ad3f -->
+
+**Date**: 2026-09-10
+**Task**: 完成P2+P3：契约spec/备份归档/门禁短名/tmp清理
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db 归档保留,backups 现3份。P2-spec:新增 upload-task-api.md 7段式跨层契约(窗口化列表+窗口语义默认非终态全量+最近500已完成/汇总端点 total,counts/SSE snapshot与delta带counts/批量 pause-resume 同形/冷却 account_cooldown+retry_after_seconds 且 IsNetworkError 去自指/189 删除受理即成功5s)并在 backend index.md 登记。P3-gate:flow_gate 支持短任务名(唯一后缀匹配,archive 内同支持,歧义报错),自测6/6,实测短名调用成功。P3-tmp:清理本会话11文件+2 fixture 目录(/tmp 65M→38M);13:00-14:21 的19个非本会话文件(HF/GitHub/模型相关)保留并说明。质量门全绿;无应用代码变更故不发布新版本。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] go vet 全绿;go test 零失败;web type-check 通过;flow_gate 自测 6/6;门禁 pre-start(短名)/pre-archive 实测放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 残留清单 P2 按需项(批次树记忆化/工作集保留策略)仍待决策
