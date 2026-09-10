@@ -1710,3 +1710,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 - 待用户:执行生产侧命令、轮换口令、决定旧提交处置(转私有/重写历史)
 
 
+
+
+## Session 113: 按用户要求退役一份废弃档案
+<!-- trellis-session: v=2 fp=6e89db2e7480d39a -->
+
+**Date**: 2026-09-10
+**Task**: 按用户要求退役一份废弃档案
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户担心未来被误当作待办,要求移除一份已废弃的暂缓决策档案及其记录。执行:①git rm 删除该归档任务目录 ②删除 journal 中对应会话条目(904字符)与索引引用 ③本次移除动作保留中性说明便于审计 ④不涉及代码/配置/环境变更 ⑤已知局限:该档案此前已推送,git 历史仍可检索,彻底清除需重写历史(默认不做)。复核:全仓 grep 该档案名 0 命中。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e19b217` | chore: retire obsolete deferred-decision record per user request |
+
+### Testing
+
+- [OK] grep 复核无残留引用;移除后目录与会话条目核验;门禁放行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如需连本次移除记录也一并清除,或彻底重写历史,告知即可

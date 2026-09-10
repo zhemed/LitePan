@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 112
+- **Total Sessions**: 113
 - **Last Active**: 2026-09-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1741 | Active |
+| `journal-2.md` | ~1743 | Active |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 113 | 2026-09-10 | 按用户要求退役一份废弃档案 | `e19b217` | `main` |
 | 112 | 2026-09-10 | 决策归档:变动文件上传防御暂不实施 | `ac1e822` | `main` |
 | 111 | 2026-09-10 | 清除生产机访问痕迹（已脱敏） | `afb3972` | `main` |
 | 110 | 2026-09-10 | 调查【生产机·地址不记录】实例:定位WAL变动导致的上传失败 | `7336e76` | `main` |
