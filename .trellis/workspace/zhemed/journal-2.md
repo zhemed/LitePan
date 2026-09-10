@@ -1522,3 +1522,36 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 待批准修复 A/B/C(建议立即做 A)
+
+
+## Session 106: 分批修复A/B/C三缺陷,0.0.29
+<!-- trellis-session: v=2 fp=0bd5f5681d15e3aa -->
+
+**Date**: 2026-09-10
+**Task**: 分批修复A/B/C三缺陷,0.0.29
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户批准分批修复事故调查确认的3缺陷:\nA【高危·数据销毁】三层保护:①保留策略跳过 owned 批次根任务(batch_root_owned&&batch_root_id)②批次创建写入 result.batch_task_total,BatchDelete 删根前要求选中数==历史总数(缺失→保守拒绝)③关键发现:除显式删根路径外,还有未加保护的'空父目录自动清理'(不受开关/归属限制+用可能过期缓存列表)→加固为必须显式勾选删批次根+父目录确为 owned 批次根+forceRefresh 实时空判定。测试8项全绿(复现测试转修复断言/正向/保守/保留跳过/既有4项补字段)。\nB【中危】DELETE /api/files/delete 过滤空白 file_id,全空→400'请选择要删除的文件'(原会'删除成功1个项目'却未删);单测3组+部署实测均400。\nC【中危·显示】新增纯函数 uploadTaskTotals.ts 分桶(running=pending+running/paused/failed=failed+canceled/done/active=running+paused),徽标优先级 上传中→已暂停→失败→完成;store/TaskPanel 接入;校验脚本7条新断言全过(paused 1810→'已暂停 1810')。\n0.0.29 三tag digest 8e8e5d60+release+部署三连;实测存量记录无 batch_task_total→删根保守禁用;我的测试残留(nested_probe×2/e2e_probe)已清(6006→6003);spec 已同步。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5da8c83` | fix(A): triple-guard cloud batch-root deletion to prevent data loss |
+| `7e8ad22` | fix(B): reject blank file_ids in delete endpoint |
+| `7ac0d4f` | fix(C): bucket task counters so paused/failed are no longer shown as uploading |
+
+### Testing
+
+- [OK] go vet 全绿;go test 零失败(8项批次保护+3组校验+既有套件);check:memo 16 断言;type-check+build;部署后 B/C/A 实测
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无(三缺陷闭环)
