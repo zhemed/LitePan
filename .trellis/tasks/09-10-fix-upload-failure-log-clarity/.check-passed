@@ -1,0 +1,2 @@
+checked_at=2026-09-10 20:33:37
+note=日志口径+前端原因可见性:go vet/go test/check:memo 27 断言/type-check+build 全绿;部署实测 code=PERMISSION_DENIED 与 上传暂缓 文案
