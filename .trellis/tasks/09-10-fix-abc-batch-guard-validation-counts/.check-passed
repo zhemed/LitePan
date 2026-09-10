@@ -1,0 +1,2 @@
+checked_at=2026-09-10 20:03:11
+note=三批修复:go vet 全绿/go test 零失败/check:memo 16 断言/type-check+build;部署实测 B/C/A 三项验证;测试残留已清
