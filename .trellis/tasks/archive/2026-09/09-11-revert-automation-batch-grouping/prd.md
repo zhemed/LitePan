@@ -27,12 +27,12 @@
 
 ## Acceptance Criteria
 
-- [ ] R1：`grep -n "BatchID\|BatchName\|uploadBatchScope" internal/automation/` 无结果；`git diff` 中该文件与 0.0.34 形态等价（仅回退）
-- [ ] R2：`internal/upload/breaker_key_test.go` 用例全部通过（空批次退化分组仍生效）
-- [ ] R3：`web/` 无改动（`git diff --name-only` 不含 `web/`）
-- [ ] R4：spec §8.4 已更新（自动化不写批次 id + 终态桶缺陷登记）
-- [ ] R5：`go vet`/`go test`/`-race`/`web type-check+build` 全绿；`0.0.36` 镜像推送 + tag/release + 本地部署三连
-- [ ] R6：任务记录中写明存量任务影响与「需单独授权」的数据清理路径
+- [x] R1：`grep -n "BatchID\|BatchName\|uploadBatchScope" internal/automation/` 无结果；`git diff` 中该文件与 0.0.34 形态等价（仅回退）
+- [x] R2：`internal/upload/breaker_key_test.go` 用例全部通过（空批次退化分组仍生效）
+- [x] R3：`web/` 无改动（`git diff --name-only` 不含 `web/`）
+- [x] R4：spec §8.4 已更新（自动化不写批次 id + 终态桶缺陷登记）
+- [x] R5：`go vet`/`go test`/`-race`/`web type-check+build` 全绿；`0.0.36` 镜像推送 + tag/release + 本地部署三连
+- [x] R6：任务记录中写明存量任务影响与「需单独授权」的数据清理路径
 
 ## Notes
 
