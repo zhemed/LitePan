@@ -1617,3 +1617,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 ### Next Steps
 
 - 用户可继续上传剩余 4383 个;若仍见冷却提示属正常保护且 30 秒后会自动重试
+
+
+## Session 109: 调查上传失败日志口径并修复前端原因可见性,0.0.31
+<!-- trellis-session: v=2 fp=697176ddad072e22 -->
+
+**Date**: 2026-09-10
+**Task**: 调查上传失败日志口径并修复前端原因可见性,0.0.31
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户反馈日志多个'上传文件失败'且前端不给原因。取证:应用日志 779 条中 ≈752 条来自 14:20 冷却风暴(0.0.24修复前确实判死)、4 条为本次5000批次冷却(随后重试成功)、1 条为我的错误父目录探针;当前数据库失败任务=0(paused 4383+success 6620)。根因①file.Service 对所有上传错误统一 Warn'上传文件失败',把可自愈的账号冷却也写成失败且无错误码②前端冷却行显示'等待中'且无原因聚合。修复:后端冷却→Info'上传暂缓:账号网络冷却,稍后自动重试'(附 retry_after_seconds)、取消→Debug、真失败→Warn+code;前端新增 uploadFailureSummary.ts(错误归类+失败/取消原因聚合)、冷却行状态'重试中'、列表上方'失败/取消 N 条:原因 k';测试 file 包3组日志分支+前端校验脚本11条(累计27)。0.0.31 三tag digest 330ee753+release+部署三连;实测 code=PERMISSION_DENIED 与 上传暂缓 文案正确;探针记录已清。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `79e801d` | fix: clarify upload failure logs and surface failure reasons in UI, bump to 0.0.31 |
+
+### Testing
+
+- [OK] go vet 全绿;go test 零失败(3组日志分支测试);check:memo 27 断言;type-check+build;部署实测日志文案
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户可硬刷新看前端聚合展示;批次剩余 4383 可继续上传
