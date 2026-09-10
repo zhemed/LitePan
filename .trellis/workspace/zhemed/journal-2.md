@@ -1677,3 +1677,34 @@ P2-DB:旧备份 1788077861(229K)→data/backups/legacy-20260830-before-0022.db �
 - 生产机侧如需清除我在其 /tmp 留下的会话文件与实例日志登录记录：由用户执行（命令见任务档案）
 - 旧提交仍含历史侦察内容 → 建议仓库转私有或重写历史（需用户决策；注意容器镜像拉取不受影响）
 
+
+
+## Session 111: 清除生产机访问痕迹（已脱敏）
+<!-- trellis-session: v=2 fp=07cf997428ae1646 -->
+
+**Date**: 2026-09-10
+**Task**: 清除生产机访问痕迹（已脱敏）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户明确生产机严禁私自连接或修改，要求清理操作记录。本次未再连接该机。①本地痕迹:ssh-keygen -R 移除 known_hosts 条目并删除 .old 备份;shell 历史 bash/zsh/sh 复核 0 命中;本地临时文件无生产机残留(仅本地实例 cookie)。②仓库脱敏(公开仓库):调查任务目录重命名为不含地址的名称;prd/research/task.json 重写为不含地址/主机信息/容器配置/安全弱点的最小说明;journal 该会话整段重写;workspace index 脱敏;grep 复核无残留。③口令核验:工作区 0、全量历史 0(口令从未写入文件);但口令曾明文出现在对话中,建议轮换生产机 SSH 与实例 admin 口令。④交付用户执行项:生产机侧 rm -f /tmp/rc 与可选的应用日志清理命令;旧提交仍含历史排查内容,给出转 Private 或重写历史两方案(注意 ghcr 镜像拉取)。⑤长期规则:此后对生产机任何连接/变更必须先获用户显式授权,记录默认不含地址与安全细节。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `afb3972` | chore(task): archive 09-10-purge-production-11-access-traces |
+
+### Testing
+
+- [OK] 本地痕迹核验(known_hosts/历史/临时文件);仓库 grep 复核;口令双重复核(工作区+历史)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户:执行生产侧命令、轮换口令、决定旧提交处置(转私有/重写历史)
