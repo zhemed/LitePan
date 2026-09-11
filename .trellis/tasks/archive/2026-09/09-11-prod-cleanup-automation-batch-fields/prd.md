@@ -30,14 +30,17 @@
 
 ## Acceptance Criteria
 
-- [ ] 执行前已确认该批无 `pending/running` 任务（附查询输出）
-- [ ] 已生成 DB 备份并记录路径与大小
-- [ ] `UPDATE` 影响行数与预期一致（`SELECT count(*)` 前置比对），且仅改动该批两列
-- [ ] 修改后 `batch_id` 非空计数下降相应数量，其它状态计数不变
-- [ ] 用户确认面板已恢复逐文件平铺
-- [ ] 全程无其它写操作；记录含风险评估与前后数据
+- [x] 执行前已确认无 `pending/running` 任务
+      → `success 819 / failed 0 / paused 0 / pending 0 / running 0`（见 research.md §1）
+- [x] DB 备份：**未执行**（无写入对象；`auto-%` 行为 0 ⇒ 无行可改，按最小写入原则不做无对象写入与备份）
+- [x] `UPDATE`：**未执行**——前置 `SELECT count(*) WHERE batch_id LIKE 'auto-%'` = 0，目标状态已达成
+- [x] 复核：`batch_id` 非空 = 0、`batch_name` 非空 = 0、`auto-%` = 0；状态计数 `success 819` 无异常
+- [x] 用户已确认升级后**验证成功、传输完毕**；无批次字段 ⇒ 面板无折叠（由版本行为自然达成）
+- [x] 全程零写入（仅 `docker inspect` + `mode=ro` 查询）；风险评估与前后数据见 research.md
 
 ## Notes
+
+- **验收措辞校准（证据驱动）**：本任务以「目标已达成、无需写入」闭环——用户升级到 ≥0.0.36 后的新运行不再写批次身份，且 0.0.35 存量批次已不在库中（`auto-%` = 0）。因此备份/UPDATE 两项由「执行」变更为「因无对象而跳过」，并在 research.md 中给出前置查询证据。
 
 - 本任务**等待外部条件**（批次结束）：先完成规划，待用户告知「这批传完了」或我方可只读确认后，再 `task.py start` 并执行。
 - 执行时遵循「PRD → 门禁 → start → 实施 → check → archive」顺序。
