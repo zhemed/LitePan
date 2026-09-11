@@ -40,3 +40,38 @@
 ### Next Steps
 
 - 等用户告知生产批次传完→执行存量 batch 字段清理（需先确认无 pending/running、备份 DB、最小 UPDATE、前后对比）；生产升级 0.0.36/0.0.37 由用户操作
+
+
+## Session 122: 生产存量批次字段清理：无需写入（目标已达成）
+<!-- trellis-session: v=2 fp=8be8373921875398 -->
+
+**Date**: 2026-09-11
+**Task**: 生产存量批次字段清理：无需写入（目标已达成）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户升级后验证成功、传输完毕，启动待命任务执行清理。只读确认：生产机 v0.0.37(ImageID 36b11f22)，819 条任务全部 success、零 failed/paused/pending/running；关键发现 auto-% 行为 0、batch_id/batch_name 非空 = 0 ⇒ 无清理对象（用户升级到 ≥0.0.36 后的新运行不再写批次身份，0.0.35 存量批次已不在库）。按最小写入原则未执行备份与 UPDATE，全程零写入（仅 docker inspect + mode=ro SELECT）。任务以『目标已达成、无需写入』闭环，验收措辞校准与证据记入 research.md/PRD
+
+### Main Changes
+
+- .trellis/tasks/archive/2026-09/09-11-prod-cleanup-automation-batch-fields/{prd.md,research.md,task.json}
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5ffa648` | chore(task): archive 09-11-prod-cleanup-automation-batch-fields |
+
+### Testing
+
+- [OK] 只读复核：statuses=819 success；batch_id 非空 0；pending/running 0；未触碰容器/配置/队列
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无待办；生产机已 0.0.37 且面板无折叠，后续运行也不会再产生批次字段
