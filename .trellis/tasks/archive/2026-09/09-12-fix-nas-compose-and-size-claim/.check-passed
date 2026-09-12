@@ -1,0 +1,2 @@
+checked_at=2026-09-12 12:30:51
+note=轻量文档/配置修正（零代码改动，6 insertions/6 deletions）：① docker-compose.fnos.yml 的 image v0.0.31→v0.0.44、两处数据目录 litepango→litepan 与 README 对齐，config --quiet 通过；② 三处不可核实的体积数字 118M 一并清除（README/AGENTS.md/.trellis/config.yaml），保留仍准确的『3驱动』，config.yaml 非注释部分与备份零差异。取证：拉取 GHCR 上的 v0.0.1 实测 178MB 未压缩/46.0MiB 压缩，与 118M 均不符，故该数字是从未准确而非过时，按用户决策不填新值。回归：运行中容器未受影响（Up + health 200）。
