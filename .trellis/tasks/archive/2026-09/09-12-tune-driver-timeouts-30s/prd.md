@@ -29,7 +29,8 @@
 
 ## Acceptance Criteria
 
-- [ ] 115 API 总超时已是 30s（`drivers/115_Open/driver.go`），且 `git diff` 未见其它定制被改动
+- [x] 115 API 总超时已是 30s（`drivers/115_Open/driver.go`），且 `git diff` 未见其它定制被改动
+      → `drivers/115_Open/driver.go:75` = `Timeout: 30 * time.Second`；本次改动文件仅 6 个（`README.md`、`docker-compose.yml`、`drivers/115_Open/{driver.go,upload.go,upload_retry_test.go}`、`drivers/189Cloud/driver.go`），115 分片仍固定 512MB、`singlePartUploadLimit` 仍 512MB、189 分片重试/节流未动；`git grep` 复核 115/189 驱动内已无 600s/300s 残留
 - [x] 115 上传响应头兜底已是 30s；189 上传响应头兜底已是 30s；189 API 仍 30s
       → `drivers/115_Open/upload.go:35`、`drivers/189Cloud/driver.go:86` 均 `30*time.Second`；`189Cloud/driver.go:80` API 仍 30s（未改）
 - [x] 115 侧新增/更新测试锁定三个值；`go test ./drivers/115_Open/ ./internal/httpx/` 通过
