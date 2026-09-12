@@ -1,0 +1,2 @@
+checked_at=2026-09-12 12:23:26
+note=部署质量门（无代码改动，落在部署契约）：容器 Up + 5211 双栈监听；health 200 / SPA 200 / 表单登录 200 / version=v0.0.44；日志含『HTTP 服务已监听』。持久化四条独立证据：同一 inode 13533519、只读读库得 11 表+真实 pbkdf2 哈希、secret.key inode/mtime 未变、重启前 session cookie 仍通过鉴权。边界：DSH 3080/3081 PID 与基线完全一致；git 零受跟踪改动，data//mounts/ 由 gitignore 覆盖。诚实记录两点：持久化验证中我曾用『文件清单』与『文件总字节数』两个无效判据产生假阴性（WAL 模式下总字节数下降属正常），已改用与大小无关的判据；fnos compose 的 v0.0.31 tag 漂移属待决项未擅改。
