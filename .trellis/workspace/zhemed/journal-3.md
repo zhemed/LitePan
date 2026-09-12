@@ -862,3 +862,45 @@
 - 可安全清理 ≈182 行 + 1 依赖（P1: settings/service_test.go 整文件 28 行 + pause_reason.go 整文件 17 行；P2: TimeWindowField.vue 122 行 + noto-serif 依赖 + automation 的 10 个死符号），需另开清理任务
 - 待决策 2 项：孤儿端点 /accounts/{id}/refresh-auth（可能是外部 API 预留）；SourceTypeOfflineHandoff 生产分支是否仍需兼容历史记录
 - 建议（未擅自执行）：把「deadcode 与 unused 必须并用 + 接口方法先核查实例化」写进 spec，本轮 PRD 未声明故未扩大范围
+
+
+## Session 144: 死代码清理 P3：删除复扫确认的 182 行 + 1 依赖，方法论入 spec
+<!-- trellis-session: v=2 fp=d2f66f651bf7dec1 -->
+
+**Date**: 2026-09-12
+**Task**: 死代码清理 P3：删除复扫确认的 182 行 + 1 依赖，方法论入 spec
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+执行 09-12-rescan-dead-code 的 P1+P2 清理建议（scope=multi-deliverable）。删除 4 个文件：internal/settings/service_test.go（28 行，只有从未实例化的 mock、无任何 Test 函数）、internal/domain/pause_reason.go（17 行，含测试零引用）、web/src/components/base/TimeWindowField.vue（122 行）、web/src/composables/useTimeWindowSchedule.ts（8 个导出零消费方）；清理 internal/automation/service_test.go 的 10 个未实例化测试符号（318→297 行，保留 automationRunRepo 活桩其它方法）；移除未使用依赖 @fontsource-variable/noto-serif-sc 并保留误报项 @vue/devtools-api（pinia 的 peerDependency）。四项数量精确吻合：deadcode 9→7、unused 14→0、deps 24→23、embed 零 churn（构建产物零变化反证被删前端文件不在 bundle）。质量门全绿：make lint 0 issues、go vet exit=0、go test 27 包 ok、vue-tsc exit=0、build 成功。
+
+### Main Changes
+
+- 删除 4 文件（Go 2 + 前端 2）+ automation 测试 10 个死符号 + 1 未使用依赖；internal/api/web 零 churn
+- spec 同步：新增 guides/dead-code-guide.md（126 行 / 6 条规则 + 复现命令 + 删除前清单）并登记进 guides/index.md
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `36c66ed` | chore(deadcode): 清理复扫确认的死代码（182 行 + 1 依赖），并把方法论写入 spec |
+| `5dbebc7` | chore(task): archive 09-12-cleanup-rescan-findings |
+
+### Testing
+
+- [OK] [OK] 四项数量精确吻合：deadcode 9→7、unused 14→0、deps 24→23、embed churn 0→0
+- [OK] [OK] 未破坏：go test 27 包 ok（含 automation 包）；vue-tsc -b exit=0；npm run build 成功
+- [OK] [OK] 边界：git status 无 manager.go/types.go/router.go/drivers/template/version.go/README/compose 任何条目（P3/P4 与版本文件零改动）；实例 Up + health 200
+- [OK] [诚实] 实施中发现复扫报告把 useTimeWindowSchedule.ts 误判为『仍被引用』—— 根因是茎名文本计数把两句注释算作引用（假阴性）；已按 Plan↔Execute 先改 PRD 再删除，并把『引用计数须剥注释』写进 spec
+- [OK] [诚实] internal/automation/service_test.go 改前就不符合 gofmt（4 处无关的 map 对齐），按范围纪律未做全文件格式化；settings 包删后无测试文件，属现状的真实反映
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 可发布：若要把它推出去需另开任务走完整发版（build + GHCR 三 tag + tag + release + 本地容器验证）；本次刻意未 bump 版本号以保持代码-镜像-文档一致
+- 仍待决策：孤儿端点 /accounts/{id}/refresh-auth、OfflineHandoffClientID、SourceTypeOfflineHandoff 生产分支语义、drivers/template + httpx OAuth 链路（~588 行）
