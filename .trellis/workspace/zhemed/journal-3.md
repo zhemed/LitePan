@@ -780,3 +780,43 @@
 ### Next Steps
 
 - 若日后要收紧凭据暴露：有效手段是『不记录 + 改强口令』，而非改记哈希（123456 的 pbkdf2 可秒破）
+
+
+## Session 142: 把浏览器验收判据写入前端 spec（填补零自动化测试的验证空白）
+<!-- trellis-session: v=2 fp=b1d2a10968d5941e -->
+
+**Date**: 2026-09-12
+**Task**: 把浏览器验收判据写入前端 spec（填补零自动化测试的验证空白）
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+背景：前端零自动化测试（无 vitest/jest/test 脚本、无 __tests__ 目录），vue-tsc 只查类型、vite build 只证明能打包，故『渲染之后才存在的行为』没有任何覆盖；而 spec 第 74 行要求的手工 QA 在归档任务中执行次数为 0，历史上只有记『UI 未验证』而没有执行手段。本机现已具备常驻无头浏览器（bw / browser-cdp.service / CDP 9222，doctor 全绿，12 项子能力实测通过），本任务把『何时必须做浏览器验收』固化为判据（单文件 +61/-1，104→164 行，零代码改动）。内容：① 触发判据表（改 web/src/** 且效果只在渲染后可见：异步取值展示、条件渲染与状态机、store↔组件接线与 watch、路由守卫分支、发布收尾）并逐条注明 type-check 为何覆盖不到；② 反向清单（后端/驱动/存储、纯文档配置、仅文案或 CSS、纯类型错误 → 不需要）；③ 可直接复制的 bw 命令序列；④ 边界三句——不替代也不减少既有门、不进 CI 不作自动判定、结论必须带证据不得写成『自动断言通过』；⑤ 截图写 /tmp 并清理。保留了原有的 No vitest yet 与 Manual QA 清单。决策依据：用户询问『是否有必要调用浏览器验收』后采纳『不进强制门、作为条件触发的可选验收判据』的方案。
+
+### Main Changes
+
+- spec/web/frontend/quality-guidelines.md：Testing 段扩写为四小节（触发判据 / 怎么跑 / 边界 / 完整人工 QA）+ 反向清单
+- 沉淀实测坑：bw click <文本> 误点标题（登录 vs 管理员登录）故按钮改用 CSS 选择器；Vue 表单补发 input/change
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d7c29b2` | docs(spec): 把浏览器验收判据写入前端 spec，填补零自动化测试的验证空白 |
+| `ef461ab` | chore(task): archive 09-12-spec-browser-acceptance-criteria |
+
+### Testing
+
+- [OK] [OK] 内容核验：判据表 6 行、反向清单 4 类、bw 命令 6 条、边界三句、原 Manual QA 清单完整保留（第 133-134 行）
+- [OK] [OK] 范围：git diff --stat 仅 1 个受跟踪文件（+61/-1）；未改强制门、未引入测试框架、未改全局 AGENTS.md
+- [OK] [OK] 边界：运行中实例未受影响（Up + /api/health 200）
+- [OK] [诚实] 未实测的 bw 能力（tesseract OCR、并发多会话行为等）一律未写入；Vue 表单事件一条如实标注为排障顺序而非已证结论
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续前端任务按新判据执行：改 web/src/** 且效果只在渲染后可见时，用 bw 做浏览器验收并在 prd.md 检查记录中写明证据来源

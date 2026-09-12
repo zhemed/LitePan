@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 141
+- **Total Sessions**: 142
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~782 | Active |
+| `journal-3.md` | ~822 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 142 | 2026-09-12 | 把浏览器验收判据写入前端 spec（填补零自动化测试的验证空白） | `d7c29b2`, `ef461ab` | `main` |
 | 141 | 2026-09-12 | 同步管理员口令记录到本机实例（用户 2026-09-12 改密） | `4236da0`, `c95dd14` | `main` |
 | 140 | 2026-09-12 | 修正 NAS compose 过期 tag 与目录分歧、清除三处不可核实的体积数字 | `106bfc0`, `343b6d8` | `main` |
 | 139 | 2026-09-12 | 部署 LitePan v0.0.44 到本机 :5211（含数据持久化验证） | `ebf95cd` | `main` |
