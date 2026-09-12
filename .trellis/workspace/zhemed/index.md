@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 136
+- **Total Sessions**: 137
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~570 | Active |
+| `journal-3.md` | ~612 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 137 | 2026-09-12 | 项目与工作区维护：版本漂移修复 + 陈旧配置/文档清理 + Trellis 升级 0.6.17 | `30a20a1` | `main` |
 | 136 | 2026-09-12 | 补齐 golangci-lint 全局 PATH 软链 | `512d5df` | `main` |
 | 135 | 2026-09-12 | 安装本机完整开发环境：Docker 29.7.2 + Go 1.26.6 + make + gcc + golangci-lint | `0b7207c` | `main` |
 | 134 | 2026-09-12 | 候选清单收尾：P7/P8/P9 归档（含 P7 已等价与有意差异核实） | - | `main` |

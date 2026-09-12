@@ -568,3 +568,45 @@
 
 - 部署 LitePan 到本机 :5211（待用户确认路线：拉取 ghcr.io/zhemed/litepan:v0.0.43 vs 本地 docker build）
 - 候选：将 pipefail + head/grep -q 的 SIGPIPE 假失败陷阱写入 .trellis/spec/guides/（连续两个任务因零改动约束未执行）
+
+
+## Session 137: 项目与工作区维护：版本漂移修复 + 陈旧配置/文档清理 + Trellis 升级 0.6.17
+<!-- trellis-session: v=2 fp=d849bc293f5e6c72 -->
+
+**Date**: 2026-09-12
+**Task**: 项目与工作区维护：版本漂移修复 + 陈旧配置/文档清理 + Trellis 升级 0.6.17
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+承接用户「先把工作区和项目维护一下」的六项授权（D1-D6），全部基于只读巡查结论、零源码改动。D1 修 1.26.4→1.26.6 版本漂移三处（.golangci.yml run.go、Dockerfile 注释、spec quality-guidelines.md 内嵌示例）；D2 删除 .trellis/config.yaml 中与 AGENTS.md 冲突的过期管理员口令/hash，改为指向单一权威；D4 新增 spec/guides/shell-script-guide.md（130 行）并登记索引，沉淀上一任务两个真实假失败；D5 删 6 张孤儿文档图片（保留 banner/feature-browser）；D6 trellis update 0.6.16→0.6.17 走 skip-all 保护路径（config.yaml 逐字节未变）。另排除两项假警报：go:embed 前端产物经死代码引用反查确认无漂移；/tmp/gh-u.json 仅是 GitHub 公开资料无密钥。
+
+### Main Changes
+
+- D1+D2+D4：.golangci.yml、Dockerfile、spec/backend/backend/quality-guidelines.md、.trellis/config.yaml、spec/guides/index.md（+新增 shell-script-guide.md）
+- D5：删除 6 张孤儿文档图片（feature-strm/strm-scrape/crosstransfer/organize/automation、wechat-tip）
+- D6：trellis 0.6.16→0.6.17，4 个模板文件自动更新（active_task.py、task_store.py、2 个 session-insight skill 文档）
+- D3（宿主）：清 /tmp 安装残留 5 个文件 + .trellis/.runtime 陈旧 marker，释放 66M（380M→314M）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `30a20a1` | chore(maintain): fix 1.26.4 version drift, prune stale config/docs, upgrade trellis to 0.6.17 |
+
+### Testing
+
+- [OK] [OK] 回归全绿：make lint 0 issues（关键：run.go 改 1.26.6 后仍解析）、go vet exit=0、go test ./... 全包 ok、vue-tsc -b exit=0
+- [OK] [OK] 升级后脚本自检三连：get_context.py / task.py list（正确绑定 current 任务）/ flow_gate.py pre-start
+- [OK] [OK] 边界：internal/drivers/pkg/cmd/web/go.mod/go.sum/Makefile/README 改动数均为 0；3080/3081 DSH 未受影响
+- [OK] [注意] 未做版本 bump —— 0.0.43 只是镜像 tag 非源码常量，且本次零产品代码改动
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 部署 LitePan 到 :5211（用户已明确先搁置）
+- 候选发现：internal/buildinfo/version.go 默认值为上游 v0.5.2-Beta，而 Dockerfile 构建未传 -ldflags -X ...Version= 覆盖 → 容器内版本自报可能与镜像 tag v0.0.43 不一致，待核实是否有意为之
