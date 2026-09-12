@@ -360,3 +360,32 @@
 
 - P3（可选）：drivers/template + httpx OAuth 测试专用链路，默认保留；若不再新增驱动可整链清理
 - P4（可选）：/accounts/{id}/refresh-auth 预留端点，建议文档标注而非删除
+
+
+## Session 131: P3/P4 裁定：均保留不修改，死代码清理收尾
+<!-- trellis-session: v=2 fp=df78f1f1a2909fa3 -->
+
+**Date**: 2026-09-12
+**Task**: P3/P4 裁定：均保留不修改，死代码清理收尾
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+裁定死代码排查报告遗留的 P3/P4，结论：两项均保留、不修改、零代码改动。P3 drivers/template（438 行）+ httpx OAuth 辅助：不是遗留死代码，而是① 统一认证守卫集成测试的驱动矩阵替身（oauth_integration_test.go:14 空导入，注释说明原 123_Open/Baidu_Open/OneDrive 已在本方移除），② spec driver-development.md:71 指定的新驱动骨架（cp -r drivers/template drivers/FooCloud）；保留成本≈0（生产不可达且链接器不进二进制，0.0.40 已实测删除死包后二进制逐字节相同），删除则削弱认证测试覆盖并移除脚手架。P4 /accounts/{id}/refresh-auth：全仓仅 router.go:180 一处引用、handler 30 行、前端只有 refresh-profile（api/accounts.ts:12）、无文档/脚本引用；属人工/脚本强制刷新账号认证的运维预留端点，系统本身有自动刷新不依赖它；删除＝改变已公开 HTTP 契约而收益仅 30 行，故保留。至此排查报告 §9 的 P1~P4 全部关闭：P1（0.0.41 三死包+23 死函数）、P2（0.0.42 前端 23 文件/-3017 行）已实施，P3/P4 裁定保留。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读取证：grep/git grep 引用链 + spec 引用核对 + handler 阅读；零代码改动（git status 仅任务目录）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如将来确定不再新增驱动或该端点长期无人使用，可另建任务做契约级清理（届时属有意变更，需同步 spec）
