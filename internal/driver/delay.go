@@ -84,14 +84,6 @@ func (dc *DelayController) wait(ctx context.Context, accountID int64, interval t
 
 type extraDelayKey struct{}
 
-// WithExtraAPIDelay 在 ctx 上叠加任务级额外 API 间隔（毫秒），与驱动自身 operation_delay 相加后统一节流。
-func WithExtraAPIDelay(ctx context.Context, ms int) context.Context {
-	if ms <= 0 {
-		return ctx
-	}
-	return context.WithValue(ctx, extraDelayKey{}, ms)
-}
-
 // ExtraAPIDelayMS 读取 ctx 中的任务级额外间隔。
 func ExtraAPIDelayMS(ctx context.Context) int {
 	v, _ := ctx.Value(extraDelayKey{}).(int)

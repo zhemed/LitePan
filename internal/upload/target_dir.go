@@ -2,7 +2,6 @@ package upload
 
 import (
 	"context"
-	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -153,26 +152,4 @@ func warmTargetDirs(ctx context.Context, files uploadTargetFiles, cache *uploadT
 			return
 		}
 	}
-}
-
-func joinUploadDisplayPath(base, relDir string) string {
-	base = "/" + strings.Trim(strings.TrimSpace(base), "/")
-	if base == "/" {
-		base = ""
-	}
-	relDir = strings.Trim(strings.TrimSpace(relDir), "/")
-	if relDir == "" {
-		if base == "" {
-			return "/"
-		}
-		return base
-	}
-	joined := path.Join(base, relDir)
-	if joined == "." || joined == "" {
-		return "/"
-	}
-	if !strings.HasPrefix(joined, "/") {
-		return "/" + joined
-	}
-	return joined
 }

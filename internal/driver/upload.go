@@ -34,21 +34,6 @@ type LocalUploadResult struct {
 	Skipped  bool
 }
 
-// LocalUploadEpochMillis 解析上传请求中的本地时间戳（毫秒），供驱动写入网盘元数据。
-func LocalUploadEpochMillis(req LocalUploadRequest) (created, updated int64) {
-	now := time.Now().UnixMilli()
-	created, updated = now, now
-	if req.ModTime != nil && !req.ModTime.IsZero() {
-		updated = req.ModTime.UnixMilli()
-	}
-	if req.CreateTime != nil && !req.CreateTime.IsZero() {
-		created = req.CreateTime.UnixMilli()
-	} else if req.ModTime != nil && !req.ModTime.IsZero() {
-		created = updated
-	}
-	return created, updated
-}
-
 // LocalUploader 是可选能力：从本地路径上传到网盘（后台上传任务使用）。
 type LocalUploader interface {
 	UploadLocalFile(ctx context.Context, req LocalUploadRequest) (*LocalUploadResult, error)

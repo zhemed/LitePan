@@ -571,15 +571,6 @@ func OfflineHandoffClientID(groupID string, index int) string {
 	return fmt.Sprintf("%s%s:%d", offlineHandoffClientPrefix, strings.TrimSpace(groupID), index)
 }
 
-func offlineHandoffGroupID(clientTaskID string) (string, bool) {
-	value := strings.TrimPrefix(strings.TrimSpace(clientTaskID), offlineHandoffClientPrefix)
-	idx := strings.LastIndexByte(value, ':')
-	if idx <= 0 || idx == len(value)-1 {
-		return "", false
-	}
-	return value[:idx], true
-}
-
 func (m *Manager) List(_ context.Context, accountID int64) []Task {
 	m.mu.Lock()
 	defer m.mu.Unlock()

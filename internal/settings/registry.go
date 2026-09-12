@@ -76,10 +76,6 @@ func boolSpec(key, category, label, description, def string) Spec {
 	return Spec{Key: key, Type: TypeBool, Category: category, Label: label, Description: description, Default: def}
 }
 
-func stringSpec(key, category, label, description, def string) Spec {
-	return Spec{Key: key, Type: TypeString, Category: category, Label: label, Description: description, Default: def}
-}
-
 func intSpec(key, category, label, description, def, unit string, min, max int) Spec {
 	return Spec{Key: key, Type: TypeInt, Category: category, Label: label, Description: description, Default: def, Unit: unit, Min: intp(min), Max: intp(max)}
 }

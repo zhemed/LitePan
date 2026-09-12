@@ -31,21 +31,6 @@ func formatTime(t time.Time) string {
 	return t.UTC().Format(time.RFC3339)
 }
 
-func normalizePath(path string) string {
-	path = "/" + strings.Trim(strings.TrimSpace(path), "/")
-	if path == "/" {
-		return "/"
-	}
-	return strings.TrimRight(path, "/")
-}
-
-func ternaryStatus(ok bool) string {
-	if ok {
-		return "success"
-	}
-	return "failed"
-}
-
 func anyString(v any) string {
 	if v == nil {
 		return ""

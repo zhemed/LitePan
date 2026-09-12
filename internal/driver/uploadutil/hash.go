@@ -11,14 +11,6 @@ import (
 	"litepan/internal/domain"
 )
 
-func HashMD5(ctx context.Context, path string) (string, error) {
-	h := md5.New()
-	if err := readFileHashes(ctx, path, h); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
 func HashMD5SHA1(ctx context.Context, path string) (string, string, error) {
 	hMD5 := md5.New()
 	hSHA1 := sha1.New()

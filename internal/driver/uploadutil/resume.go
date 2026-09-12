@@ -43,20 +43,6 @@ func UploadedBytesByParts(fileSize, partSize int64, completedParts map[int]struc
 	return uploaded
 }
 
-func UploadedBytesByPartKeys(fileSize, partSize int64, completedParts map[int]string) int64 {
-	if len(completedParts) == 0 {
-		return 0
-	}
-	set := make(map[int]struct{}, len(completedParts))
-	for partNo, etag := range completedParts {
-		if strings.TrimSpace(etag) == "" {
-			continue
-		}
-		set[partNo] = struct{}{}
-	}
-	return UploadedBytesByParts(fileSize, partSize, set)
-}
-
 func AnyString(v any) string {
 	switch s := v.(type) {
 	case string:

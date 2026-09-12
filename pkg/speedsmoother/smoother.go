@@ -94,10 +94,6 @@ func New(cfg Config) *Tracker {
 	return &Tracker{cfg: cfg}
 }
 
-func NewDefault() *Tracker {
-	return New(DefaultConfig())
-}
-
 func (t *Tracker) Reset() {
 	*t = *New(t.cfg)
 }

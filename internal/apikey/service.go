@@ -204,42 +204,6 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *Service) Validate(ctx context.Context, raw string) (*domain.ApiKey, error) {
-	if s == nil || s.repo == nil {
-		return nil, domain.Errf(domain.CodeInternal)
-	}
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return nil, domain.Errorf(domain.CodeAdminAuthRequired, "缺少 API Key")
-	}
-	row, err := s.repo.GetByHash(ctx, Hash(raw))
-	if err != nil {
-		return nil, err
-	}
-	if row.Status != domain.ApiKeyStatusActive {
-		return nil, domain.Errorf(domain.CodePermissionDenied, "API Key 已禁用")
-	}
-	if !row.ExpiresAt.IsZero() && row.ExpiresAt.Before(time.Now()) {
-		return nil, domain.Errorf(domain.CodePermissionDenied, "API Key 已过期")
-	}
-	_ = s.repo.TouchLastUsed(ctx, row.ID, time.Now().UTC())
-	return row, nil
-}
-
-func (s *Service) ValidateTask(ctx context.Context, raw string) (*domain.ApiKey, error) {
-	if !strings.HasPrefix(strings.TrimSpace(raw), PrefixAPI) {
-		return nil, domain.Errorf(domain.CodePermissionDenied, "API Key 类型不支持")
-	}
-	row, err := s.Validate(ctx, raw)
-	if err != nil {
-		return nil, err
-	}
-	if row.KeyType != domain.ApiKeyTypeTask {
-		return nil, domain.Errorf(domain.CodePermissionDenied, "API Key 权限不足")
-	}
-	return row, nil
-}
-
 func toKeyView(row *domain.ApiKey, raw string) KeyView {
 	view := KeyView{
 		ID:         row.ID,

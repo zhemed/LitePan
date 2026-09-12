@@ -441,27 +441,6 @@ func extractAlignMeta(name string) (alignMeta, bool) {
 	return out, false
 }
 
-func asAlignInt(v any) *int {
-	switch t := v.(type) {
-	case int:
-		n := t
-		return &n
-	case int32:
-		n := int(t)
-		return &n
-	case int64:
-		n := int(t)
-		return &n
-	case float64:
-		n := int(t)
-		return &n
-	case string:
-		return parseEpisodeNumber(t)
-	default:
-		return nil
-	}
-}
-
 // episodeLocator 描述一种集号写法：用 re 匹配，epGroup 指向集号数字所在的捕获组。
 type episodeLocator struct {
 	style   string

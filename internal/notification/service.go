@@ -80,13 +80,6 @@ func (s *Service) DeleteAll(ctx context.Context) (int64, error) {
 	return s.repo.DeleteAll(ctx)
 }
 
-func (s *Service) DeleteByRef(ctx context.Context, category string, refID int64) (int64, error) {
-	if s.repo == nil {
-		return 0, domain.Errorf(domain.CodeInternal, "通知仓储未就绪")
-	}
-	return s.repo.DeleteByRef(ctx, category, refID)
-}
-
 func (s *Service) Notify(ctx context.Context, level, category, title, message string, accountID, refID int64) {
 	if s == nil {
 		return

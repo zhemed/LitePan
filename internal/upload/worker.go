@@ -179,15 +179,6 @@ func shouldResetResumeState(errMsg string) bool {
 	return strings.Contains(lower, "invalidpartorder") || strings.Contains(lower, "previous part hash context")
 }
 
-func (m *Manager) taskLocalPath(taskID string) string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if st, ok := m.tasks[taskID]; ok {
-		return st.localPath
-	}
-	return ""
-}
-
 func (m *Manager) deleteUploadedFile(ctx context.Context, st *taskState) error {
 	if st.Result == nil {
 		return nil

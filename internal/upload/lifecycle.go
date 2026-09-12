@@ -165,13 +165,6 @@ func snapshotCopy(st *taskState) *Task {
 	return &t
 }
 
-func progressForBytes(done, total int64) int {
-	if total <= 0 {
-		return 0
-	}
-	return calcProgress(done, total)
-}
-
 // BatchResume 批量恢复：逐个走单任务 Resume（内部排队与并发闸门不变），
 // 供前端一次请求恢复整批（原先逐任务 1620 次 HTTP + 响应式 patch 会卡死页面）。
 func (m *Manager) BatchResume(ctx context.Context, taskIDs []string) BatchControlResult {

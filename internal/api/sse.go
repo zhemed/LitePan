@@ -32,13 +32,6 @@ func (s *sseWriter) writeEvent(event, data string) {
 	s.flusher.Flush()
 }
 
-func streamSSEMessages(r *http.Request, s *sseWriter, eventName, initial string, ch <-chan string) {
-	if initial != "" {
-		s.writeEvent(eventName, initial)
-	}
-	streamSSELoop(r, s, eventName, ch)
-}
-
 func streamSSEByteMessages(r *http.Request, s *sseWriter, eventName string, initial []byte, ch <-chan []byte) {
 	if len(initial) > 0 {
 		s.writeEvent(eventName, string(initial))

@@ -184,10 +184,6 @@ func (d *Driver) signedJSON(ctx context.Context, method, rawURL string, params m
 	return d.rawJSON(ctx, method, rawURL, query, nil, headers, out)
 }
 
-func (d *Driver) signedForm(ctx context.Context, method, rawURL string, form url.Values, out any) error {
-	return d.signedFormFor(ctx, method, rawURL, form, out, d.isFamily())
-}
-
 func (d *Driver) signedFormFor(ctx context.Context, method, rawURL string, form url.Values, out any, family bool) error {
 	query := clientSuffix()
 	headers, err := d.signatureHeadersFor(method, rawURL, "", family)

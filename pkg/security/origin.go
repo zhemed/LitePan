@@ -64,10 +64,6 @@ func requestOrigin(r *http.Request) string {
 	return normalizeOrigin(r.Header.Get("Referer"))
 }
 
-func RequestBaseURL(r *http.Request) string {
-	return requestBaseURL(r)
-}
-
 func requestBaseURL(r *http.Request) string {
 	proto := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0])
 	host := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Host"), ",")[0])
