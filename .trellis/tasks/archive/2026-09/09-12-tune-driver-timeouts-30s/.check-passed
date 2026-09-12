@@ -1,0 +1,2 @@
+checked_at=2026-09-12 15:50:57
+note=参数收敛任务：115 API 600s→30s、115 上传响应头兜底 60s→30s、189 上传兜底 60s→30s（189 API 30s 未改）；上传传输仍无总超时。测试：新增 TestInitConfiguresDriverTimeouts（离线锁定三值）+ 更新断言；go vet/test/build + web 三连全绿。发版 0.0.39：镜像三 tag 同 digest 1f2b2bb4、tag v0.0.39 已修正指向 7243a27（gh release create 顺序错误已修正并复盘）、本地容器重建三连通过。已知取舍：115 complete 类慢 API 30s 即失败，回退=只调大该值
