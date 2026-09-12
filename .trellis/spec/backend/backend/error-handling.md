@@ -32,7 +32,7 @@ Reference: `internal/domain/errors.go`, `internal/domain/conn_error.go`.
 
 - `internal/store/*: wrapDB(err)` converts `sql.ErrNoRows` → `domain.CodeNotFound`, sqlite unique → `CodeConflict`, busy/locked → `CodeInternal` with retry hint.
 - Always `return wrapDB(err)` not raw `err`.
-- `scanAccount`, `scanApiKey` etc. return `wrapDB` already; callers check `domain.CodeOf(err)==domain.CodeNotFound` when branching.
+- `scanAccount`, `scanUploadTask` etc. return `wrapDB` already; callers check `domain.CodeOf(err)==domain.CodeNotFound` when branching.
 
 ---
 
@@ -62,7 +62,9 @@ Reference: `internal/domain/errors.go`, `internal/domain/conn_error.go`.
 - Handlers should `if err != nil { writeDomainError(w, err); return }` — never `http.Error` raw.
 - For SSE/WebDAV, use `httpx` helpers + `logx` for non-JSON errors.
 
-Reference: `internal/api/api_keys.go`, `internal/api/accounts.go` — all handlers end with `writeDomainError`.
+Reference: `internal/api/accounts.go`, `internal/api/file_favorites.go` — 失败统一走 `writeErr`（`internal/api/resp.go`）。
+
+> ⚠️ **本节的错误码映射表已过时（待单独任务同步）**：`writeDomainError`、`internal/api/errors.go`、`CodeInvalid/CodeConflict/CodeUnauthorized/CodeForbidden` 在当前代码中**均不存在**。实测出口为 `internal/api/resp.go: writeErr`，HTTP 映射由 `internal/domain/errors.go: codeTable + AppError.HTTPStatus()` 决定，响应 JSON 字段为 `error_type`（非 `code`）。
 
 ---
 

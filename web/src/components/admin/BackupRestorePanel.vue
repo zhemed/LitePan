@@ -404,7 +404,7 @@ onActivated(() => {
         <FormField label="备份备注">
           <AppInput v-model="createForm.note" maxlength="200" placeholder="可选，例如：升级前" />
         </FormField>
-        <p class="backup-form__help">由于备份可能包含管理员登录信息、API 密钥、网盘账号数据等敏感信息，必须使用密码加密。</p>
+        <p class="backup-form__help">由于备份可能包含管理员登录信息、网盘账号数据等敏感信息，必须使用密码加密。</p>
         <FormField label="备份密码" required>
           <AppInput v-model="createForm.password" type="password" autocomplete="new-password" placeholder="至少 8 位；忘记后无法恢复" />
         </FormField>

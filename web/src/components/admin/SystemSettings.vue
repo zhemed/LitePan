@@ -27,7 +27,6 @@ import SectionTabBar from "@/components/admin/SectionTabBar.vue";
 import SettingsCard from "@/components/admin/SettingsCard.vue";
 import SettingsRow from "@/components/admin/SettingsRow.vue";
 import SettingsHelpTooltip from "@/components/admin/SettingsHelpTooltip.vue";
-import ApiKeySettings from "@/components/admin/ApiKeySettings.vue";
 import SvgIcon from "@/components/icons/SvgIcon.vue";
 import { isCacheSettingKey } from "@/constants/cacheSettings";
 import { getSkinPref, previewSkin, restoreSavedSkin, setSkinPref, type SkinPref } from "@/utils/theme";
@@ -47,7 +46,6 @@ const emit = defineEmits<{ "password-updated": []; "admin-ui-updated": [] }>();
 const SECURITY_TAB = "security";
 const HOMEPAGE_TAB = "homepage";
 const SERVICE_TAB = "services";
-const API_KEYS_TAB = "apiKeys";
 
 const TASK_PANEL_SETTING_KEYS = new Set(["upload_task_concurrency"]);
 
@@ -122,17 +120,10 @@ const homepageOriginal = reactive({
   admin_home_return_mode: "top_icon" as "sidebar" | "top_icon",
   header_effects_enabled: true,
 });
-const apiKeySettingsRef = ref<InstanceType<typeof ApiKeySettings> | null>(null);
-const apiKeyToolbar = reactive({ loading: true, keyCount: 0, maxKeys: 10 });
-const apiKeyAddDisabled = computed(
-  () => apiKeyToolbar.loading || apiKeyToolbar.keyCount >= apiKeyToolbar.maxKeys,
-);
-
 const tabs = computed(() => [
   { key: SECURITY_TAB, label: "账号安全" },
   { key: HOMEPAGE_TAB, label: "首页设置" },
   { key: SERVICE_TAB, label: "其他设置", disabled: props.forcePasswordChange },
-  { key: API_KEYS_TAB, label: "API 秘钥", disabled: props.forcePasswordChange },
 ]);
 
 const systemItems = computed(() => items.value.filter((it) => it.category === "system"));
@@ -205,7 +196,7 @@ const settingsDirty = computed(
 );
 const { activeTab, setActiveTab } = useSectionTabRoute(
   SECURITY_TAB,
-  [SECURITY_TAB, HOMEPAGE_TAB, SERVICE_TAB, API_KEYS_TAB],
+  [SECURITY_TAB, HOMEPAGE_TAB, SERVICE_TAB],
   {
     beforeTabChange: async (from, to) => {
       if (props.forcePasswordChange && to !== SECURITY_TAB) return false;
@@ -219,12 +210,10 @@ const { confirmDiscardChanges } = useSettingsPageDirty(settingsDirty, revertCurr
 const isSecurityTab = computed(() => activeTab.value === SECURITY_TAB);
 const isHomepageTab = computed(() => activeTab.value === HOMEPAGE_TAB);
 const isServicesTab = computed(() => activeTab.value === SERVICE_TAB);
-const isApiKeysTab = computed(() => activeTab.value === API_KEYS_TAB);
 const accentColor = computed(() => {
   if (isSecurityTab.value) return ACCENTS[0];
   if (isHomepageTab.value) return ACCENTS[1];
   if (isServicesTab.value) return ACCENTS[2];
-  if (isApiKeysTab.value) return ACCENTS[3];
   return ACCENTS[0];
 });
 
@@ -438,16 +427,6 @@ async function submit() {
     <SectionTabBar :model-value="activeTab" :tabs="tabs" @update:model-value="setActiveTab">
       <template #actions>
         <AppButton
-          v-if="isApiKeysTab"
-          type="button"
-          variant="primary"
-          :disabled="apiKeyAddDisabled"
-          @click="apiKeySettingsRef?.openCreate()"
-        >
-          新增秘钥
-        </AppButton>
-        <AppButton
-          v-else
           type="button"
           variant="primary"
           :disabled="!canSave || saving"
@@ -773,13 +752,6 @@ async function submit() {
           </SettingsRow>
         </SettingsCard>
       </template>
-
-      <ApiKeySettings
-        v-else-if="isApiKeysTab"
-        ref="apiKeySettingsRef"
-        :accent="accentColor"
-        @toolbar-state="Object.assign(apiKeyToolbar, $event)"
-      />
     </template>
   </div>
 </template>

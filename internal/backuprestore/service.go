@@ -129,7 +129,7 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (Record, error)
 	var sources []archiveSource
 	if req.IncludeAccounts {
 		scope = ScopeFull
-		components = []string{"settings", "accounts", "credentials", "tasks", "api_keys", "favorites", "secret_key"}
+		components = []string{"settings", "accounts", "credentials", "tasks", "favorites", "secret_key"}
 		payload.Scope = scope
 		sources, payload, err = s.buildFullSources(ctx, workDir, payload)
 	} else {

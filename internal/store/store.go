@@ -9,7 +9,6 @@ type Store struct {
 	AuthStates       domain.AuthStateRepository
 	Configs          domain.ConfigRepository
 	Notifications    domain.NotificationRepository
-	ApiKeys          domain.ApiKeyRepository
 	UploadTasks     domain.UploadTaskRepository
 	FuseMounts      domain.FuseMountRepository
 	AutomationRules  domain.AutomationRuleRepository
@@ -24,7 +23,6 @@ func New(db *DB) *Store {
 		AuthStates:       &authStateRepo{db: db},
 		Configs:          &configRepo{db: db},
 		Notifications:    &notificationRepo{db: db},
-		ApiKeys:          &apiKeyRepo{db: db},
 		UploadTasks:     &uploadTaskRepo{db: db},
 		FuseMounts:      &fuseMountRepo{db: db},
 		AutomationRules:  &automationRuleRepo{db: db},

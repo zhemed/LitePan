@@ -20,7 +20,6 @@ import (
 	"litepan/internal/account"
 	"litepan/internal/accountprofile"
 	"litepan/internal/adminauth"
-		"litepan/internal/apikey"
 	"litepan/internal/auth"
 	"litepan/internal/automation"
 	"litepan/internal/backuprestore"
@@ -55,7 +54,6 @@ type Deps struct {
 	Playback   *playback.Service
 	Automation        *automation.Service
 	Fuse              *fusemount.Service
-	ApiKeys           *apikey.Service
 	Auth              *auth.Service
 	AuthSched         *auth.Scheduler
 	AdminAuth         *adminauth.Service
@@ -85,7 +83,6 @@ type Handler struct {
 	playback  *playback.Service
 	automation        *automation.Service
 	fuse              *fusemount.Service
-	apiKeys           *apikey.Service
 	auth              *auth.Service
 	authSched         *auth.Scheduler
 	adminAuth         *adminauth.Service
@@ -120,7 +117,6 @@ func NewRouter(d Deps) http.Handler {
 		playback:  d.Playback,
 		automation:        d.Automation,
 		fuse:              d.Fuse,
-		apiKeys:           d.ApiKeys,
 		auth:              d.Auth,
 		authSched:         d.AuthSched,
 		adminAuth:         d.AdminAuth,
@@ -187,13 +183,6 @@ func NewRouter(d Deps) http.Handler {
 				r.Post("/accounts/{id}/refresh-profile", h.refreshAccountProfile)
 				r.Get("/settings", h.getSettings)
 				r.Put("/settings", h.updateSettings)
-				r.Route("/api-keys", func(r chi.Router) {
-					r.Get("/", h.listApiKeys)
-					r.Post("/", h.createApiKey)
-					r.Put("/{id}", h.updateApiKey)
-					r.Post("/{id}/toggle", h.toggleApiKey)
-					r.Delete("/{id}", h.deleteApiKey)
-				})
 				r.Get("/cache/stats", h.cacheStats)
 				r.Get("/cache/stats/{id}", h.accountCacheStats)
 				r.Post("/clear-cache", h.clearCache)

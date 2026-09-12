@@ -59,7 +59,7 @@ const visible = computed(()=> store.items.filter(i=> !i.hidden));
 | `src/components/media/*` | `PdfViewer.vue` (`pdfjs-dist`), `DocxPreview.vue` (`docx-preview`), `VideoPlayer.vue` (`hls.js`/`mpegts.js`), `ImagePreview.vue` (`heic-to`, `@panzoom/panzoom`) |
 | `src/views/IndexView.vue` | File browsing page `/` |
 | `src/views/LoginView.vue` | Login + password change |
-| `src/views/AdminView.vue` | Admin tab shell (strm/cache/fuse/automation/apiKeys/logs...) — **11k lines, split via composables, not by file** |
+| `src/views/AdminView.vue` | Admin tab shell（4 页签：`dashboard` 运行概况/系统日志、`settings` 账号安全/首页设置/其他设置、`tasks` 自动联动、`tools` 增强工具/备份管理）—— 面板实现都在 `src/components/admin/*` |
 
 ---
 

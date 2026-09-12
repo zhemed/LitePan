@@ -17,7 +17,7 @@ Reference: `internal/store/db.go`, `internal/config/config.go: Load()`.
 ## Schema & Migrations
 
 - Migrations live in `internal/store/migrate.go: func (db *DB) Migrate(ctx) error` — idempotent `CREATE TABLE IF NOT EXISTS` + `ALTER TABLE` additions. No external migration tool.
-- Tables include: `cloud_accounts`, `account_auth_states`, `strm_tasks`, `cache_retention_tasks`, `media_organize_tasks`, `upload_tasks`, `api_keys`, `account_profiles`, `system_configs`, etc.
+- Tables: `cloud_accounts`, `account_auth_states`, `configs`, `upload_tasks`, `fuse_mounts`, `notifications`, `automation_rules`, `automation_runs`（+ `schema_migrations` 迁移台账）。
 - Adding a migration: append `_, err = tx.ExecContext(ctx, `ALTER TABLE x ADD COLUMN y TEXT`)` guarded by `SELECT` of `pragma_table_info`; keep `Migrate` ordered chronologically; test via `store.Open(Memory:true)` in `*_test.go`.
 
 Reference: `internal/store/migrate.go`, `internal/store/db.go: wrapDB`.
@@ -27,7 +27,7 @@ Reference: `internal/store/migrate.go`, `internal/store/db.go: wrapDB`.
 ## Repository Pattern
 
 - `internal/domain/*.go` declares `type FooRepository interface{ List/Create/Get/Update/Delete... }` + structs.
-- `internal/store/*.go` implements one file per aggregate: `accountRepo`, `authStateRepo`, `apiKeyRepo`, `strmRepo`, etc.
+- `internal/store/*.go` implements one file per aggregate: `accountRepo`, `authStateRepo`, `configRepo`, `uploadTaskRepo`, `fuseMountRepo`, `automationRuleRepo` etc.
 - **Store is the only implementor**: `internal/api` and services receive `domain.FooRepository` via `Deps`/wiring, never `*store.DB` directly.
 
 Example:
@@ -45,7 +45,7 @@ func (r *accountRepo) Create(ctx, a *domain.Account) (int64,error){
 }
 ```
 
-Reference: `internal/domain/account.go`, `internal/store/account_repo.go`, `internal/store/api_key_repo.go`.
+Reference: `internal/domain/account.go`, `internal/store/account_repo.go`, `internal/store/upload_task_repo.go`.
 
 ---
 

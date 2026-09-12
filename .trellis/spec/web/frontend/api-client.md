@@ -49,7 +49,7 @@ export const publicApi = { listAccounts:()=> http.get<Account[]>("/public/accoun
 // web/src/api/files.ts, strm.ts, auth.ts, etc. follow same pattern
 ```
 
-Full list: `accounts.ts, announcement.ts, apikey.ts, auth.ts, automation.ts, drivers.ts, files.ts, public.ts, logs.ts, ...`（`strm.ts / cache.ts / cloudTools.ts` 中 `quarkTV/coverExtract/emby/fnos/crossTransfer` 已删，`cloudTools.ts` 仅 `localUploadApi`，`crossTransfer.ts` 5 导出已删，2026-08-30 精简后）。
+Full list: `accounts.ts, auth.ts, automation.ts, backupRestore.ts, cache.ts, client.ts, cloudTools.ts, dev.ts, drivers.ts, files.ts, fuse.ts, logs.ts, notifications.ts, oauth.ts, public.ts, qr.ts, settings.ts, types.ts, upload.ts`（`cloudTools.ts` 仅 `localUploadApi`；`apikey.ts` 随 09-12 API 秘钥功能移除而删除）。
 
 ---
 

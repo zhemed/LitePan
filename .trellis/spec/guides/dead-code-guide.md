@@ -34,9 +34,10 @@ Measured 2026-09-12 (`v0.0.44`): `deadcode` reported **9**, `unused` reported **
 A method that *looks* like an interface stub is only justified if **something instantiates the type and assigns it to an interface variable**. "Looks like a mock" is not evidence.
 
 ```bash
-grep -n "apiKeyRepo" internal/automation/service_test.go
-# → only `type` definition + method definitions, NO instantiation → truly dead
+# 判定手法：搜类型名，看有没有 `&Type{` 形式的实例化（只有 type/方法定义 = 真死）
+grep -rn "TypeName" internal/<pkg>/
 ```
+历史案例（目标文件已删，手法照旧有效）：`internal/settings/service_test.go` 的 `memoryConfigRepo`、`internal/automation/service_test.go` 的 `apiKeyRepo` —— 都只有定义与方法、无任何实例化，已确认删除。
 
 Both an earlier sweep and an early draft of a later one misclassified such a batch as "interface stubs, not dead code". Checking instantiation is what settles it.
 

@@ -7,7 +7,7 @@
 ## Stack
 
 - Router: `github.com/go-chi/chi/v5` + `chi/middleware` in `internal/api/router.go: NewRouter(Deps)`.
-- Auth: `internal/adminauth.Service` + `internal/api/admin_middleware.go` (`Authorization: Bearer <key>` or cookie session, `X-API-Key`).
+- Auth: `internal/adminauth.Service` + `internal/api/admin_middleware.go`（**仅 Cookie 会话**：`ReadSession(r)` 读会话 Cookie；无 `Authorization`/`X-API-Key` 等请求头鉴权）。
 - Embed: `//go:embed web` `webFS embed.FS` serves `internal/api/web/index.html` as SPA fallback.
 - Handler pattern: `type Handler struct{ log *slog.Logger, accountSvc *account.Service, ... }` + method per route, constructed once per `NewRouter`.
 
@@ -17,7 +17,7 @@
 
 ```
 Client → chi.Router (Recoverer, RequestID, Logger)
-  → admin_middleware.go (session/apiKey check, sets ctx admin)
+  → admin_middleware.go（`ReadSession` 校验会话 Cookie，命中后写入 ctx admin）
   → Handler.<Feature>(w,r) in internal/api/<feature>.go
     → internal/<feature>.Service (business validation)
       → domain.Repository (interface, e.g. domain.AccountRepository)

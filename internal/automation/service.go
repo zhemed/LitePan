@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"litepan/internal/apikey"
 	"litepan/internal/domain"
 	filesvc "litepan/internal/file"
 	"litepan/internal/settings"
@@ -16,7 +15,6 @@ import (
 type Service struct {
 	rules    domain.AutomationRuleRepository
 	runs     domain.AutomationRunRepository
-	apiKeys  *apikey.Service
 	files    *filesvc.Service
 	settings *settings.Service
 	dataDir  string
@@ -37,7 +35,6 @@ type Service struct {
 type Options struct {
 	Rules    domain.AutomationRuleRepository
 	Runs     domain.AutomationRunRepository
-	ApiKeys  *apikey.Service
 	Files    *filesvc.Service
 	Settings *settings.Service
 	DataDir  string
@@ -115,7 +112,6 @@ func New(opts Options) *Service {
 	return &Service{
 		rules:        opts.Rules,
 		runs:         opts.Runs,
-		apiKeys:      opts.ApiKeys,
 		files:        opts.Files,
 		settings:     opts.Settings,
 		dataDir:      opts.DataDir,
@@ -136,13 +132,6 @@ func (s *Service) SetStartupGate(gate <-chan struct{}) {
 	s.startupGate = gate
 	s.startupReady = gate == nil
 	s.mu.Unlock()
-}
-
-func (s *Service) SetApiKeys(apiKeys *apikey.Service) {
-	if s == nil {
-		return
-	}
-	s.apiKeys = apiKeys
 }
 
 func (s *Service) ListRules(ctx context.Context) ([]RuleView, error) {

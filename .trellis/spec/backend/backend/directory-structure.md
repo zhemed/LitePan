@@ -23,7 +23,7 @@
 │   ├── driver/                  # driver abstractions: Manager, DelayController, Config, registry
 │   ├── file/ playback/ upload/  # file operations, streaming, upload manager
 │   ├── fusemount/ fusereadcache/ cache/
-│   ├── auth/ adminauth/ apikey/ account/ accountprofile/
+│   ├── auth/ adminauth/ account/ accountprofile/
 │   ├── logx/ httpx/ eventbus/ notification/
 │   └── ... (automation, backuprestore, share, settings, favorites, taskauth, startupwait)
 ├── pkg/                         # pure utils: jsonvalue, secretkey, singleflight, strutil, timeutil, speedsmoother

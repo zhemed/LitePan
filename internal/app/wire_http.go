@@ -6,7 +6,6 @@ import (
 
 	"litepan/internal/adminauth"
 		"litepan/internal/api"
-	"litepan/internal/apikey"
 	"litepan/internal/backuprestore"
 	"litepan/internal/buildinfo"
 	"litepan/internal/cache"
@@ -24,14 +23,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 	})
 	notifySvc.Register(core.bus)
 
-	apiKeySvc := apikey.New(apikey.Options{
-		Repo:     st.store.ApiKeys,
-		Settings: st.settings,
-		Secret:   core.secret,
-	})
-	if svc.automation != nil {
-		svc.automation.SetApiKeys(apiKeySvc)
-	}
 	backupRestoreSvc, err := backuprestore.New(backuprestore.Options{
 		DataDir:   cfg.DataDir,
 		DBPath:    cfg.DBPath,
@@ -60,7 +51,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Playback:  svc.playback,
 		Automation:       svc.automation,
 		Fuse:             svc.fuse,
-		ApiKeys:          apiKeySvc,
 		Auth:             core.auth,
 		AuthSched:        core.sched,
 		AdminAuth:        adminauth.New(st.store.Configs, core.secret, logs.For(logx.ModuleAPI)),

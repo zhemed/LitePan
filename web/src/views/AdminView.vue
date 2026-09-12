@@ -50,7 +50,7 @@ const PAGE_TABS: Record<string, { defaultTab: string; tabs: Record<string, strin
   dashboard: { defaultTab: "overview", tabs: { overview: "运行概况", logs: "系统日志" } },
   settings: {
     defaultTab: "security",
-    tabs: { security: "账号安全", homepage: "首页设置", service: "其他设置", "api-keys": "API 秘钥" },
+    tabs: { security: "账号安全", homepage: "首页设置", service: "其他设置" },
   },
   tasks: {
     defaultTab: "automation",
