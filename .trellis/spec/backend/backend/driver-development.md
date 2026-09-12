@@ -100,6 +100,15 @@ Reference: `drivers/Quark/{driver.go, config.go, auth.go, ops.go, transport.go, 
 
 - Auth refresh: `internal/driver/manager.go` + `internal/auth` scheduler handles `AuthToken` (proactive `RefreshAdvance`) vs `AuthCookie` (periodic `HealthCheckInterval` + `Ping`).
 
+### Control plane vs data plane HTTP clients (0.0.38)
+
+`http.Client.Timeout` is the **whole-request** deadline (connect + write the entire body + read the response) — it is **not** an idle timeout, so it must never bound a file-transfer request.
+
+- **API / control plane** → `httpx.NewClient(httpx.ClientOptions{Timeout: ...})` (finite total timeout, e.g. 189 = 30s, 115 = 600s).
+- **Upload / data plane** → `httpx.NewStreamingClient(base, 60*time.Second)`: clones the base client's transport (connection pool, proxy, compression settings) but sets **no total timeout**, only `ResponseHeaderTimeout` — a dead upstream is caught by "connected but no response headers", while a slow-but-progressing transfer is allowed to finish.
+- Per-part retry belongs to the driver: bound the attempts (115 OSS parts: `ossUploadPartWithRetry`, 3 attempts, 1s/2s backoff, `f.Seek(offset, io.SeekStart)` before each attempt), retry only transient classes (`net.Error`, `unexpected EOF`, `connection reset`, `broken pipe`, HTTP 429/5xx), and **leave credential errors to the token-refresh path** so retries do not multiply into a refresh storm.
+- Reference: upstream `869974b`「修复网盘上传超时」, adopted in `drivers/115_Open/{driver,upload}.go` + `drivers/189Cloud/driver.go`; contract tests in `internal/httpx/client_test.go` and `drivers/115_Open/upload_retry_test.go`.
+
 ---
 
 ## Pure-Driver Rule (Critical)

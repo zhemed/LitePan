@@ -45,6 +45,24 @@ func NewClient(opts ClientOptions) *http.Client {
 	return &http.Client{Timeout: timeout, Transport: tr}
 }
 
+// NewStreamingClient 复用普通客户端的连接配置，但不限制整段文件传输时长。
+//
+// 与 NewClient 的差别只在于：不设置 http.Client.Timeout（该字段是"整个请求"的总时长上限，
+// 会把大分片/慢链路的正常传输掐断），改为设置 ResponseHeaderTimeout —— 只对"连上了却
+// 迟迟不返回响应头"判死。用于上传等数据面请求；普通 API 调用仍应使用 NewClient。
+func NewStreamingClient(base *http.Client, responseHeaderTimeout time.Duration) *http.Client {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	if base != nil {
+		if baseTransport, ok := base.Transport.(*http.Transport); ok {
+			tr = baseTransport.Clone()
+		}
+	}
+	if responseHeaderTimeout > 0 {
+		tr.ResponseHeaderTimeout = responseHeaderTimeout
+	}
+	return &http.Client{Transport: tr}
+}
+
 func CloseClient(c *http.Client) {
 	if c == nil {
 		return

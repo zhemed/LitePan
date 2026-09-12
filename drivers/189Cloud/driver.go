@@ -80,11 +80,9 @@ func (d *Driver) Init(ctx context.Context) error {
 		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 30 * time.Second})
 	}
 	if d.uploadClient == nil {
-		d.uploadClient = httpx.NewClient(httpx.ClientOptions{
-			Timeout:            300 * time.Second,
-			DisableCompression: true,
-			DisableKeepAlives:  true,
-		})
+		// 数据面（分片 PUT）复用 API 客户端的连接配置，但不限制整段传输时长：
+		// 只对"连上了却迟迟不返回响应头"判死（upstream 869974b 修复网盘上传超时）。
+		d.uploadClient = httpx.NewStreamingClient(d.client, 60*time.Second)
 	}
 	d.mu.Lock()
 	if d.accessToken == "" {
