@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 123
+- **Total Sessions**: 124
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~112 | Active |
+| `journal-3.md` | ~143 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 124 | 2026-09-12 | 调查上游 LitePan 最新更新（v0.5.5-beta）：历史被重写，47 提交分类与 9 项移植候选 | - | `main` |
 | 123 | 2026-09-12 | 本地3条失败任务归档确认（只读复核） | `214d17f` | `main` |
 | 122 | 2026-09-11 | 生产存量批次字段清理：无需写入（目标已达成） | `5ffa648` | `main` |
 | 121 | 2026-09-11 | 修复终态桶为空+清理任务待命,0.0.37 | `65e91f0` | `main` |

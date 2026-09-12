@@ -110,3 +110,34 @@
 ### Next Steps
 
 - 无待办；若 189 HTTP 511/513 频繁出现再另开专项任务
+
+
+## Session 124: 调查上游 LitePan 最新更新（v0.5.5-beta）：历史被重写，47 提交分类与 9 项移植候选
+<!-- trellis-session: v=2 fp=66eb433874514a47 -->
+
+**Date**: 2026-09-12
+**Task**: 调查上游 LitePan 最新更新（v0.5.5-beta）：历史被重写，47 提交分类与 9 项移植候选
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+只读调查 ponphil 上游自 fork 点(f71a522≡4c160d9, 08-29)以来 47 个提交：① 发现上游已 force-push 重写历史（根 tree 相同、SHA 全变、双方无共同祖先）→ 同步口径改为内容级 tree 对照，禁止 merge/rebase；② 逐提交适用性评分（11 个 0 适用文件；STRM/跨盘/Emby/AI/清理/多驱动均不适用）；③ 与本方 0.0.32~0.0.37 六项修复并排取证：上游无 breaker.go/无冷却等待/无 cooldown 日志抑制/无 groupBatches，唯一同文件竞争 5255775 收口5 为纯重构，不建议移植；④ 产出 P1~P9 候选（P1=869974b 上传超时修复最优先）；⑤ 官方 changelog v0.5.5/v0.5.4 与 git 提交交叉印证。本轮零代码改动（go vet 绿）
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读：git fetch/tree 三向对照/GitHub API/8 路 tavily+官方 changelog 交叉；零代码改动（git status 仅任务目录，git diff HEAD 为空）；go vet ./... 全绿
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户决定是否建移植任务：P1 上传超时（httpx.NewStreamingClient+189/115 上传客户端+OSS 分片重试，bump 0.0.38）
+- 可选：P2+P5 日志/可观测合并任务；P3 认证收口（需 -race 验证）
+- 建议将「上游同步口径：内容对照移植」固化为 .trellis/spec 备忘（待用户确认）
