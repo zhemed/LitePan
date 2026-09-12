@@ -72,7 +72,7 @@ func (d *Driver) SetRequestIntervalGate(gate driver.RequestIntervalGate) { d.int
 
 func (d *Driver) Init(ctx context.Context) error {
 	if d.client == nil {
-		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 600 * time.Second})
+		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 30 * time.Second})
 	}
 	if d.uploadClient == nil {
 		d.uploadClient = newOSSUploadHTTPClient(d.client)

@@ -30,9 +30,9 @@ import (
 const ossUploadAttempts = 3
 
 // newOSSUploadHTTPClient 构造数据面专用客户端：不限制整段传输时长，仅在响应头迟迟不来时判死。
-// 见 upstream 869974b「修复网盘上传超时」。
+// 见 upstream 869974b「修复网盘上传超时」；响应头兜底为 30s（用户 2026-09-12 定的统一值）。
 func newOSSUploadHTTPClient(base *http.Client) *http.Client {
-	return httpx.NewStreamingClient(base, 60*time.Second)
+	return httpx.NewStreamingClient(base, 30*time.Second)
 }
 
 // ossUploadHTTPClient 返回数据面客户端；未初始化时回退到 API 客户端，避免空指针。

@@ -68,8 +68,35 @@ func TestNewOSSUploadHTTPClientHasNoTotalTimeout(t *testing.T) {
 	if !ok {
 		t.Fatalf("transport 类型异常：%T", up.Transport)
 	}
-	if tr.ResponseHeaderTimeout != 60*time.Second {
-		t.Fatalf("ResponseHeaderTimeout=%v，期望 60s", tr.ResponseHeaderTimeout)
+	if tr.ResponseHeaderTimeout != 30*time.Second {
+		t.Fatalf("ResponseHeaderTimeout=%v，期望 30s", tr.ResponseHeaderTimeout)
+	}
+}
+
+// TestInitConfiguresDriverTimeouts 锁定 0.0.39 的统一取值：
+// API 客户端总超时 30s；上传客户端无总超时、响应头兜底 30s。
+// 该用例不发网络请求（token 非空时 Init 不做刷新）。
+func TestInitConfiguresDriverTimeouts(t *testing.T) {
+	d := &Driver{}
+	d.add.AccessToken = "dummy-token"
+	if err := d.Init(context.Background()); err != nil {
+		t.Fatalf("Init 失败（不应访问网络）：%v", err)
+	}
+	if d.client == nil || d.uploadClient == nil {
+		t.Fatal("Init 应同时构造 API 客户端与上传客户端")
+	}
+	if d.client.Timeout != 30*time.Second {
+		t.Fatalf("115 API 总超时=%v，期望 30s", d.client.Timeout)
+	}
+	if d.uploadClient.Timeout != 0 {
+		t.Fatalf("上传客户端不应有总超时，实际 %v", d.uploadClient.Timeout)
+	}
+	tr, ok := d.uploadClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("上传客户端 transport 类型异常：%T", d.uploadClient.Transport)
+	}
+	if tr.ResponseHeaderTimeout != 30*time.Second {
+		t.Fatalf("上传响应头兜底=%v，期望 30s", tr.ResponseHeaderTimeout)
 	}
 }
 
@@ -80,7 +107,7 @@ func TestOSSUploadHTTPClientFallsBack(t *testing.T) {
 	if d.ossUploadHTTPClient() != api {
 		t.Fatal("uploadClient 为空时应回退到 client")
 	}
-	up := httpx.NewStreamingClient(api, 60*time.Second)
+	up := httpx.NewStreamingClient(api, 30*time.Second)
 	d.uploadClient = up
 	if d.ossUploadHTTPClient() != up {
 		t.Fatal("已初始化时应使用 uploadClient")
