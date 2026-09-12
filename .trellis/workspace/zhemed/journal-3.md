@@ -657,3 +657,45 @@
 - 部署 LitePan 到 :5211（用户已明确搁置，随时可开）
 - 未决观察：README 首屏声称 118M，实测 v0.0.44 压缩后 41.8MiB / 未压缩 161MB，三者口径不一致（118M 是 v0.0.1 时代数字），是否更新待用户决定
 - 本机新库默认口令为 admin/admin（非 AGENTS.md 记录的 123456，后者是上一台机器重置后的值）；正式部署时需决定是否改密
+
+
+## Session 139: 部署 LitePan v0.0.44 到本机 :5211（含数据持久化验证）
+<!-- trellis-session: v=2 fp=ec3b654641c022d6 -->
+
+**Date**: 2026-09-12
+**Task**: 部署 LitePan v0.0.44 到本机 :5211（含数据持久化验证）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户指示把已发布的 v0.0.44 部署到本机 :5211，用仓库 tracked docker-compose.yml（未修改），零仓库受跟踪改动。起始前提：Docker 29.7.2+Compose v5.4.0 active、镜像已在本地、5211/42069 空闲、data/ 不存在（首次启动只新建不覆盖）。部署结果：容器 litepan Up、5211 双栈发布（0.0.0.0+[::]）、约 4s 就绪；health 200、SPA 首页含 LitePan、表单编码登录 200（is_admin+must_change_password）、/api/public/system-config 返回 version=v0.0.44（顺带在部署形态下复核了上一任务成果）、日志含『HTTP 服务已监听』、RestartPolicy=unless-stopped。持久化用四条与文件大小无关的证据证明：同一 inode 13533519 全程未变、只读读库得 11 张表与真实 pbkdf2 哈希、secret.key inode/mtime 未变、重启前的 session cookie 在整容器重启后仍通过鉴权。边界：DSH 3080/3081 的 node PID 与基线完全一致、git 零受跟踪改动、data/ 与 mounts/ 由 gitignore 覆盖。
+
+### Main Changes
+
+- 宿主/容器（非仓库）：新增容器 litepan（ghcr.io/zhemed/litepan:v0.0.44）、发布端口 5211、创建 data/ 与 mounts/（均 gitignored）
+- 任务产物：.trellis/tasks/archive/2026-09/09-12-deploy-litepan-local-5211/{prd.md,design.md,implement.md,.check-passed}；scope=infra
+- 选型依据：本机用根 docker-compose.yml（相对路径+ports 收敛），不用 README/fnos 变体（NAS 绝对路径 + host 网络）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ebf95cd` | chore(task): archive 09-12-deploy-litepan-local-5211 |
+
+### Testing
+
+- [OK] [OK] 可用性：health 200 / SPA 200 / 表单登录 200 / version=v0.0.44 / 日志含监听行
+- [OK] [OK] 持久化：inode 同一 + 只读读库 11 表与真实哈希 + secret.key 未重建 + 重启前 cookie 仍有效
+- [OK] [OK] 边界：DSH PID 与基线一致；git status 仅任务目录；git check-ignore 证实 data//mounts/ 被忽略
+- [OK] [教训] 持久化验证中我先后用『文件清单』与『db+wal+shm 总字节数』两个无效判据产生假阴性 —— WAL 模式下 checkpoint 使总字节数下降属正常；已改用与大小无关的判据
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户在浏览器改默认口令后，建议同步更新 AGENTS.md 的口令记录（属规则文件，需另建任务）
+- 待决：docker-compose.fnos.yml 的 image tag 仍为 v0.0.31（落后 13 版），bump 会把多版本变更推给 NAS 用户且本机无法验证 fnOS
+- 待决：README 首屏声称 118M，实测 v0.0.44 压缩后 41.8MiB / 未压缩 161MB，口径不一致
