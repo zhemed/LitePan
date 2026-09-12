@@ -1,0 +1,2 @@
+checked_at=2026-09-12 15:56:31
+note=只读调查 P6：结论=不需要。internal/mediaorganize/rules 为孤儿包（0 处 import、不在 cmd/litepan 依赖图、无 API 路由/前端/自动化入口），1bcfac8 移除目录整理时同提交也移除了 name_align 对它的依赖，故已死 13 天；上游 20b66de 改的正是该包→P6 作废（候选 9→8）。顺带更正三处过期记述（报告 §3.2/§6、journal-1.md:252、spec directory-structure.md:44）；建议后续可选清理任务（删 19 文件/3796 行 + 同步 spec）。零代码改动
