@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 122
-- **Last Active**: 2026-09-11
+- **Total Sessions**: 123
+- **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~77 | Active |
+| `journal-3.md` | ~112 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 123 | 2026-09-12 | 本地3条失败任务归档确认（只读复核） | `214d17f` | `main` |
 | 122 | 2026-09-11 | 生产存量批次字段清理：无需写入（目标已达成） | `5ffa648` | `main` |
 | 121 | 2026-09-11 | 修复终态桶为空+清理任务待命,0.0.37 | `65e91f0` | `main` |
 | 120 | 2026-09-11 | 回退自动化批次分组,0.0.36 | `b8e7222`, `31b9ba7` | `main` |

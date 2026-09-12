@@ -75,3 +75,38 @@
 ### Next Steps
 
 - 无待办；生产机已 0.0.37 且面板无折叠，后续运行也不会再产生批次字段
+
+
+## Session 123: 本地3条失败任务归档确认（只读复核）
+<!-- trellis-session: v=2 fp=7e2f97b537e3d688 -->
+
+**Date**: 2026-09-12
+**Task**: 本地3条失败任务归档确认（只读复核）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户确认归档本地 3 条失败任务。只读复核：本地实例 v0.0.37(ImageID 36b11f22, Restarts=0)，任务 13 条全部 success、failed=0；对照 09-11 清单：bulk5k_1609.bin 与 bulk5k_1540.bin 已重传成功，bulk5k_1267.bin 记录已随列表清理。观察并如实标注：本地任务记录 15,098→13 为用户侧清理，非我方操作；云端文件与本地测试文件未受影响。本轮零写入
+
+### Main Changes
+
+- .trellis/tasks/archive/2026-09/09-12-record-local-failed-tasks-archived/{prd.md,research.md,task.json}
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `214d17f` | chore(task): record local failed-tasks archived (read-only verified) |
+
+### Testing
+
+- [OK] 只读：SQLite mode=ro 查询 + docker inspect；无任何写操作
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 无待办；若 189 HTTP 511/513 频繁出现再另开专项任务
