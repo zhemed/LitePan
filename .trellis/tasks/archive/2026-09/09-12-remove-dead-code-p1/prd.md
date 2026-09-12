@@ -31,16 +31,29 @@
 
 ## Acceptance Criteria
 
-- [ ] `internal/proxybase`、`internal/taskauth`、`pkg/strutil` 已删除，且删除前有零 import 复核证据
-- [ ] 24 个真死函数已按复核结果处理：删除或（复核不通过者）保留并记录原因
-- [ ] `deadcode ./cmd/litepan` 复跑：目标符号消失且无新增发现（留存对比证据）
-- [ ] `go vet ./...`、`go test ./...`、`go build ./...`、web 三连全绿
-- [ ] 版本号 `0.0.41` 已更新（`README.md` + `docker-compose.yml`）
-- [ ] 镜像 `ghcr.io/zhemed/litepan:0.0.41`（含 `:v0.0.41`、`:latest`）已推送；tag 指向修复提交（API 复核）；release 已创建（顺序正确）
-- [ ] 本地容器已重建到 0.0.41，health / form 登录 / 任务汇总三连通过
-- [ ] 删除清单、排除项与原因已写入 journal
+- [x] `internal/proxybase`、`internal/taskauth`、`pkg/strutil` 已删除，且删除前有零 import 复核证据
+      → 三包 `grep -rn "litepan/<pkg>\""` 均为 0 且不在 `go list -deps ./cmd/litepan`；`git rm -r` 三个目录（含测试）
+- [x] 24 个真死函数已按复核结果处理：删除或（复核不通过者）保留并记录原因
+      → 删除 **23 个**；保留 **1 个**：`pkg/jsonvalue.FlexibleString.UnmarshalJSON`（实现 `json.Unmarshaler`，由 `encoding/json` 反射调用，RTA 观察不到，删除会改变解码语义）——已在 Notes 与 journal 记录
+      → 附带清理：`internal/driver/uploadutil/progress.go`（类型 `ReadProgress`/常量全无引用）与 `internal/backuprestore/maintenance.go`（3 个方法删除后仅剩无用类型 `TempCandidate`）整文件删除；`internal/upload/target_dir.go` 移除因删除产生的未用 `path` import；`gofmt` 复核仅修自身改动引入的 1 处格式问题（其余不干净文件经 HEAD 对比确认为存量）
+- [x] `deadcode ./cmd/litepan` 复跑：目标符号消失且无新增发现（留存对比证据）
+      → 清理前 **32** 项 → 清理后 **9** 项；差集显示 23 个目标全部消除，**新增 0**；剩余 9 = 8 个"仅测试可达" + 1 个有意保留项（`/tmp/deadcode_prod.txt` vs `/tmp/deadcode_prod_after.txt`）
+- [x] `go vet ./...`、`go test ./...`、`go build ./...`、web 三连全绿
+      → 全部通过（`go test ./...` exit 0；web `MEMO-ALL-PASS`）；`go mod tidy -diff` 为空（无依赖变化）
+- [x] 版本号 `0.0.41` 已更新（`README.md` + `docker-compose.yml`）
+      → README 2 处 + docker-compose 1 处
+- [x] 镜像 `ghcr.io/zhemed/litepan:0.0.41`（含 `:v0.0.41`、`:latest`）已推送；tag 指向修复提交（API 复核）；release 已创建（顺序正确）
+      → 三 tag 同 digest `sha256:6617d6520460509aff1e9438d726b13d30f33b8ca228104bff535a051438f7eb`（ImageID `0c11de670d67`）；tag `v0.0.41` = `69a3177`（`gh api .../git/ref/tags/v0.0.41` 与本地一致）；release https://github.com/zhemed/LitePan/releases/tag/v0.0.41；顺序＝push main → tag → push tag → release ✔
+      → 二进制对照：0.0.40 与 0.0.41 体积同为 **20,885,666 B**、内容不同（约 52% 字节差异＝链接布局位移）→ 清理收益在源码/维护面，非镜像体积
+- [x] 本地容器已重建到 0.0.41，health / form 登录 / 任务汇总三连通过
+      → ImageID `0c11de670d67`、`Restarts=0`；health ok；登录 ok；任务汇总 `total=13 success=13`
+- [x] 删除清单、排除项与原因已写入 journal
+      → Session 128
 
 ## Notes
 
 - `scope=lightweight`：纯删除 + 发版，无接口/契约/行为变更。
+- **排除项（重要，防反射误删）**：`pkg/jsonvalue.FlexibleString.UnmarshalJSON` 保留。判据修正：`deadcode`(RTA) 看不到 `encoding/json` 等**反射调用**，凡实现标准接口（`UnmarshalJSON`/`MarshalJSON`/`Read`/`Write` 等）的方法，必须先人工复核再决定是否删除。
+- 统计：共 24 个文件、**-781 行**（含 3 个包与 2 个整文件）。
+- 未做（属排查报告 P2~P4）：前端 12 个零引用文件、`drivers/template`+httpx OAuth 测试专用链路、`/accounts/{id}/refresh-auth` 预留端点。
 - Keep `prd.md` focused on requirements, constraints, and acceptance criteria.

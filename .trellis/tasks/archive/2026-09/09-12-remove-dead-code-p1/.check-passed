@@ -1,0 +1,2 @@
+checked_at=2026-09-12 16:24:06
+note=死代码清理 P1 完成：删 3 孤儿包（proxybase/taskauth/strutil）+ 23 真死函数（含 progress.go、maintenance.go 整文件），保留 FlexibleString.UnmarshalJSON（json.Unmarshaler 反射调用，RTA 盲区）；deadcode 32→9、无新增；go vet/test/build + web 三连全绿、tidy 无变化；共 24 文件 -781 行。发版 0.0.41（三 tag 同 digest 6617d652、tag=69a3177 API 复核、release 顺序正确）+ 本地重建三连通过；二进制体积不变（20885666B）
