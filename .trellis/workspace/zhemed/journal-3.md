@@ -904,3 +904,42 @@
 
 - 可发布：若要把它推出去需另开任务走完整发版（build + GHCR 三 tag + tag + release + 本地容器验证）；本次刻意未 bump 版本号以保持代码-镜像-文档一致
 - 仍待决策：孤儿端点 /accounts/{id}/refresh-auth、OfflineHandoffClientID、SourceTypeOfflineHandoff 生产分支语义、drivers/template + httpx OAuth 链路（~588 行）
+
+
+## Session 145: 修正 drivers/template 包注释指向不存在的 README
+<!-- trellis-session: v=2 fp=94197113e9fe2112 -->
+
+**Date**: 2026-09-12
+**Task**: 修正 drivers/template 包注释指向不存在的 README
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+在解释 P3/P4 详情时顺带发现的缺陷并修正：drivers/template/driver.go 的包注释写『按 README 实现』，但该目录只有 6 个 .go 文件没有 README（全仓库仅此一处指向它），新建驱动的人会照它去翻一个不存在的文件。逐处核实后只替换错的那一处——注释里共四处指引，实测三处为真（复制目录、改包名与 Config.Name、到 drivers/all.go 空导入、勿注册本包）故原样保留；把假的那处改为指向真实且维护中的 .trellis/spec/backend/backend/driver-development.md:69『Adding a New Driver FooCloud』（含完整四步、DelayController.Gate 用法与注册位置）。改动 100% 为注释行（1 删 3 增，非注释行改动=0）。质量门：make lint 0 issues、go vet exit=0、go test 27 包 ok、gofmt 干净；死代码基线未变（deadcode 7、unused 0）。
+
+### Main Changes
+
+- drivers/template/driver.go：包注释改为指向真实存在的 spec 章节；保留其余三处已核实为真的指引
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `241a24c` | docs(drivers): 修正 template 包注释指向不存在的 README |
+| `47b0a50` | chore(task): archive 09-12-fix-template-package-comment |
+
+### Testing
+
+- [OK] [OK] README 字样零命中；指向的 driver-development.md:69 章节确实存在；drivers/all.go 实际存在
+- [OK] [OK] 四项准确指引仍在（复制目录/改包名与 Config.Name/all.go 空导入/勿注册 template 自身）
+- [OK] [OK] 只改注释：git diff 非注释行改动 = 0；gofmt 干净；go test 27 包 ok
+- [OK] [OK] 死代码基线未变：deadcode 仍 7、unused 仍 0（本任务不应改变基线）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- P3/P4 决策已给出结论（四项均建议保留：refresh-auth 是可达运维钩子、SourceTypeOfflineHandoff 是生产默认值、template 是 spec 记载的驱动流程载体与唯一 OAuth 守卫测试替身）；仅 P3-2 的 OfflineHandoffClientID 属可删但收益极小

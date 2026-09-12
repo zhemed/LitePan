@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 144
+- **Total Sessions**: 145
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~906 | Active |
+| `journal-3.md` | ~945 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 145 | 2026-09-12 | 修正 drivers/template 包注释指向不存在的 README | `241a24c`, `47b0a50` | `main` |
 | 144 | 2026-09-12 | 死代码清理 P3：删除复扫确认的 182 行 + 1 依赖，方法论入 spec | `36c66ed`, `5dbebc7` | `main` |
 | 143 | 2026-09-12 | 死代码复扫：核对遗留 9 处 + 交叉验证新发现 14 条测试层死代码 | `e6ae23a` | `main` |
 | 142 | 2026-09-12 | 把浏览器验收判据写入前端 spec（填补零自动化测试的验证空白） | `d7c29b2`, `ef461ab` | `main` |
