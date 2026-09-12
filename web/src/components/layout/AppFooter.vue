@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import SvgIcon from "@/components/icons/SvgIcon.vue";
 import { useHomeFooterStatus } from "@/composables/useHomeFooterStatus";
 import { usePerformancePanel } from "@/composables/usePerformancePanel";
+import { useAppInfoStore } from "@/stores/appInfo";
 import {
+  APP_NAME,
   APP_URL,
-  APP_VERSION_BADGE,
   COLLAB_BADGE_TEXT,
   COLLAB_URL,
   GITHUB_URL,
@@ -19,9 +20,16 @@ function syncCompactHome() {
   compactHome.value = localStorage.getItem(COMPACT_HOME_KEY) === "1";
 }
 
+// 版本号由后端运行期提供（见 stores/appInfo）；取不到时只显示应用名，不回退到任何版本字面量。
+const appInfo = useAppInfoStore();
+const versionBadge = computed(() =>
+  appInfo.version ? `${APP_NAME} ${appInfo.version}` : APP_NAME,
+);
+
 onMounted(() => {
   syncCompactHome();
   window.addEventListener("storage", syncCompactHome);
+  void appInfo.load();
 });
 onUnmounted(() => {
   window.removeEventListener("storage", syncCompactHome);
@@ -31,29 +39,32 @@ const { status, openTaskPanel } = useHomeFooterStatus();
 // 性能面板展开状态持久化（与工具栏性能面板共享同一状态/存储），刷新后保持
 const { expanded: perfOpen, toggle: togglePerf } = usePerformancePanel();
 
-const badges = [
-  {
-    key: "docs",
-    href: APP_URL,
-    icon: "globe",
-    label: "当前版本",
-    value: APP_VERSION_BADGE,
-  },
-  {
-    key: "github",
-    href: GITHUB_URL,
-    icon: "github",
-    label: "项目地址",
-    value: "Github 仓库",
-  },
-  {
-    key: "collab",
-    href: COLLAB_URL,
-    icon: "bilibili",
-    label: "联合测评",
-    value: COLLAB_BADGE_TEXT,
-  },
-] as const;
+const badges = computed(
+  () =>
+    [
+      {
+        key: "docs",
+        href: APP_URL,
+        icon: "globe",
+        label: "当前版本",
+        value: versionBadge.value,
+      },
+      {
+        key: "github",
+        href: GITHUB_URL,
+        icon: "github",
+        label: "项目地址",
+        value: "Github 仓库",
+      },
+      {
+        key: "collab",
+        href: COLLAB_URL,
+        icon: "bilibili",
+        label: "联合测评",
+        value: COLLAB_BADGE_TEXT,
+      },
+    ] as const,
+);
 </script>
 
 <template>

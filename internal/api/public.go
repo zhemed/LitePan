@@ -32,6 +32,8 @@ func (h *Handler) publicCacheHitRate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) publicSystemConfig(w http.ResponseWriter, r *http.Request) {
 	_ = r
 	writeOK(w, map[string]any{
+		// version 是前端「当前版本 / 关于」显示的唯一来源（见 web/src/stores/appInfo.ts）。
+		"version":                   h.version,
 		"index_account_switch_mode": h.adminAuth.IndexAccountSwitchMode(r.Context()),
 		"compact_home_enabled":      h.adminAuth.CompactHomeEnabled(r.Context()),
 		"header_effects_enabled":    h.adminAuth.HeaderEffectsEnabled(r.Context()),

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import { APP_NAME, APP_VERSION } from "@/version";
+import { useAppInfoStore } from "@/stores/appInfo";
+import { APP_NAME } from "@/version";
 import { useDeveloperUnlock } from "@/composables/useDeveloperUnlock";
 import { toast } from "@/composables/useToast";
 import AppModal from "@/components/base/AppModal.vue";
@@ -15,6 +16,8 @@ const props = defineProps<{
 const emit = defineEmits<{ logout: [] }>();
 
 const auth = useAuthStore();
+// 版本号由后端运行期提供（见 stores/appInfo），前端不留版本字面量。
+const appInfo = useAppInfoStore();
 const { unlocked: devUnlocked, init: devUnlockInit, unlock } = useDeveloperUnlock();
 const open = ref(false);
 const wrapRef = ref<HTMLElement | null>(null);
@@ -122,6 +125,7 @@ onMounted(() => {
   window.addEventListener("resize", handleViewportChange);
   window.addEventListener("scroll", handleViewportChange, true);
   void devUnlockInit();
+  void appInfo.load();
 });
 
 onUnmounted(() => {
@@ -194,7 +198,7 @@ onBeforeUnmount(() => {
           </span>
           <span class="acct-menu__content">
             <span class="acct-menu__label">关于 {{ APP_NAME }}</span>
-            <span class="acct-menu__meta">{{ APP_VERSION }}</span>
+            <span v-if="appInfo.version" class="acct-menu__meta">{{ appInfo.version }}</span>
           </span>
         </div>
 

@@ -584,7 +584,8 @@ func hashRangeSHA1(path, rangeSpec string) (string, error) {
 	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))), nil
 }
 
-const ossUserAgent = httpx.DefaultUserAgent
+// var（非 const）：httpx.DefaultUserAgent 由 buildinfo.Version 在运行期派生，不再是编译期常量。
+var ossUserAgent = httpx.DefaultUserAgent
 
 const resume115PersistEvery = 5
 

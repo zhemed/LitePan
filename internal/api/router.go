@@ -62,12 +62,16 @@ type Deps struct {
 	Notifications     *notification.Service
 	BackupRestore     *backuprestore.Service
 	DataDir           string
+	// Version 是构建信息里的版本号（internal/buildinfo），由 app 层装配注入。
+	// 它是全站版本号的唯一真值：前端经 /public/system-config 运行期读取，不再自带字面量。
+	Version           string
 	OnSettingsUpdated func(map[string]string)
 }
 
 // Handler 持有处理请求所需的依赖。
 type Handler struct {
 	bootID            string
+	version           string
 	logs              *logx.Manager
 	log               *slog.Logger
 	accountSvc        *account.Service
@@ -102,6 +106,7 @@ func NewRouter(d Deps) http.Handler {
 	}
 	h := &Handler{
 		bootID:            uuid.NewString(),
+		version:           d.Version,
 		logs:              d.Logs,
 		log:               apiLog,
 		accountSvc:        d.AccountSvc,

@@ -67,6 +67,7 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Notifications:    notifySvc,
 		BackupRestore:    backupRestoreSvc,
 		DataDir:          cfg.DataDir,
+		Version:          buildinfo.Version,
 		OnSettingsUpdated: cacheSettingsHook(core.cache, st.settings, cfg.DataDir),
 	})
 
