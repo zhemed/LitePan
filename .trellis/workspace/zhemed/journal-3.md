@@ -485,3 +485,47 @@
 ### Next Steps
 
 - 候选清单已全部关闭；后续如遇认证类问题、通知实时性需求或播放故障，可按记录的重启条件对应重启 P3/P8/P9
+
+
+## Session 135: 安装本机完整开发环境：Docker 29.7.2 + Go 1.26.6 + make + gcc + golangci-lint
+<!-- trellis-session: v=2 fp=722a5f3f36b2eb93 -->
+
+**Date**: 2026-09-12
+**Task**: 安装本机完整开发环境：Docker 29.7.2 + Go 1.26.6 + make + gcc + golangci-lint
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+全新 Ubuntu 22.04 主机从零装齐五项工具链（零源码改动）。Docker 29.7.2 + Compose v5.4.0 复用仓库 install-docker.sh 并 apt-mark hold 锁版，daemon active、hello-world 通过；Go 1.26.6 官方 tarball sha256 校验后装 /usr/local/go 并加 /usr/local/bin 软链（DSH 非登录 shell 才可用）；make 4.3；golangci-lint v2.12.2 走 go install 命中 Makefile 回退路径；build-essential/gcc 11.4.0 为规划期补漏项（go test -race 依赖 cgo）。质量门全绿：make lint 0 issues、go vet exit=0、go test ./... 全包 ok、go test -race ./internal/store ok 3.518s、web vue-tsc -b exit=0。
+
+### Main Changes
+
+- 环境安装（宿主，非仓库）：Docker 29.7.2 + Compose v5.4.0 + containerd + buildx（apt-mark hold）；Go 1.26.6（sha256 708effb7…）；make 4.3；build-essential/gcc 11.4.0；golangci-lint v2.12.2
+- 新增任务产物：.trellis/tasks/archive/2026-09/09-12-setup-dev-environment/{prd.md,design.md,implement.md,setup-env.sh,.check-passed}；scope=multi-deliverable
+- 规划期回退修正：原路线 D 四项清单缺 gcc，而项目强制 go test -race 依赖 cgo —— 在零系统写入前补入 build-essential 并同步 design/implement
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0b7207c` | chore(task): archive 09-12-setup-dev-environment |
+
+### Testing
+
+- [OK] [OK] make lint → 0 issues（验证 Makefile 的 GOPATH/bin 回退路径与 depguard 链）
+- [OK] [OK] GOWORK=off go vet ./... → exit=0；go test ./... → 全包 ok 无失败；go test -race ./internal/store → ok 3.518s
+- [OK] [OK] cd web && npm ci（145 包）+ npm run type-check → exit=0；internal/api/web 受跟踪产物 0 diff
+- [OK] [OK] docker run --rm hello-world 成功；docker info Server=29.7.2 Driver=overlayfs
+- [OK] [OK] 边界未破坏：git diff --name-only HEAD = 0；3080/3081 仍由 DSH 监听；5211 仍空闲
+- [OK] [注意] 刻意未跑 npm run build（会覆写 135 个受跟踪 embed 产物），属有意偏离并已在 prd.md 留痕
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 部署 LitePan 到本机 :5211：需先确认路线（拉取现成镜像 ghcr.io/zhemed/litepan:v0.0.43 vs 本地 docker build）
+- 候选：把 pipefail + head/grep -q 的 SIGPIPE 假失败陷阱写入 .trellis/spec/guides/（本任务因'零受跟踪文件改动'约束未执行，待用户决定）
+- 部署任务需处理：本机为新库，管理员为首次启动默认值；上机备份 /tmp/litepan-backup-20260909-201827.db 不在本机

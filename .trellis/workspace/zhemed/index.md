@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 134
+- **Total Sessions**: 135
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~487 | Active |
+| `journal-3.md` | ~531 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 135 | 2026-09-12 | 安装本机完整开发环境：Docker 29.7.2 + Go 1.26.6 + make + gcc + golangci-lint | `0b7207c` | `main` |
 | 134 | 2026-09-12 | 候选清单收尾：P7/P8/P9 归档（含 P7 已等价与有意差异核实） | - | `main` |
 | 133 | 2026-09-12 | 关闭候选 P3/P4：P3 归档不实施、P4 判定本方不适用 | - | `main` |
 | 132 | 2026-09-12 | 移植上游 P2+P5（日志与可观测）并发布 0.0.43 | `ac6ec4a` | `main` |
