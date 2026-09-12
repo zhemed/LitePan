@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -40,6 +41,11 @@ func requestLogger(ctx context.Context) *slog.Logger {
 
 func logAPIError(r *http.Request, err error) {
 	if r == nil || err == nil {
+		return
+	}
+	// 请求上下文已被取消（客户端提前断开/主动放弃）：非服务端错误，静默不记 ERROR。
+	// 见 upstream d545e47。
+	if errors.Is(r.Context().Err(), context.Canceled) || errors.Is(r.Context().Err(), context.DeadlineExceeded) {
 		return
 	}
 	log := requestLogger(r.Context())

@@ -14,14 +14,20 @@ type Executor interface {
 }
 
 type Service struct {
-	exec      Executor
-	mu        sync.RWMutex
-	profiles  map[int64]domain.AccountProfile
-	refreshed map[int64]string
+	exec        Executor
+	mu          sync.RWMutex
+	profiles    map[int64]domain.AccountProfile
+	refreshed   map[int64]string
+	refreshGate chan struct{}
 }
 
 func New(exec Executor) *Service {
-	return &Service{exec: exec, profiles: map[int64]domain.AccountProfile{}, refreshed: map[int64]string{}}
+	return &Service{
+		exec:        exec,
+		profiles:    map[int64]domain.AccountProfile{},
+		refreshed:   map[int64]string{},
+		refreshGate: make(chan struct{}, 1),
+	}
 }
 
 func (s *Service) Get(accountID int64) (domain.AccountProfile, bool) {
@@ -52,7 +58,15 @@ func (s *Service) RefreshDaily(ctx context.Context, accounts []*domain.Account) 
 	}
 }
 
+// refresh 后台串行刷新单个账号资料：容量 1 的闸门保证同一时刻只有一个账号在打上游，
+// 避免多账号并发刷新造成上游压力与"后台变慢"（upstream b5c9308）。
 func (s *Service) refresh(parent context.Context, accountID int64) {
+	select {
+	case s.refreshGate <- struct{}{}:
+		defer func() { <-s.refreshGate }()
+	case <-parent.Done():
+		return
+	}
 	ctx, cancel := context.WithTimeout(parent, 45*time.Second)
 	defer cancel()
 	_, _ = s.Refresh(ctx, accountID)
