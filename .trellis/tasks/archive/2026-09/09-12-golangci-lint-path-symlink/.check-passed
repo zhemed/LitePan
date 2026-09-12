@@ -1,0 +1,2 @@
+checked_at=2026-09-12 11:41:52
+note=轻量任务质量门：golangci-lint 已全局可用（非登录非交互 shell 直出 2.12.2），make lint 复跑仍 0 issues exit=0；零仓库改动（git diff --name-only HEAD = 0）。本任务无源码/前端改动，故无单测与类型检查新增项；spec 同步无新增经验（SIGPIPE 陷阱已在前一任务记录为待决候选）。
