@@ -141,3 +141,44 @@
 - 待用户决定是否建移植任务：P1 上传超时（httpx.NewStreamingClient+189/115 上传客户端+OSS 分片重试，bump 0.0.38）
 - 可选：P2+P5 日志/可观测合并任务；P3 认证收口（需 -race 验证）
 - 建议将「上游同步口径：内容对照移植」固化为 .trellis/spec 备忘（待用户确认）
+
+
+## Session 125: P1 上传超时修复并发布 0.0.38：控制面/数据面客户端解耦
+<!-- trellis-session: v=2 fp=104d6fc0e4bb00a1 -->
+
+**Date**: 2026-09-12
+**Task**: P1 上传超时修复并发布 0.0.38：控制面/数据面客户端解耦
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+移植上游 869974b：httpx.NewStreamingClient（克隆 base transport 但不设 http.Client.Timeout，只设 ResponseHeaderTimeout=60s）；115 新增数据面 uploadClient（Init 建/Drop 关），单请求与分片 PUT 改用它，新增 ossUploadPartWithRetry（3 次、1s/2s 退避、可取消、重试前 Seek 复位）与 isRetryableOSSUploadError（net error/EOF/reset/broken pipe/429/5xx；凭证错误交给既有刷新链路避免 3× 放大）；189 uploadClient 由 300s+关 keep-alive 改为 NewStreamingClient(d.client,60s)。与上游同名函数逐字节一致（仅去掉多余 nil 防御）。定制未动：115 600s、512MB 分片、189 节流与分片重试。质量门 vet/test/build/web 三连全绿；golangci-lint 在本机 go1.27.0 下 staticcheck 于依赖包 poll panic（isInitialPkg=false），改用 go vet + 手工 depguard 等价核对并如实记录。发布 0.0.38：三 tag 同 digest 7fe5f5ea，tag v0.0.38 + release，本地容器重建三连（health/表单登录/任务汇总 total=13 success=13）。记录更正：09-12 调查报告 P1 的『30s』表述有误，我方 115 为 600s（4d8e868/0.0.3 起），问题实质＝API 与数据面共用客户端 + 缺分片重试
+
+### Main Changes
+
+- internal/httpx 新增 NewStreamingClient（数据面无总超时 + 60s 响应头兜底）
+- drivers/115_Open 数据面专用客户端 + 分片 3 次瞬时故障重试（凭证错误不重试）
+- drivers/189Cloud 上传客户端流式化（取消 300s 总超时、恢复连接复用）
+- spec/backend/driver-development.md 增补『控制面 vs 数据面 HTTP 客户端』约定
+- 版本 0.0.38（README + docker-compose）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ae4c11` | fix(driver): stream upload bodies and retry 115 parts, bump to 0.0.38 |
+
+### Testing
+
+- [OK] go vet ./... 全绿；go test ./... 全包 ok；go build ./... OK；web type-check+build+check:memo MEMO-ALL-PASS（构建产物零 churn）；新增 internal/httpx/client_test.go(5) 与 drivers/115_Open/upload_retry_test.go(9)；部署三连通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ⚠️ 生产机 10.0.0.11 仍为 0.0.37（未授权未动）；如需享受本次上传超时修复，请授权后再升级
+- 可选后续：P2+P5 日志/可观测任务、P3 认证收口任务
+- 环境问题待办：golangci-lint 在本机 go1.27.0 崩溃（go.mod 声明 1.26.6）——需要升级 golangci-lint 或固定本地工具链
