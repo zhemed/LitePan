@@ -57,7 +57,8 @@ Managed by Trellis. Edits outside this block are preserved; edits inside may be 
 ### 其余既有约定（保留）
 
 - 未建任务不得 `edit/write/bash` 改文件、不得 `sqlite3 UPDATE` 改库、不得 `docker` 重建。
-- 当前线上管理员：`admin / 123456`（`2026-09-09` 经用户授权重置落库 `pbkdf2:sha256:600000$aa9764...`，重置前备份 `/tmp/litepan-backup-20260909-201827.db`；此前 `08-30` 记录的 `admin/admin` 已作废），后续改密必先建 Trellis 任务并 `ask_user_question`。
+- 当前线上管理员：`admin / 123456`（`2026-09-12` 由用户在本机 `:5211` 实例界面改密落库 `pbkdf2:sha256:600000$af0dac85f9dad16...`，库位于 `/root/LitePan/data/litepan.db`，`must_change_password` 已解除）。后续改密必先建 Trellis 任务并 `ask_user_question`。
+- 口令变更史（防混淆）：`08-30` 记的 `admin/admin` 已作废 → `2026-09-09` **上一台机器**重置为 `123456`（旧盐哈希 `pbkdf2:sha256:600000$aa9764...`，当时备份 `/tmp/litepan-backup-20260909-201827.db`，**该备份不在本机**）→ `2026-09-12` 本机新库改密为 `123456`（新盐哈希 `af0dac85f9dad16...`）。
 - **API 登录注意**：`POST /api/auth/login` 仅接受 **form 表单编码**（`curl -d 'username=admin&password=123456'`），发 JSON 体会被静默解析为空用户名而报"用户名或密码错误"（日志特征 `username=""`）。
 - **版本基线**：`0.0.1` 即稳定基线（`3驱动`，`ghcr.io/zhemed/litepan:0.0.1` 已推，`git tag v0.0.1`），后续 `0.0.2` 递增（`fix`→`0.0.2`，`feat`→`0.0.3`），**不跳 `1.0.0`**，仅用户显式说“发 `1.0`”时再 `1.0.0`。
 - 关联任务：`08-30-remove-cache-organize` 回归 `2f1b620` 已追认为 `08-30-fix-coverextract-nil`，`journal-1.md Session8` 为证。
