@@ -427,3 +427,32 @@
 ### Next Steps
 
 - 候选清单剩余：P7（上传取消语义/批次名）、P8（铃铛 SSE 推送）、P9（播放诊断）
+
+
+## Session 133: 关闭候选 P3/P4：P3 归档不实施、P4 判定本方不适用
+<!-- trellis-session: v=2 fp=b3386af9af7a7b8b -->
+
+**Date**: 2026-09-12
+**Task**: 关闭候选 P3/P4：P3 归档不实施、P4 判定本方不适用
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+关闭上游候选清单 P3/P4（零代码改动）。P3（99ea858 认证收口）：按用户指示归档不实施——上游属重构+日志降噪非缺陷修复，本方 0.0.17 已同源移植（不含该批），认证链路无已知缺陷；重启条件=出现认证类问题（刷新风暴/调度抖动）。P4（df86352 账号级目录缓存失效）：查证判定本方不适用——① 上游所改的自动化动作在本方不存在（domain/automation.go 仅 local_upload，刷新目录/清缓存动作在 1bcfac8 精简时已删）；② 本方已有等价且更精确的能力：cache.InvalidateAccount（service.go:197）、写路径按目录失效（file/service.go:62/242/413）、事件驱动失效（cache/cleaner.go）、管理端 clear-cache→ClearAll（api/cache.go:55）；③ 强行移植只会新增无调用者 helper＝新死代码，与排查目标相反。候选收尾状态：P1✅(0.0.38/0.0.39)、P2✅(0.0.43)、P5✅(0.0.43)、P6❌作废、P3 归档、P4 不适用，剩 P7/P8/P9。方法论：候选移植必须查证目标载体是否仍存在（P4 与 P6 同教训）。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读取证：grep 动作常量/缓存失效调用点/router 与函数阅读；零代码改动（git status 仅任务目录）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户确认：P7+P9（顺带优化）是否立即开工；P8（铃铛改 SSE 推送）属功能项需单独确认
