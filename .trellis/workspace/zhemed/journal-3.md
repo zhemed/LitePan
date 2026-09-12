@@ -221,3 +221,32 @@
 - 观察：若 115 大文件在合并阶段报 Client.Timeout，只需把 115 API 客户端调大（最小回退）
 - 可选后续：P2+P5 日志/可观测、P3 认证收口（上游 99ea858）
 - 环境待办：本地 go1.27.0 与 go.mod 1.26.6 不一致导致 golangci-lint 崩溃，需固定工具链或升级 linter
+
+
+## Session 127: 调查 P6 必要性：目录整理模块已是死代码，P6 作废
+<!-- trellis-session: v=2 fp=a045a9e134251d98 -->
+
+**Date**: 2026-09-12
+**Task**: 调查 P6 必要性：目录整理模块已是死代码，P6 作废
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+只读复核 P6（上游 20b66de 修复目录整理误匹配）在本方是否需要：结论=不需要。证据：① internal/mediaorganize/rules 零 import（全仓唯一提及是 name_align.go:394 的一句注释）；② 不在主程序依赖图（go list -deps ./cmd/litepan | grep -c mediaorganize = 0）；③ 三类入口全无（API 路由空、前端源码与构建产物空、自动化动作只剩 local_upload）；④ 1bcfac8（2026-08-30 删除目录整理）在同一提交把 name_align 的 mrules 依赖换成自带简化解析→该包自那时起无消费者；⑤ 规模 15 非测试文件/3796 行、无外部依赖。上游对照：origin/main 的 name_align 仍 import mrules，其 rules 是活跃代码，本方两者都不用。据此 P6 从候选清单作废（9→8），并更正三处过期记述：调查报告 §3.2/§6、journal-1.md:252（'为 name_align 保留'与实际不符）、spec directory-structure.md:44（仍写保留）。方法论教训：适用性判据需从『文件存在』升级为『文件存在且存在可达入口/消费者』（Go 可用 go list -deps 一票否决）。建议（未实施）：可选清理任务删除孤儿包并同步 spec；保留亦可但易再次误导。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读：grep import 链/路由/前端/构建产物/自动化动作 + go list -deps 依赖图 + git show 历史取证；零代码改动
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户决定：是否建清理任务删除 internal/mediaorganize 孤儿包（19 文件/3796 行）并同步 spec 两处过期表述

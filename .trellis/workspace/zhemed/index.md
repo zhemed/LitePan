@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 126
+- **Total Sessions**: 127
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~223 | Active |
+| `journal-3.md` | ~252 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 127 | 2026-09-12 | 调查 P6 必要性：目录整理模块已是死代码，P6 作废 | - | `main` |
 | 126 | 2026-09-12 | 驱动超时统一 30s 并发布 0.0.39（含两处流程偏差复盘） | `7243a27` | `main` |
 | 125 | 2026-09-12 | P1 上传超时修复并发布 0.0.38：控制面/数据面客户端解耦 | `6ae4c11` | `main` |
 | 124 | 2026-09-12 | 调查上游 LitePan 最新更新（v0.5.5-beta）：历史被重写，47 提交分类与 9 项移植候选 | - | `main` |
