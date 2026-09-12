@@ -529,3 +529,42 @@
 - 部署 LitePan 到本机 :5211：需先确认路线（拉取现成镜像 ghcr.io/zhemed/litepan:v0.0.43 vs 本地 docker build）
 - 候选：把 pipefail + head/grep -q 的 SIGPIPE 假失败陷阱写入 .trellis/spec/guides/（本任务因'零受跟踪文件改动'约束未执行，待用户决定）
 - 部署任务需处理：本机为新库，管理员为首次启动默认值；上机备份 /tmp/litepan-backup-20260909-201827.db 不在本机
+
+
+## Session 136: 补齐 golangci-lint 全局 PATH 软链
+<!-- trellis-session: v=2 fp=d3b1b74f7ba392e7 -->
+
+**Date**: 2026-09-12
+**Task**: 补齐 golangci-lint 全局 PATH 软链
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+承接 09-12-setup-dev-environment 的收尾遗留项：golangci-lint v2.12.2 原装于 /root/go/bin（不在 PATH），裸 shell 调用报 command not found。按用户指示建 /usr/local/bin/golangci-lint 软链（ln -sfn 幂等），与已有 go/gofmt 软链保持一致。验证：非登录非交互 shell 直出 2.12.2、command -v 命中 /usr/local/bin/golangci-lint、make lint 复跑 0 issues exit=0。零仓库改动（git diff --name-only HEAD = 0），3080/3081 DSH 未受影响、5211 仍空闲。
+
+### Main Changes
+
+- 宿主改动：/usr/local/bin/golangci-lint -> /root/go/bin/golangci-lint 软链（零仓库受跟踪文件改动）
+- 新增任务产物：.trellis/tasks/archive/2026-09/09-12-golangci-lint-path-symlink/{prd.md,.check-passed}；scope=lightweight
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `512d5df` | chore(task): archive 09-12-golangci-lint-path-symlink |
+
+### Testing
+
+- [OK] [OK] 非登录非交互 shell：golangci-lint --version → 2.12.2；command -v → /usr/local/bin/golangci-lint
+- [OK] [OK] 回归：make lint → 0 issues. exit=0（软链未破坏 Makefile 的 GOPATH 回退路径）
+- [OK] [OK] 边界：git diff --name-only HEAD = 0；3080/3081 仍由 DSH 监听；5211 仍空闲
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 部署 LitePan 到本机 :5211（待用户确认路线：拉取 ghcr.io/zhemed/litepan:v0.0.43 vs 本地 docker build）
+- 候选：将 pipefail + head/grep -q 的 SIGPIPE 假失败陷阱写入 .trellis/spec/guides/（连续两个任务因零改动约束未执行）
