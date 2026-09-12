@@ -82,6 +82,17 @@ Reference: `internal/api/accounts.go:6205`, `admin_middleware.go:1187`.
 - `internal/app/wire_http.go` builds `Deps` from `store.New(db)` + all services.
 - Adding new dependency: extend `Deps`, add field to `Handler`, wire in `app/wire_http.go`, update `api/router_test.go` if needed.
 
+### 版本号：单一来源（2026-09-12，v0.0.44 起）
+
+**`internal/buildinfo.Version` 是全站版本号的唯一真值。任何地方都不得再持有版本字面量。**
+
+- 装配：`api.Deps.Version` ← `app/wire_http.go` 注入 `buildinfo.Version`（与 `backuprestore.Options{Version: ...}` 同一模式）
+- 暴露：`GET /api/public/system-config` 返回 `version` 字段
+- 前端：`web/src/stores/appInfo.ts` 运行期读取；组件经该 store 取值，**不设版本 fallback**（取不到就只显示应用名）
+- `internal/httpx.AppVersion` / `DefaultUserAgent` 亦由该值派生（故它们是 `var` 而非 `const`；`drivers/115_Open` 的 `ossUserAgent` 已随之改为 `var`）
+- 发版时**只改 `version.go` 一处**；`README.md` 与 `docker-compose.yml` 的镜像 tag 需同步为同一版本
+- 历史教训：此前 `internal/buildinfo`、`web/src/version.ts`、`internal/httpx/user_agent.go` **三处**各自持有 `v0.5.2-Beta` 副本，靠"记得一起改"维持一致性 → 界面与 User-Agent 长期报着上游版本号。回归检查：`grep -rn "v0\.5\.2" web/src internal/ drivers/` 必须零命中。
+
 ---
 
 ## Anti-Patterns
