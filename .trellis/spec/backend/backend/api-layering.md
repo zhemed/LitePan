@@ -90,7 +90,7 @@ Reference: `internal/api/accounts.go:6205`, `admin_middleware.go:1187`.
 - 暴露：`GET /api/public/system-config` 返回 `version` 字段
 - 前端：`web/src/stores/appInfo.ts` 运行期读取；组件经该 store 取值，**不设版本 fallback**（取不到就只显示应用名）
 - `internal/httpx.AppVersion` / `DefaultUserAgent` 亦由该值派生（故它们是 `var` 而非 `const`；`drivers/115_Open` 的 `ossUserAgent` 已随之改为 `var`）
-- 发版时**只改 `version.go` 一处**；`README.md` 与 `docker-compose.yml` 的镜像 tag 需同步为同一版本
+- 发版时**只改 `version.go` 一处**；`README.md`（2 处）与 `docker-compose.yml`、`docker-compose.fnos.yml` 的镜像 tag 需同步为同一版本（**共 3 个文件、4 处引用**；`docker-compose.fnos.yml` 只搜 `docker-compose.yml` 会漏，须按 `docker-compose*.yml` 通配搜）
 - 历史教训：此前 `internal/buildinfo`、`web/src/version.ts`、`internal/httpx/user_agent.go` **三处**各自持有 `v0.5.2-Beta` 副本，靠"记得一起改"维持一致性 → 界面与 User-Agent 长期报着上游版本号。回归检查：`grep -rn "v0\.5\.2" web/src internal/ drivers/` 必须零命中。
 
 ---

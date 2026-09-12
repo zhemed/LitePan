@@ -18,7 +18,7 @@
 | `deadcode ./cmd/litepan` | reachability from `main` (RTA, includes interface dispatch) | production-unreachable functions |
 | `golangci-lint run --enable=unused -c .golangci.yml ./...` | per-package, **includes `_test.go`** (U1000) | unused identifiers inside packages |
 
-Measured 2026-09-12 (`v0.0.44`): `deadcode` reported **9**, `unused` reported **14**, **zero overlap**.
+Measured 2026-09-12: `v0.0.44` → `deadcode` **9**, `unused` **14**；两轮清理后 `v0.0.45`（本轮发版）→ `deadcode` **7**, `unused` **0**，**两个视角始终零重叠**。
 
 - `unused` treats a package's own tests as *users* → it is blind to production symbols that only tests reach
 - `deadcode` never looks inside `_test.go` → it is blind to dead test code
