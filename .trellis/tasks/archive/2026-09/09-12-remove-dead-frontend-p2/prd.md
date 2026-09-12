@@ -36,16 +36,30 @@
 
 ## Acceptance Criteria
 
-- [ ] 12 个文件已删除，且删除前每个文件均有"无可达入口/功能已被覆盖"的复核结论
-- [ ] `web/src` 复扫无新增零引用文件；被删标识符无残留引用
-- [ ] 前端三连（type-check/build/check:memo）与 `go build/vet/test` 全绿
-- [ ] 未删除 `constants/cacheSettings.ts` 与 `api/fuse.ts`（R4 保留项）
-- [ ] 版本号 `0.0.42` 已更新（`README.md` + `docker-compose.yml`）
-- [ ] 镜像 `ghcr.io/zhemed/litepan:0.0.42` 三 tag 已推送；tag 指向修复提交（API 复核）；release 已创建（顺序正确）
-- [ ] 本地容器已重建到 0.0.42，health / form 登录 / 任务汇总三连通过
-- [ ] 删除清单与覆盖复核结论已写入 journal
+- [x] 12 个文件已删除，且删除前每个文件均有"无可达入口/功能已被覆盖"的复核结论
+      → 第一层 12 个已删；每个都有复核结论（见 Background 表 + Notes）
+- [x] `web/src` 复扫无新增零引用文件；被删标识符无残留引用
+      → 复扫发现 **11 个传递孤儿**（第二层 7 + 第三层 4，其引用者全部属于已删集合，已用 `git grep HEAD` 逐个核实）；迭代删除后**收敛到 0 个零引用文件**（源文件 223 → 204）
+- [x] 前端三连（type-check/build/check:memo）与 `go build/vet/test` 全绿
+      → 全绿；**构建产物零 churn**（反证这些文件本就不在 bundle 内）；`go test ./...` exit 0（42 包）
+- [x] 未删除 `constants/cacheSettings.ts` 与 `api/fuse.ts`（R4 保留项）
+      → 两者均保留（`cacheSettings.ts` 被 `SystemSettings.vue` 引用、`api/fuse.ts` 被 3 个在线组件引用）
+- [x] 版本号 `0.0.42` 已更新（`README.md` + `docker-compose.yml`）
+      → README 2 处 + docker-compose 1 处
+- [x] 镜像 `ghcr.io/zhemed/litepan:0.0.42` 三 tag 已推送；tag 指向修复提交（API 复核）；release 已创建（顺序正确）
+      → 三 tag 同 digest `sha256:6617d652…`（与 0.0.41 相同，属预期：前端产物未变）；tag `v0.0.42` = `75be52b`（API 复核一致）；release https://github.com/zhemed/LitePan/releases/tag/v0.0.42；顺序 push main → tag → push tag → release ✔
+- [x] 本地容器已重建到 0.0.42，health / form 登录 / 任务汇总三连通过
+      → ImageID `0c11de670d67`、`Restarts=0`；health ok；登录 ok；任务汇总 `total=13 success=13`
+- [x] 删除清单与覆盖复核结论已写入 journal
+      → Session 129
 
 ## Notes
+
+- **实际删除量：23 个文件 / -3,017 行**（原报告列 12 个；迭代到不动点后新增 11 个传递孤儿）。
+- **方法论修正（重要）**：死代码清理必须**迭代到不动点**——删除第一层后要重新扫描，因为"只被死文件引用"的模块会成为新的孤儿。本轮三层分别是 12 → 7 → 4 → 0。
+- **反证证据**：删除前后前端构建产物**零 churn**，说明这些文件从未进入 bundle（与"零引用"判定一致）。
+- 删除的 UI 面板（WebDAV/缓存/启动横幅）未来若需恢复，可从 git 历史或上游内容对照取回；本轮不影响任何在线功能。
+- Keep `prd.md` focused on requirements, constraints, and acceptance criteria.
 
 - `scope=lightweight`：纯前端死文件删除 + 产物重建 + 发版。
 - **风险说明**：删除的 UI 面板（WebDAV/缓存/启动横幅）未来若需恢复，可从 git 历史取回或按内容对照从上游移植；本轮不影响任何在线功能。

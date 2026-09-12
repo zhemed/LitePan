@@ -1,0 +1,2 @@
+checked_at=2026-09-12 16:29:34
+note=前端死代码清理 P2：迭代到不动点共删 23 文件/-3017 行（12 原始 + 7 + 4 传递孤儿，传递层逐个 git grep 复核引用者均属已删集合）；收敛后 web/src 零引用=0。删除前功能覆盖复核：FUSE 另有在线 UI、缓存在 SystemSettings 被显式过滤、WebDAV 无前端入口。验证：前端三连全绿且构建产物零 churn（反证不在 bundle）、go build/vet/test 全绿。发版 0.0.42（digest 同 0.0.41 属预期、tag=75be52b API 复核、release 顺序正确）+ 本地重建三连通过
