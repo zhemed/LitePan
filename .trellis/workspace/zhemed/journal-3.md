@@ -610,3 +610,50 @@
 
 - 部署 LitePan 到 :5211（用户已明确先搁置）
 - 候选发现：internal/buildinfo/version.go 默认值为上游 v0.5.2-Beta，而 Dockerfile 构建未传 -ldflags -X ...Version= 覆盖 → 容器内版本自报可能与镜像 tag v0.0.43 不一致，待核实是否有意为之
+
+
+## Session 138: 版本号收敛为单一来源（后端运行期提供）并发布 v0.0.44
+<!-- trellis-session: v=2 fp=5393c4e84df17e92 -->
+
+**Date**: 2026-09-12
+**Task**: 版本号收敛为单一来源（后端运行期提供）并发布 v0.0.44
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+修复项目诞生起就存在的问题：版本号从上游继承后从未更新 —— internal/buildinfo、web/src/version.ts、internal/httpx/user_agent.go 三处各自持有 v0.5.2-Beta 副本，Dockerfile 也未注入 -ldflags，导致界面『当前版本/关于』与发给上游的 User-Agent 长期报错版本。按用户选定的方案C 收敛为唯一真值 buildinfo.Version：Deps/Handler 注入 + /api/public/system-config 暴露 version 字段 + 前端新增 appInfo store 运行期读取（inflight 去重，无 fallback 字面量）+ version.ts 删两个字面量 + GITHUB_URL 改指 zhemed/LitePan。httpx 的 AppVersion/DefaultUserAgent 改为由该值派生（连带 115 驱动 ossUserAgent 由 const 改 var）。重建 109 个 embed 产物。完整发版：镜像 v0.0.44/0.0.44/latest 三 tag 同 digest sha256:a864057d46ac，git tag 远端==本地 593d125（未重演 0.0.39 顺序问题），release 已建，并删本地镜像从 GHCR 真拉回重验三项全过。
+
+### Main Changes
+
+- 后端：api.Deps/Handler 新增 Version（app 层注入 buildinfo.Version）；publicSystemConfig 新增 version 字段（纯新增，既有 3 字段不变）；新增 internal/api/public_version_test.go
+- 第三处硬编码（实施期由验收项抓出）：internal/httpx/user_agent.go 改由 buildinfo.Version 运行期派生；drivers/115_Open/upload.go 的 ossUserAgent 由 const 改 var（仅关键字，值与 3 处用法不变）
+- 前端：新增 stores/appInfo.ts（inflight 去重）；AppFooter.vue/AdminAccountChip.vue 改经 store 取值；version.ts 删 APP_VERSION 与 APP_VERSION_BADGE、GITHUB_URL 改指 zhemed/LitePan
+- 版本与产物：buildinfo v0.0.44；README×2 + docker-compose×1 镜像 tag 同步；重建 internal/api/web（54 新/54 删/1 改）
+- spec 同步：api-layering.md 新增『版本号单一来源』小节，含历史教训与回归 grep，防止后人再写死版本号
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `593d125` | feat(version): backend becomes the single source of truth for the version, bump to 0.0.44 |
+| `7f5e0f2` | docs(spec): 记录版本号单一来源约定（v0.0.44 起） |
+
+### Testing
+
+- [OK] [OK] 质量门：make lint 0 issues；go vet exit=0；go test 28 包全 ok（含新测试 2 子测试）；vue-tsc -b exit=0
+- [OK] [OK] 单一真值达成：grep v0.0.44 在全部代码中只命中 version.go 一处；grep v0.5.2 零命中
+- [OK] [OK] 产物复核：解压 102 个 embed 产物，0 处含上游版本号、含 public/system-config（证明改运行期取）
+- [OK] [OK] 发版：GHCR API 显示单条 version(id 1240621421) 挂载 v0.0.44/0.0.44/latest 三 tag 同 digest；远端 tag 与本地 593d125 一致；release 已建
+- [OK] [OK] 拉回重验：删本地镜像 → docker pull → digest 一致 → 容器三项（health 200 / version=v0.0.44 / 表单登录 200）全过
+- [OK] [OK] 边界：5211 仍空闲（部署仍搁置）；5212 已释放；DSH 3080/3081 未受影响；仓库无 data//mounts/；容器已清理
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 部署 LitePan 到 :5211（用户已明确搁置，随时可开）
+- 未决观察：README 首屏声称 118M，实测 v0.0.44 压缩后 41.8MiB / 未压缩 161MB，三者口径不一致（118M 是 v0.0.1 时代数字），是否更新待用户决定
+- 本机新库默认口令为 admin/admin（非 AGENTS.md 记录的 123456，后者是上一台机器重置后的值）；正式部署时需决定是否改密
