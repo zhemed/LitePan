@@ -1,0 +1,2 @@
+checked_at=2026-09-12 16:33:25
+note=P3/P4 裁定（零代码改动）：P3 drivers/template 保留——是统一认证守卫集成测试的驱动矩阵替身（oauth_integration_test.go:14，注释说明原 123/Baidu/OneDrive 已移除）且被 spec 指定为新驱动骨架（driver-development.md:71），删除会削弱测试覆盖与脚手架，保留成本≈0（生产不可达、不进二进制）；P4 /accounts/{id}/refresh-auth 保留——全仓仅路由一处引用、handler 30 行、前端只有 refresh-profile，删它等于改 HTTP 契约而收益仅 30 行。两项均非遗留死代码；真正死代码已在 P1/P2 清完。留档 research.md 并关闭报告 §9 的 P3/P4
