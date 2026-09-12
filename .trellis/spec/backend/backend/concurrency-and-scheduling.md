@@ -38,7 +38,6 @@ Test: `internal/driver/delay_test.go`.
 |-------------|---------|---------------|
 | `strm.Coordinator` | `internal/strm` | `pending → running → success/failed`, pause by account |
 | `cacheretention.Coordinator` | `internal/cacheretention` | `running/paused`, `PauseByAccount` |
-| `mediaorganize.Service` | `internal/mediaorganize` | preview → confirm → move |
 | `upload.Manager` | `internal/upload` | `pending/uploading/success/failed`, respects `UploadTaskConcurrency` |
 | `automation.Service` | `internal/automation` | `trigger(daily/interval/webhook) → actions[organize/strm/scrape/cache_clear/delay/emby_refresh]` |
 

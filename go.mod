@@ -3,7 +3,6 @@ module litepan
 go 1.26.6
 
 require (
-	github.com/alde/go-fish v0.0.0-20260611152328-df695ecc9fbf
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/google/uuid v1.6.0
 	github.com/hanwen/go-fuse/v2 v2.11.0

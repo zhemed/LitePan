@@ -22,11 +22,10 @@
 │   ├── store/                   # sqlite impl of domain repositories (modernc.org/sqlite)
 │   ├── driver/                  # driver abstractions: Manager, DelayController, Config, registry
 │   ├── file/ playback/ upload/  # file operations, streaming, upload manager
-│   ├── strm/ strmscrape/ mediaorganize/ aiorganize/ classifyorganize/
-│   ├── fusemount/ fusereadcache/ cache/ cacheretention/
+│   ├── fusemount/ fusereadcache/ cache/
 │   ├── auth/ adminauth/ apikey/ account/ accountprofile/
-│   ├── logx/ httpx/ eventbus/ notification/ announcement/
-│   └── ... (automation, backuprestore, share, quarktv, etc.)
+│   ├── logx/ httpx/ eventbus/ notification/
+│   └── ... (automation, backuprestore, share, settings, favorites, taskauth, startupwait)
 ├── pkg/                         # pure utils: jsonvalue, secretkey, singleflight, strutil, timeutil, speedsmoother
 ├── web/                         # Vue 3 + Vite frontend, builds to internal/api/web
 ├── docs/pictures/               # README assets
@@ -41,7 +40,8 @@ Reference: `internal/app/app.go` wires 30+ services via `Deps` structs; `drivers
 ## 已移除（2026-08-30 精简后 현황）
 
 - `internal/crosstransfer`（4 文件）`2026-08-30 nocross` 已移除，`cross_transfer_admin.go` 5 handler 与 `Route("/cross-transfer")` 均已删，仅 `local-upload` 保留
-- `internal/strm`、`strmscrape`、`cacheretention`、`mediaorganize/classifyorganize/aiorganize`、`share/dav`、`embyproxy/fnosproxy/quarktv/spacecleanup/coverextract` 已 `rm -rf`，`internal/cache` 核心与 `mediaorganize/rules` 保留。镜像 `128M → 119M`，`CloudToolsPanel` 仅 `LocalUpload`。
+- `internal/strm`、`strmscrape`、`cacheretention`、`mediaorganize/classifyorganize/aiorganize`、`share/dav`、`embyproxy/fnosproxy/quarktv/spacecleanup/coverextract` 已 `rm -rf`，`internal/cache` 核心保留。镜像 `128M → 119M`，`CloudToolsPanel` 仅 `LocalUpload`。
+- `internal/mediaorganize/rules` 曾因 `internal/file/name_align.go` 的依赖被保留，但该依赖已在同一提交（`1bcfac8`）被换成自带简化解析——**该包自 2026-08-30 起即无消费者**，2026-09-12 查实后整体删除（`0.0.40`，19 文件 / 3,796 行；唯一第三方依赖 `github.com/alde/go-fish` 一并从 `go.mod` 移除）。判据：`grep` 无 import + `go list -deps ./cmd/litepan` 不含该包。**教训：候选移植/清理项的可达性必须用依赖图复核，不能只看文件是否存在。**
 
 ## Module Ownership
 
@@ -76,7 +76,7 @@ Guard source: `.golangci.yml` → `linters.settings.depguard.rules`.
 | Task | Location | Example |
 |------|----------|---------|
 | New HTTP endpoint | `internal/api/<feature>.go` + wire in `internal/api/router.go` (`Deps` → `Handler`) + `internal/app/wire_http.go` | `internal/api/cover_extract.go` |
-| New business workflow | `internal/<feature>/service.go` + `internal/domain/<feature>.go` (types) + `internal/store/<feature>.go` (persistence) | `internal/mediaorganize/service.go` + `domain/media_organize.go` |
+| New business workflow | `internal/<feature>/service.go` + `internal/domain/<feature>.go` (types) + `internal/store/<feature>.go` (persistence) | `internal/upload/manager.go` + `domain/upload_task.go` + `store/upload_task_repo.go` |
 | New driver `FooCloud` | `drivers/FooCloud/{driver,config,auth,ops,transport}.go` + register in `internal/driver/registry.go` + `drivers/all.go` | `drivers/Quark/driver.go` (see `Config(){Name:"quark"}`) |
 | Shared helper | `pkg/<util>/` only if no `internal` imports needed | `pkg/singleflight`, `pkg/strutil` |
 | DB migration | `internal/store/migrate.go` + `store.Open.Migrate` | `internal/store/db.go` |
