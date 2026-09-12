@@ -943,3 +943,41 @@
 ### Next Steps
 
 - P3/P4 决策已给出结论（四项均建议保留：refresh-auth 是可达运维钩子、SourceTypeOfflineHandoff 是生产默认值、template 是 spec 记载的驱动流程载体与唯一 OAuth 守卫测试替身）；仅 P3-2 的 OfflineHandoffClientID 属可删但收益极小
+
+
+## Session 146: 归档死代码 P3/P4 处置：四项均保留（附重启条件），候选清单全部关闭
+<!-- trellis-session: v=2 fp=f97d13ef70eb3eae -->
+
+**Date**: 2026-09-12
+**Task**: 归档死代码 P3/P4 处置：四项均保留（附重启条件），候选清单全部关闭
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户指示归档死代码复扫遗留的 P3/P4 四项处置（均保留、不实施），零代码改动，交付物即 PRD 决定记录。核心结论：四项没有一项是真正的死代码——① /api/admin/accounts/{id}/refresh-auth 是【可达但未被调用】的运维钩子（handler 30 行，同一 auth.Refresh 被 gate.go:43 与 scheduler.go:360 在用，前端 accountsApi 无 refresh-auth，左右邻居 set-default/refresh-profile 都在用；删它属 API 收缩决策且对外 breaking）；② OfflineHandoffClientID 是【生产死/测试可达】（前缀常量只在生成函数内部用，故生产既不生成也不解析该格式；仅 3 处测试调用；删只省 3 行却要动 3 处测试）；③ SourceTypeOfflineHandoff 是【生产活】（manager.go:477 它是服务器上传的默认来源类型、:479 校验、:405 文案；命名来自已删功能属命名漂移，改名要动 DB 存量值）——同文件两者名字同源但命运相反，清理时绝不可连带删除；④ drivers/template 438 行 + httpx A 簇 115 行是【有意脚手架+测试载体】（spec driver-development.md:71 记载 cp -r drivers/template 为驱动创建第一步；且是 TestOAuthDriversUseUnifiedGuard 的唯一替身，真实 OAuth 驱动已精简掉，删=静默丢该守卫唯一覆盖；重启条件=先补不依赖 template 的守卫测试再删链）。PRD 引用的 7 处文件:行号已逐一抽查全部命中；deadcode 仍 7、unused 仍 0 反证未动代码。候选清单最终状态：P1/P2 已清理（182 行+1 依赖）、P3/P4 已归档，deadcode 剩余 7 = A 簇 5 + C 簇 1 + 保留项 1，全部有明确处置，无遗漏项。
+
+### Main Changes
+
+- 仅新增决定记录：.trellis/tasks/archive/2026-09/09-12-close-deadcode-p3-p4/prd.md；git diff 为空、受跟踪文件改动 0
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f6c03a` | chore(task): archive 09-12-close-deadcode-p3-p4 |
+
+### Testing
+
+- [OK] [OK] PRD 引用 7 处行号逐一抽查全部命中（router.go:186 / gate.go:43 / scheduler.go:360 / manager.go:477 / manager.go:568 / driver-development.md:71 / oauth_integration_test.go:14）
+- [OK] [OK] 零代码改动：git diff 0 行、受跟踪文件改动 0；基线不变（deadcode 7、unused 0）反证未动代码
+- [OK] [OK] 实例未受影响：/api/health 200、容器 Up
+- [OK] [诚实] 我初稿算错过剩余 7 的构成（漏 C 簇写成 5+1=6），已自查修正为 5+1+1 并逐项对应处置结论
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 死代码候选清单已全部关闭；若日后要清理 P4，须先补不依赖 template 的 OAuth 守卫测试再删链（该顺序已写入 P4 重启条件）

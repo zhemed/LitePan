@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 145
+- **Total Sessions**: 146
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~945 | Active |
+| `journal-3.md` | ~983 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 146 | 2026-09-12 | 归档死代码 P3/P4 处置：四项均保留（附重启条件），候选清单全部关闭 | `2f6c03a` | `main` |
 | 145 | 2026-09-12 | 修正 drivers/template 包注释指向不存在的 README | `241a24c`, `47b0a50` | `main` |
 | 144 | 2026-09-12 | 死代码清理 P3：删除复扫确认的 182 行 + 1 依赖，方法论入 spec | `36c66ed`, `5dbebc7` | `main` |
 | 143 | 2026-09-12 | 死代码复扫：核对遗留 9 处 + 交叉验证新发现 14 条测试层死代码 | `e6ae23a` | `main` |
