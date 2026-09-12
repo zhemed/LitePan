@@ -1,12 +1,12 @@
 services:
   litepan:
-    image: ghcr.io/zhemed/litepan:v0.0.31
+    image: ghcr.io/zhemed/litepan:v0.0.44
     container_name: litepan
     environment:
       - TZ=Asia/Shanghai
     volumes:
-      - /vol1/1000/docker/litepango/data:/app/data
-      - /vol1/1000/docker/litepango/mounts:/app/mounts:shared
+      - /vol1/1000/docker/litepan/data:/app/data
+      - /vol1/1000/docker/litepan/mounts:/app/mounts:shared
     devices:
       - /dev/fuse:/dev/fuse
     privileged: true
