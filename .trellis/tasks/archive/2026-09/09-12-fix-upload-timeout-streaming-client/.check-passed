@@ -1,0 +1,2 @@
+checked_at=2026-09-12 15:39:34
+note=P1 上传超时修复完成：httpx.NewStreamingClient（无总超时+60s 响应头）+ 115 数据面专用客户端与 3 次分片重试 + 189 流式上传客户端；与上游 869974b 同名函数逐字节一致（isRetryableOSSUploadError 去掉多余 nil 防御）。质量门：go vet / go test ./... / go build / web type-check+build+check:memo 全绿；golangci-lint 在本机 go1.27.0 下 staticcheck 崩溃（依赖包 poll，isInitialPkg=false），已用 go vet + 手工等价 depguard 核对（drivers 仅导入 domain/driver/uploadhelper/httpx）替代并如实记录。定制未动：115 600s、512MB 分片、189 节流/重试。发布：0.0.38 三 tag 同 digest 7fe5f5ea、tag+release 已建、本地容器重建三连通过（health/登录/任务汇总 total=13 success=13）

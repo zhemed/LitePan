@@ -40,20 +40,34 @@
 
 ## Acceptance Criteria
 
-- [ ] `internal/httpx.NewStreamingClient` 已实现且 `internal/httpx` 单测覆盖（无总超时 / transport 继承 / 响应头超时 / nil base），`go test ./internal/httpx/` 通过
-- [ ] 189 上传客户端已改为流式（无总超时 + 60s 响应头超时），`go test ./drivers/189Cloud/...` 通过
-- [ ] 115 数据面（单请求 + 分片）已使用 `uploadClient`，分片具备 3 次瞬时故障重试（含分类表测与假 transport 行为测试），`go test ./drivers/115_Open/...` 通过
-- [ ] 未改动 R5 所列本方定制（`git diff` 逐行核对：115 超时仍 600s、分片仍 512MB、189 节流/重试未动）
-- [ ] `go vet ./...`、`go test ./...`、`go build ./...` 全绿；`cd web && npm run type-check && npm run build && npm run check:memo` 全绿
-- [ ] 版本号 `0.0.38` 已更新（`README.md` + `docker-compose.yml`）
-- [ ] 镜像 `ghcr.io/zhemed/litepan:0.0.38`（含 `:v0.0.38`、`:latest`）三 tag 同 digest 已推送
-- [ ] `git tag v0.0.38` 已推送，GitHub release `v0.0.38` 已创建
-- [ ] 本地容器已重建到 0.0.38，health / form 表单登录 / 上传任务汇总三连通过
-- [ ] 记录更正（30s → 600s，问题实质）已写入本任务文档与 journal
-- [ ] 上游 `869974b` 的**适配差异表**（保留项/未移植项/理由）已写入 `design.md`
+- [x] `internal/httpx.NewStreamingClient` 已实现且 `internal/httpx` 单测覆盖（无总超时 / transport 继承 / 响应头超时 / nil base），`go test ./internal/httpx/` 通过
+      → `internal/httpx/client.go` + `client_test.go`（5 个测试）；`ok litepan/internal/httpx 0.204s`
+- [x] 189 上传客户端已改为流式（无总超时 + 60s 响应头超时），`go test ./drivers/189Cloud/...` 通过
+      → `drivers/189Cloud/driver.go:82-86` = `httpx.NewStreamingClient(d.client, 60*time.Second)`；包内测试全绿
+- [x] 115 数据面（单请求 + 分片）已使用 `uploadClient`，分片具备 3 次瞬时故障重试（含分类表测与假 transport 行为测试），`go test ./drivers/115_Open/...` 通过
+      → `drivers/115_Open/{driver,upload}.go` + `upload_retry_test.go`（9 个测试）；`ok litepan/drivers/115_Open 5.055s`
+- [x] 未改动 R5 所列本方定制（`git diff` 逐行核对：115 超时仍 600s、分片仍 512MB、189 节流/重试未动）
+      → `drivers/115_Open/driver.go:75` 仍 `600 * time.Second`；`calculateOSSPartSize` 仍固定 512MB；`singlePartUploadLimit` 仍 512MB；189 `putUploadPartOnce`/`retryableUploadURLFailure`/`maxAttempts` 未改（`git diff` 仅动 4 个源文件 + 版本号 + spec）
+- [x] `go vet ./...`、`go test ./...`、`go build ./...` 全绿；`cd web && npm run type-check && npm run build && npm run check:memo` 全绿
+      → vet/build OK；`go test ./...` 全包 ok（exit 0）；web 三连通过（`MEMO-ALL-PASS`，构建产物零 churn）。**例外**：`make lint`（golangci-lint v2.12.2）在本机无法运行——见 Notes 第 3 条
+- [x] 版本号 `0.0.38` 已更新（`README.md` + `docker-compose.yml`）
+      → README 2 处 + docker-compose 1 处
+- [x] 镜像 `ghcr.io/zhemed/litepan:0.0.38`（含 `:v0.0.38`、`:latest`）三 tag 同 digest 已推送
+      → 三 tag 同 digest `sha256:7fe5f5eac935a9204e317a0f6925a6316312f0ec88b74c4476d72b25a8ec0b04`（ImageID `3cbdbc2eaf6e`）
+- [x] `git tag v0.0.38` 已推送，GitHub release `v0.0.38` 已创建
+      → commit `6ae4c11`；tag `v0.0.38`；release https://github.com/zhemed/LitePan/releases/tag/v0.0.38
+- [x] 本地容器已重建到 0.0.38，health / form 表单登录 / 上传任务汇总三连通过
+      → ImageID `3cbdbc2eaf6e`、`Restarts=0`；`/api/health` ok；登录 `{"success":true,"username":"admin"}`；任务汇总 `total=13, success=13`；启动日志无错误
+- [x] 记录更正（30s → 600s，问题实质）已写入本任务文档与 journal
+      → 本 PRD「Background」+ `design.md` §5 + journal（Session 125）
+- [x] 上游 `869974b` 的**适配差异表**（保留项/未移植项/理由）已写入 `design.md`
+      → `design.md` §5（9 行差异对照）
 
 ## Notes
 
 - 上游 `869974b` 同时改了 139/123/百度/光鸭/OneDrive/Quark 六个驱动的上传客户端与 `InternalExperimental` 标记 —— 本方精简分支**只保留 189/115 两个驱动**，相关改动不适用（差异表已列）。
 - 数据面无总超时后的残留风险（服务端长期不返回响应体/不读 body）与缓解手段（`ResponseHeaderTimeout=60s`、任务暂停/取消携带 ctx、TCP keepalive、驱动 `Drop`）已在 `design.md` 讨论；如认为不可接受，可在实施前提出收紧方案。
+- **3. lint 工具在本地不可用（环境问题，非本改动引入，如实记录）**：`golangci-lint v2.12.2` 在本机（**go1.27.0**；go.mod 声明 `go 1.26.6`，Dockerfile 用 `golang:1.26.6`）运行时其 `staticcheck v0.7.0` 分析器**在依赖包 `poll` 上 panic**（`interface conversion: interface {} is nil, not *buildir.IR`），无论全量还是限定包、无论是否收敛 linter 集合都会崩溃（堆栈显示 `isInitialPkg: false`，即崩溃点在依赖分析而非本仓库代码）。替代取证：① `go vet ./...` 全绿；② 手工等价核对 `depguard/drivers-pure` 规则——`drivers/115_Open` 与 `drivers/189Cloud` 的 internal 导入仅为 `domain`/`driver`/`driver/uploadutil`/`httpx`，无 `file`/`auth`/`upload`/`store`；③ 代码与上游 `869974b` 逐函数比对（4 个新函数中 3 个 IDENTICAL，1 个去掉了我方多余的 nil 防御以保持同构）。
+- **4. 移植保真度核对**：`newOSSUploadHTTPClient`、`ossUploadHTTPClient`、`ossUploadPartWithRetry`、`ossUploadPart`、`ossSinglePartUpload` 与上游 `origin/main` 同函数**逐字节一致**；`isRetryableOSSUploadError` 去掉了初版的 nil 防御分支（不可达状态，且与上游保持同构，降低未来移植冲突）。
+- **5. 测试期踩坑留痕**：首版 `upload_retry_test.go` 用 `http.Header{"ETag": ...}` 造响应导致 `Header.Get("ETag")` 取不到值（Go 头键规范形是 `Etag`）；另一例误把"取消后不发请求"写成断言（该职责属真实 `http.Transport`，假 transport 不承担）。两处均已按实证修正，并在测试注释中留痕。
 - Keep `prd.md` focused on requirements, constraints, and acceptance criteria.
