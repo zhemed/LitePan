@@ -1,0 +1,2 @@
+checked_at=2026-09-12 16:42:55
+note=移植上游 P2+P5：P2 加 error_log 取消/超时守卫+3 例回归测试；P5① 新增 slow_dashboard_log.go（1s 阈值、6 条本方在线端点、router 接线、含白名单与阈值行为测试）；P5② accountprofile refreshGate 串行闸门 + 上游串行测试 + 取消直接返回用例。质量门 vet/test/build/web 三连全绿。发版 0.0.43（三 tag digest 6fd9d631、tag=ac6ec4a API 复核、release 顺序正确）+ 本地重建三连通过

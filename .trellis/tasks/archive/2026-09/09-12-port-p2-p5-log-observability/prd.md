@@ -36,14 +36,22 @@
 
 ## Acceptance Criteria
 
-- [ ] P2 守卫已加且有回归测试（取消上下文不记日志 / 正常上下文仍记录）
-- [ ] P5① 慢后台日志已加：路径表为本方在线端点（含裁剪说明注释）、`router.go` 已接线、测试覆盖路径判定与阈值行为
-- [ ] P5② refreshGate 已加，且移植的串行性测试通过（两个账号刷新不并发）
-- [ ] `go vet ./...`、`go test ./...`、`go build ./...`、web 三连全绿
-- [ ] 版本号 `0.0.43` 已更新（`README.md` + `docker-compose.yml`）
-- [ ] 镜像 `ghcr.io/zhemed/litepan:0.0.43` 三 tag 已推送；tag 指向提交（API 复核）；release 已创建（顺序正确）
-- [ ] 本地容器已重建到 0.0.43，health / form 登录 / 任务汇总三连通过
-- [ ] 移植清单与适配差异已写入 journal
+- [x] P2 守卫已加且有回归测试（取消上下文不记日志 / 正常上下文仍记录）
+      → `internal/api/error_log.go:46-50` 守卫（`errors.Is(ctx.Err(), Canceled/DeadlineExceeded)`）；新增 `internal/api/error_log_cancel_test.go`（3 例，`go test ./internal/api/` 通过）
+- [x] P5① 慢后台日志已加：路径表为本方在线端点（含裁剪说明注释）、`router.go` 已接线、测试覆盖路径判定与阈值行为
+      → 新增 `internal/api/slow_dashboard_log.go`（阈值 1s、仅 GET、6 条在线端点，注释注明上游已删端点被裁剪）；`router.go:132` 接线；新增 `slow_dashboard_log_test.go`（白名单判定 + 快速/非白名单/非 GET 不记 + 超阈值记录）
+- [x] P5② refreshGate 已加，且移植的串行性测试通过（两个账号刷新不并发）
+      → `internal/accountprofile/service.go` 新增 `refreshGate chan struct{}`（`New` 初始化、`refresh` 取闸、父 ctx 取消即返回）；`service_test.go` 含上游串行性测试 + 新增"取消的父上下文直接返回"用例；`go test ./internal/accountprofile/` 通过
+- [x] `go vet ./...`、`go test ./...`、`go build ./...`、web 三连全绿
+      → 全绿（`go test ./...` exit 0、28 个包 ok；web `MEMO-ALL-PASS`）
+- [x] 版本号 `0.0.43` 已更新（`README.md` + `docker-compose.yml`）
+      → README 2 处 + docker-compose 1 处
+- [x] 镜像 `ghcr.io/zhemed/litepan:0.0.43` 三 tag 已推送；tag 指向提交（API 复核）；release 已创建（顺序正确）
+      → 三 tag 同 digest `sha256:6fd9d63191b95aad927fe67630b1f3cc68b6a63ec638454c100a6c40b7c3d8f7`（ImageID `d64aabd93966`）；tag `v0.0.43` = `ac6ec4a`（API 复核一致）；release https://github.com/zhemed/LitePan/releases/tag/v0.0.43；顺序 push → tag → push tag → release ✔
+- [x] 本地容器已重建到 0.0.43，health / form 登录 / 任务汇总三连通过
+      → ImageID `d64aabd93966`、`Restarts=0`；health ok；登录 ok；任务汇总 `total=13 success=13`
+- [x] 移植清单与适配差异已写入 journal
+      → Session 131
 
 ## Notes
 
