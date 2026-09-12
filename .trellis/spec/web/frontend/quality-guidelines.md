@@ -71,7 +71,67 @@ build: {
 ## Testing
 
 - No `vitest` yet; when adding, place `web/src/__tests__/` and run `npm test`.
-- Manual QA: `npm run dev` → login → browse `/` → admin tabs → file preview (pdf/docx/video) → check console for `TypeError`.
+
+### Browser acceptance: the only coverage for rendered behavior
+
+The frontend has **no automated tests at all** (no `vitest`/`jest`, no `test` script). `vue-tsc` only checks
+types and `vite build` only proves the bundle builds — **neither observes anything that exists only after
+render**. For rendered behavior there are exactly two options: look at it in a browser, or verify nothing.
+This section defines when the former is required.
+
+#### When browser acceptance is required
+
+The change touches `web/src/**` **and** its effect is only visible after rendering:
+
+| Trigger | Why `type-check` cannot cover it |
+|---|---|
+| Async / runtime-fetched values in the UI (e.g. the version badge filled by a store after load) | Types are correct while the value may never arrive, or render empty |
+| Conditional rendering and state machines (task terminal buckets, paused badge, cooldown countdown) | Whether a branch is actually reached is invisible to the type system |
+| store ↔ component wiring, shared state across components, `watch`/reactivity | "Reactivity did not fire" and "value is empty" are indistinguishable by type |
+| Router guard branches (`public_index_enabled`, `must_change_password`) | The outcome depends on runtime config |
+| Release / deployment wrap-up | Must confirm the surface the user actually sees |
+
+**Not required** for: backend/driver/store changes (`go test` + `curl` already cover them), docs- or
+config-only changes, copy or CSS-class-only edits, and type errors that `type-check` already reports.
+
+#### How to run it
+
+```bash
+bw open http://127.0.0.1:5211/ --text=1500   # real render (runs JS), returns post-render text
+bw els                                       # list interactive elements to pick a click target
+bw fill admin --into='input[placeholder="请输入用户名"]'
+bw click '.submit-btn'                       # buttons: use a CSS selector
+bw text 1200                                 # post-render text
+bw shot /tmp/ui.png --full                   # screenshot; inspect it with read_image
+```
+
+`bw` is the resident headless Chromium (systemd `browser-cdp.service`, CDP 9222) usable from any session —
+see the BROWSER-CDP section of the global `AGENTS.md`.
+
+**Two pitfalls measured in this repo (2026-09-12):**
+
+- **`bw click <text>` can hit the wrong element.** Clicking `登录` matched the page heading `管理员登录`
+  instead of the `<button>`, so the form never submitted. Use a CSS selector for buttons; keep text matching
+  for links whose text is unique.
+- **Vue form inputs.** `bw fill` does write the value; if a form submits empty, dispatch `input`/`change`
+  events via `bw eval` before clicking. *Not independently isolated:* in the observed run the click failure
+  came first, so treat this as a troubleshooting order, not a proven requirement.
+
+#### Boundaries (do not confuse these)
+
+- **It is acceptance, not testing.** It neither replaces nor reduces `npm run type-check`, `npm run build`,
+  `make lint`, or `go test`.
+- **Never put it in CI, never use it as an automated gate decision.** Selectors break when the UI changes and
+  it needs a running instance — it is non-deterministic tooling.
+- **State the evidence, not a verdict.** Record "screenshot inspected" / "post-render DOM text was X" —
+  never "automated assertion passed".
+- Record the result in the task's `prd.md` check log. Write screenshots to `/tmp` and delete them afterwards
+  so the git worktree stays clean.
+
+#### Full manual QA pass (when the change touches a main flow)
+
+`npm run dev` (or a deployed instance) → login → browse `/` → admin tabs → file preview (pdf/docx/video)
+→ **check console for `TypeError`**
 
 ---
 
