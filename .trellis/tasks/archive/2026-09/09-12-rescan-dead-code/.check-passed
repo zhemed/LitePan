@@ -1,0 +1,2 @@
+checked_at=2026-09-12 13:40:31
+note=死代码复扫（零代码改动，只装 deadcode v0.50.0）。核心结论：deadcode prod 9→9，0 新增 0 消除——0.0.42~0.0.44 与多轮维护未引入新死代码。三处纠错/新发现：① B 簇 pause_reason.go 上次记『仅测试可达』实为全文件零引用（含测试），deadcode 只报函数不报类型故低估；② 新增 deadcode+unused 并用方法后暴露 14 条测试层死代码，含 settings/service_test.go 整文件 28 行（只有未使用的 mock、无任何 Test 函数）——该批上次被记为『接口实现桩非死代码』，本轮经实例化核查否证（从未被实例化）；③ 前端新增发现 1 个零引用文件 TimeWindowField.vue（122 行，构建产物交叉验证 0 命中）与 1 个未使用依赖 @fontsource-variable/noto-serif-sc，并排除 1 个误报 @vue/devtools-api（实为 pinia 的 peerDependency）。可安全清理约 182 行 + 1 依赖，待决策 2 项。自身两次判断失误已如实纠正。
