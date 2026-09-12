@@ -981,3 +981,39 @@
 ### Next Steps
 
 - 死代码候选清单已全部关闭；若日后要清理 P4，须先补不依赖 template 的 OAuth 守卫测试再删链（该顺序已写入 P4 重启条件）
+
+
+## Session 147: 完全移除 API 秘钥功能（前端+接口+包+接线+数据表）
+<!-- trellis-session: v=2 fp=9ed1b384e628ef35 -->
+
+**Date**: 2026-09-12
+**Task**: 完全移除 API 秘钥功能（前端+接口+包+接线+数据表）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 按 design.md KD3 固定顺序（先摘接线、后删包）执行：① 前端删 ApiKeySettings.vue(517行)+api/apiKeys.ts，AdminView 去 tab、SystemSettings 去 import/常量/状态/条件分支、备份弹窗文案去「API 密钥」；② 删 internal/api/api_keys.go（5 handler）并摘 router 的 Deps/Handler/5 条路由；③ 摘 wire_http（apiKeySvc 构造+SetApiKeys+Deps 传参）与 automation（字段/SetApiKeys/构造赋值）；④ 删 domain/api_key.go、store/api_key_repo.go，清 store.go bundle 字段、backup.go 的 UPDATE api_keys 语句（其余 6 条逐条保留）、backuprestore components 去 api_keys（其余 6 项顺序不变）；⑤ 删 internal/apikey 整包；⑥ 新增 0024_drop_api_keys.sql（幂等 DROP TABLE IF EXISTS，历史迁移零改动）；⑦ 重建 embed。中途刻意确认了预期的中间态编译错误 unknown field ApiKeys in struct literal of type api.Deps。另同步 7 个 spec 文件里指向已删文件的引用。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b61ee9d` | refactor(api-key): 完全移除 API 秘钥功能（前端/接口/包/接线/数据表） |
+| `0fac3f1` | chore(task): archive 09-12-remove-api-key-feature |
+
+### Testing
+
+- [OK] 质量门：make lint 0 issues / GOWORK=off go vet exit=0 / go test 27 包全 ok / vue-tsc -b exit=0 / vite build exit=0。迁移 0024 四场景实测（实例库只读副本→api_keys 及索引消失、其余表行数零变化；幂等重跑无报错；schema_migrations 回退到 23 + 重建含数据孤儿表→再次被清除，即旧备份恢复路径成立；全新库台账 1→24 完整）+ 真实启动：go build -tags fuse 起临时实例(127.0.0.1:5311)自动迁移到 version 24、configs 7 行未损。近名物复核：DynamicForm.vue:72 "api_key" 仍在（通用敏感字段关键词）、backup.go 6 条 sanitize 逐条在、components 6 项顺序不变。残余扫描 Go/web/spec 零 apikey 引用。基线不劣化：deadcode 7→7、unused 0→0、前端零引用 0→0、gofmt 17→17 零新增。越界 0。浏览器验收（quality-guidelines.md 命中条款）：设置页仅 3 页签且布局完好、两页签切页正常、备份弹窗文案已无「API 密钥」、SPA 切页 0 JS 错误；构建产物交叉验证——HEAD 的 SystemSettings chunk 含 6×「API 秘钥」/19×api-keys，新产物命中 0。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 是否发版由用户决定：本轮是用户可见的功能移除（后台少一个 tab），比上轮纯死代码删除更够格；要发版须另开任务走 build→GHCR 三 tag→tag→release→本地容器验证，并把 README/compose 的 v0.0.44 一并推进；② 待办：单独任务同步 error-handling.md / api-layering.md / api-client.md 中既有的僵尸内容（writeDomainError、internal/api/errors.go、CodeInvalid/CodeConflict/CodeUnauthorized/CodeForbidden 均已不存在；实测出口为 resp.go: writeErr，映射在 domain/errors.go: codeTable+HTTPStatus()，响应字段是 error_type）；③ 待办：dead-code-guide.md 回填「功能级死代码」识别法（管理侧可达、消费侧缺席，deadcode/unused 查不出来）—— 本任务按 PRD 明确未做。
