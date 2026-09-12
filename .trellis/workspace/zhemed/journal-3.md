@@ -182,3 +182,42 @@
 - ⚠️ 生产机 10.0.0.11 仍为 0.0.37（未授权未动）；如需享受本次上传超时修复，请授权后再升级
 - 可选后续：P2+P5 日志/可观测任务、P3 认证收口任务
 - 环境问题待办：golangci-lint 在本机 go1.27.0 崩溃（go.mod 声明 1.26.6）——需要升级 golangci-lint 或固定本地工具链
+
+
+## Session 126: 驱动超时统一 30s 并发布 0.0.39（含两处流程偏差复盘）
+<!-- trellis-session: v=2 fp=aae38cf2df5ea8a3 -->
+
+**Date**: 2026-09-12
+**Task**: 驱动超时统一 30s 并发布 0.0.39（含两处流程偏差复盘）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户指示统一驱动侧超时为 30s：115 API 客户端 600s→30s（覆盖 rawRequest/postPassport/ossDo＝全部 API 与 OSS init/complete/凭证刷新）、115 上传响应头兜底 60s→30s、189 上传兜底 60s→30s（189 API 本就 30s）；上传传输仍无总超时，30s 只作用于『分片发完后上游不回应』与普通 API。测试：新增 TestInitConfiguresDriverTimeouts（离线 Init 锁定 API=30s/上传无总超时/上传兜底=30s），upload_retry_test.go 断言同步；go vet/test/build + web 三连全绿。发版 0.0.39：三 tag 同 digest 1f2b2bb4、本地容器重建三连通过。已知取舍：115 complete 类慢 API 30s 即失败（回退=只调大该值），慢速大分片传输不受影响。两处流程偏差如实记录：① gh release create 先于 git push main 执行，GitHub 自动打出的 v0.0.39 指向旧 main 头 86e52ca，发现后删远端 tag 重推至 7243a27（API 复核通过）——教训：必须 push main→tag→push tag→最后 release；② pre-archive 因仍有 1 项未勾选被拒（我漏勾了第一条验收项），但命令链仍执行了 archive，已按先例把任务目录移回、补勾证据、重跑 pre-archive 通过后重新归档，并在 PRD Notes 留痕
+
+### Main Changes
+
+- 115 API 客户端总超时 600s→30s
+- 115 上传响应头兜底 60s→30s；189 上传兜底 60s→30s
+- 版本 0.0.39 + 镜像三 tag + tag/release + 本地部署
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7243a27` | fix(driver): unify driver timeouts to 30s, bump to 0.0.39 |
+
+### Testing
+
+- [OK] go vet ./... 全绿；go test ./... 全包 ok；go build ./... OK；web type-check+build+check:memo MEMO-ALL-PASS；新增/更新 115 侧超时断言用例；本地容器重建三连（health/表单登录/任务汇总 total=13 success=13）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 观察：若 115 大文件在合并阶段报 Client.Timeout，只需把 115 API 客户端调大（最小回退）
+- 可选后续：P2+P5 日志/可观测、P3 认证收口（上游 99ea858）
+- 环境待办：本地 go1.27.0 与 go.mod 1.26.6 不一致导致 golangci-lint 崩溃，需固定工具链或升级 linter
