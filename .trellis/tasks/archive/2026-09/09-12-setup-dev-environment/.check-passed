@@ -1,0 +1,2 @@
+checked_at=2026-09-12 11:37:38
+note=项目质量门全绿：make lint 0 issues；go vet exit=0；go test ./... 全包 ok；go test -race ./internal/store ok 3.518s（cgo 可用）；web vue-tsc -b exit=0。零源码改动（git diff --name-only HEAD = 0）。刻意未跑 npm run build 以保护 135 个受跟踪 embed 产物，理由已留痕。
