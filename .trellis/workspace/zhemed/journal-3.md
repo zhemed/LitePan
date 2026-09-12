@@ -389,3 +389,41 @@
 ### Next Steps
 
 - 如将来确定不再新增驱动或该端点长期无人使用，可另建任务做契约级清理（届时属有意变更，需同步 spec）
+
+
+## Session 132: 移植上游 P2+P5（日志与可观测）并发布 0.0.43
+<!-- trellis-session: v=2 fp=e8c1c3af667c8142 -->
+
+**Date**: 2026-09-12
+**Task**: 移植上游 P2+P5（日志与可观测）并发布 0.0.43
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+移植候选清单 P2+P5：① P2（upstream d545e47）logAPIError 加取消/超时守卫——客户端提前断开不再记 ERROR，新增 error_log_cancel_test.go（取消/超时/正常三例）；② P5①（upstream b5c9308）新增 internal/api/slow_dashboard_log.go：后台概况类 GET 超 1s 记 INFO（method/path/duration_ms），router 于 attachRequestLogger 后接线，路径表按本方在线端点裁剪（上游含 cache-retention/media-organize/strm 等已删端点，代码注释说明），含白名单与阈值行为测试；③ P5②（upstream b5c9308）accountprofile 增加容量 1 的 refreshGate 串行闸门（父 ctx 取消即返回），移植上游串行性测试并补取消用例。质量门 vet/test/build/web 三连全绿。发版 0.0.43：三 tag 同 digest 6fd9d631、tag=ac6ec4a（API 复核）、release 顺序正确、本地容器重建三连通过。
+
+### Main Changes
+
+- P2：logAPIError 取消/超时守卫 + 回归测试
+- P5①：慢后台接口日志（1s 阈值，路径表按本方端点裁剪）
+- P5②：accountprofile refreshGate 后台刷新串行化
+- 版本 0.0.43 + 镜像三 tag + tag/release + 本地部署
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ac6ec4a` | feat(api): port upstream P2+P5 log/observability fixes, bump to 0.0.43 |
+
+### Testing
+
+- [OK] go vet ./... 全绿；go test ./... 全绿（28 包 ok）；go build OK；web type-check+build+check:memo MEMO-ALL-PASS；新增 internal/api/error_log_cancel_test.go、slow_dashboard_log_test.go、internal/accountprofile/service_test.go（含上游串行性测试）；本地容器三连通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 候选清单剩余：P7（上传取消语义/批次名）、P8（铃铛 SSE 推送）、P9（播放诊断）
