@@ -699,3 +699,44 @@
 - 用户在浏览器改默认口令后，建议同步更新 AGENTS.md 的口令记录（属规则文件，需另建任务）
 - 待决：docker-compose.fnos.yml 的 image tag 仍为 v0.0.31（落后 13 版），bump 会把多版本变更推给 NAS 用户且本机无法验证 fnOS
 - 待决：README 首屏声称 118M，实测 v0.0.44 压缩后 41.8MiB / 未压缩 161MB，口径不一致
+
+
+## Session 140: 修正 NAS compose 过期 tag 与目录分歧、清除三处不可核实的体积数字
+<!-- trellis-session: v=2 fp=2e8b4952ac369486 -->
+
+**Date**: 2026-09-12
+**Task**: 修正 NAS compose 过期 tag 与目录分歧、清除三处不可核实的体积数字
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+收尾前两轮暴露的两项遗留（零代码改动，4 文件 6 insertions/6 deletions）。① docker-compose.fnos.yml 双重过期：image v0.0.31→v0.0.44（落后 13 版），数据目录 litepango→litepan 与 README 快速开始统一（此前照 README 抄会落到不同目录）；config --quiet 通过，其余字段未动。② 全仓库三处 118M（README:9/AGENTS.md:62/.trellis/config.yaml:9）一并清除、按用户决策不填新值；取证方式为从 GHCR 分页查出仍在的 v0.0.1 并 docker pull 实测——未压缩 178MB、压缩层 46.0MiB，与 118M 均不符，且 v0.0.44 更小（161MB/41.8MiB，因功能精简），故该数字是『从未准确』而非『过时』。保留仍准确的『3驱动』等声明；config.yaml 非注释部分与备份零差异。回归：运行中容器未受影响（Up + health 200）。
+
+### Main Changes
+
+- docker-compose.fnos.yml：image 升至 v0.0.44；两处卷路径 /vol1/1000/docker/litepango/ → /vol1/1000/docker/litepan/
+- README.md:9：去掉 118M → **115 · 天翼 · 本机 · 一个界面**（diff 仅此一行）
+- AGENTS.md:62 与 .trellis/config.yaml:9：版本基线句去掉 118M，保留 0.0.1 基线/已推镜像/tag/递增规则/不跳 1.0.0 与『3驱动』
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `106bfc0` | fix(docs): 修正 NAS compose 的过期 tag 与目录分歧、清除不可核实的体积数字 |
+| `343b6d8` | chore(task): archive 09-12-fix-nas-compose-and-size-claim |
+
+### Testing
+
+- [OK] [OK] grep 118M 与 litepango 均零命中；docker compose -f docker-compose.fnos.yml config --quiet 通过
+- [OK] [OK] 未误改核验：仅 3 驱动 / 115_open / 189_cloud / localfs / Vue 3.5.41 / v0.0.44 / go 1.26.6 全部在位
+- [OK] [OK] config.yaml 非注释部分与上轮备份 diff 零差异（只动注释）
+- [OK] [OK] 边界：运行中的 litepan 容器未受影响（Up + /api/health 200）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 已知影响待你判断：NAS 用户从 v0.0.31 直接跳到 v0.0.44 会跨 13 个版本（含 STRM/跨盘秒传/多驱动删除），如需分步升级请改中间版本自行验证

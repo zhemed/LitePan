@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 139
+- **Total Sessions**: 140
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~701 | Active |
+| `journal-3.md` | ~742 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 140 | 2026-09-12 | 修正 NAS compose 过期 tag 与目录分歧、清除三处不可核实的体积数字 | `106bfc0`, `343b6d8` | `main` |
 | 139 | 2026-09-12 | 部署 LitePan v0.0.44 到本机 :5211（含数据持久化验证） | `ebf95cd` | `main` |
 | 138 | 2026-09-12 | 版本号收敛为单一来源（后端运行期提供）并发布 v0.0.44 | `593d125`, `7f5e0f2` | `main` |
 | 137 | 2026-09-12 | 项目与工作区维护：版本漂移修复 + 陈旧配置/文档清理 + Trellis 升级 0.6.17 | `30a20a1` | `main` |
