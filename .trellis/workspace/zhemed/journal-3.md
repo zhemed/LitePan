@@ -250,3 +250,34 @@
 ### Next Steps
 
 - 待用户决定：是否建清理任务删除 internal/mediaorganize 孤儿包（19 文件/3796 行）并同步 spec 两处过期表述
+
+
+## Session 128: 死代码全面排查：3 孤儿包 + 24 死函数 + 12 前端文件
+<!-- trellis-session: v=2 fp=5a760f70eef09136 -->
+
+**Date**: 2026-09-12
+**Task**: 死代码全面排查：3 孤儿包 + 24 死函数 + 12 前端文件
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户要求全面排查残留死代码（只读，六类）：① Go 包级 45 个仓库内包中 4 个不在 cmd/litepan 依赖图——internal/proxybase(163行)、internal/taskauth(128+100)、pkg/strutil(13) 为真死，drivers/template(438行) 为测试专用骨架（保留）；② deadcode 生产视角 32 个不可达，与 -test 差集得 24 真死（backuprestore 孤儿清理三连、apikey Validate/ValidateTask、automation normalizePath/ternaryStatus、upload 离线 handoff/lifecycle progressForBytes/target_dir/worker taskLocalPath、uploadutil HashMD5/ReadProgress/UploadedBytesByPartKeys、file asAlignInt、settings stringSpec、api streamSSEMessages、189 signedForm、pkg 三处、notification DeleteByRef 等）+ 8 仅测试可达（httpx OAuth 一套 5 个 + domain 暂停原因 2 个 + upload OfflineHandoffClientID）；③ 前端 223 源文件 12 个零引用（2237 行：spaceCleanup/海报墙/封面/TMDB/FUSE/WebDAV/缓存面板等），30 依赖 0 未用；④ 路由/驱动注册表/自动化动作/设置键无残留，仅 1 个疑似未使用端点 /accounts/{id}/refresh-auth；⑤ 本地库 11 表全在用（已删功能表由迁移 0022 清除），upload_tasks 跨盘列仍被本机上传使用，迁移历史 9 文件建议保留；⑥ 构建产物 109 asset 全被引用。产出按优先级清理清单（P1 死包+死函数 / P2 前端分两步 / P3 template+OAuth 默认保留 / P4 预留端点）与误报排除记录（HashMD5 同名常量、面板未接线≠功能已删、测试接口桩不计）。方法沉淀：go list -deps 包级 + deadcode(prod/-test 差集) 符号级 + 前端引用计数 + 解压 .gz 互引 + 叶子路由匹配。零代码改动。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读：go list/go list -deps/deadcode(prod & -test)/grep 引用计数/sqlite ro/py 脚本（前端引用、依赖、产物互引、路由匹配）；未改代码与 DB；git status 仅任务目录
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户决策是否执行清理：建议 P1（3 死包 + 24 死函数）合并为一个纯删除任务并发版
+- P2 前端 12 文件建议分两步：先删已删功能相关的 4 个，再确认 FUSE/WebDAV/缓存三块未接线 UI 是否保留
+- P3 drivers/template 与 httpx OAuth 链路：若不再新增驱动则整链清理（438+~150 行），否则保留
