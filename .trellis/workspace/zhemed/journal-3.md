@@ -321,3 +321,42 @@
 - 待用户决策 P2：前端 12 个零引用文件（建议先删已删功能相关的 4 个，FUSE/WebDAV/缓存 8 个待确认）
 - P3：drivers/template + httpx OAuth 测试专用链路（默认保留，若不再新增驱动可整链清理 ~588 行）
 - P4：/accounts/{id}/refresh-auth 预留端点，建议文档标注而非删除
+
+
+## Session 130: 死代码清理 P2 并发布 0.0.42（前端 23 文件，迭代到不动点）
+<!-- trellis-session: v=2 fp=a3fee0031ccf5136 -->
+
+**Date**: 2026-09-12
+**Task**: 死代码清理 P2 并发布 0.0.42（前端 23 文件，迭代到不动点）
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+执行排查报告 §9 P2：删除前端零引用文件并迭代到不动点——三层 12→7→4，共 23 文件/-3017 行。第一层（报告原列 12）：spaceCleanup/AdminStartupBanner/CacheRuntimeStats/CacheSettingsPanel/FuseManagement(1071)/WebDAVSettings/useConditionalPolling/useLiveElapsedClock/useStartupCountdown/useVirtualPosterWall/coverPoster/tmdbHit；第二层（7 传递孤儿）：AdminSettingsDrawer/AdminStatusPill/AdminTaskTabHeader/InputActionField/SettingsFormRow/useAccountPathLabel/useSettingsForm；第三层（4）：AdminStatsGrid/SettingsEntryCard/SettingsRowLabel/adminTaskTabHeader。删除前逐个复核可达性：FUSE 另有在线 UI（api/fuse.ts 被 Dashboard/SystemSettings/AuxTools 用）、缓存在 SystemSettings 被 filterOutCacheSettings 显式过滤、WebDAV 前端无入口、其余属已删功能（垃圾清理/海报墙/封面/TMDB）或通用工具；传递层用 git grep HEAD 复核引用者全部属于已删集合。保留 constants/cacheSettings.ts 与 api/fuse.ts。收敛后 web/src 零引用=0（223→204 文件）。验证：前端三连全绿且构建产物零 churn（反证不在 bundle）、go build/vet/test 全绿（42 包）。发版 0.0.42：digest 同 0.0.41（预期）、tag=75be52b（API 复核）、release 顺序正确、本地容器重建三连通过。方法论沉淀：死代码清理必须迭代到不动点。
+
+### Main Changes
+
+- 删除前端第一层 12 个零引用文件
+- 迭代删除第二/三层共 11 个传递孤儿
+- 复核并保留 cacheSettings.ts 与 api/fuse.ts（在线使用）
+- 版本 0.0.42 + 镜像三 tag + tag/release + 本地部署
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `75be52b` | chore(web): remove dead frontend files P2 (23 files, -3017 lines), bump to 0.0.42 |
+
+### Testing
+
+- [OK] 前端 type-check/build/check:memo 全绿（产物零 churn）；go build/vet/test 全绿；收敛后复扫 zero-reference=0；本地容器 health/登录/任务汇总三连通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- P3（可选）：drivers/template + httpx OAuth 测试专用链路，默认保留；若不再新增驱动可整链清理
+- P4（可选）：/accounts/{id}/refresh-auth 预留端点，建议文档标注而非删除
