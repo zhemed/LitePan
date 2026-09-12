@@ -1,0 +1,2 @@
+checked_at=2026-09-12 16:07:23
+note=死代码清理：删除 internal/mediaorganize（19 文件/3796 行+4 测试，零消费者、不在依赖图）；go mod tidy 移除 alde/go-fish；spec 三处+一处过期表述修正（含可达性判据教训）。质量门 go vet/test/build + web 三连全绿。发版 0.0.40：镜像与 0.0.39 同 digest（实测二进制 sha256 a00da8e3 相同，死代码不进二进制，属预期）；tag v0.0.40=4b2f49b 已用 API 复核，release 已建（顺序：push→tag→push tag→release）；本地容器重建三连通过

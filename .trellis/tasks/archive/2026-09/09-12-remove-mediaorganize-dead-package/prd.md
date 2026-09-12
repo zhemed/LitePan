@@ -31,15 +31,25 @@
 
 ## Acceptance Criteria
 
-- [ ] `internal/mediaorganize/` 已删除，且删除前有"零消费者"复核证据（grep + `go list -deps`）
-- [ ] `go vet ./...`、`go test ./...`、`go build ./...` 全绿；web 三连全绿
-- [ ] `github.com/alde/go-fish` 依赖已处理（移除或说明保留原因）
-- [ ] spec 四处过期表述已修正，且全仓 `grep -rn "mediaorganize" .trellis/spec` 无残留错误描述
-- [ ] 版本号 `0.0.40` 已更新（`README.md` + `docker-compose.yml`）
-- [ ] 镜像 `ghcr.io/zhemed/litepan:0.0.40`（含 `:v0.0.40`、`:latest`）三 tag 同 digest 已推送
-- [ ] `git tag v0.0.40` 指向修复提交（GitHub API 复核），release 已创建
-- [ ] 本地容器已重建到 0.0.40，health / form 登录 / 任务汇总三连通过
-- [ ] 删除范围与验证结果已写入 journal
+- [x] `internal/mediaorganize/` 已删除，且删除前有"零消费者"复核证据（grep + `go list -deps`）
+      → 删除前复核：`grep -rn "mediaorganize" --include="*.go"` 仅命中 `internal/file/name_align.go:394` 注释；`go list -deps ./cmd/litepan | grep -c mediaorganize` = **0**；`git rm -r internal/mediaorganize`（20 项变更、27 文件、-4,736 行）
+- [x] `go vet ./...`、`go test ./...`、`go build ./...` 全绿；web 三连全绿
+      → 全部通过：`go test ./...` 全包 ok（exit 0，`internal/mediaorganize/rules` 已不再出现在测试列表）；web `MEMO-ALL-PASS`
+- [x] `github.com/alde/go-fish` 依赖已处理（移除或说明保留原因）
+      → 先 `go mod tidy -diff` 预演（仅该依赖 + 其 2 条 go.sum + `google/go-cmp` 2 条），确认无外溢后执行：`go.mod -1`、`go.sum -4`
+- [x] spec 四处过期表述已修正，且全仓 `grep -rn "mediaorganize" .trellis/spec` 无残留错误描述
+      → `directory-structure.md`（目录树行、已移除清单、Module Ownership 示例行）+ `concurrency-and-scheduling.md`（删 `mediaorganize.Service` 行）；复核后仅剩"历史说明 + 教训"两段（有意保留）
+- [x] 版本号 `0.0.40` 已更新（`README.md` + `docker-compose.yml`）
+      → README 2 处 + docker-compose 1 处
+- [x] 镜像 `ghcr.io/zhemed/litepan:0.0.40`（含 `:v0.0.40`、`:latest`）三 tag 同 digest 已推送
+      → 三 tag 同 digest `sha256:1f2b2bb4e24af552f68eef5c3c17054643d3d2a3cd9b005d80c4a3c0fa3c4a1d`（**与 0.0.39 同 digest**：实测两版镜像内 `/app/litepan` sha256 均为 `a00da8e36e8fdcf32d7c5fd2859868077aa19044c371e4a6dc9ed90d79b9793d`，即"死代码不进二进制"的实证，属预期而非缓存误用）
+- [x] `git tag v0.0.40` 指向修复提交（GitHub API 复核），release 已创建
+      → 本地与远端 tag 均为 `4b2f49b01774d84bccc5f1a70995c5e5ecad0057`（`gh api .../git/ref/tags/v0.0.40` 复核一致）；release https://github.com/zhemed/LitePan/releases/tag/v0.0.40
+      → 本次严格遵守顺序：push main → tag → push tag → **最后** gh release（上一任务的顺序错误未重演）
+- [x] 本地容器已重建到 0.0.40，health / form 登录 / 任务汇总三连通过
+      → ImageID `d7039ebbde26`、`Restarts=0`；health ok；登录 ok；任务汇总 `total=13 success=13`
+- [x] 删除范围与验证结果已写入 journal
+      → Session 127
 
 ## Notes
 
