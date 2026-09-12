@@ -103,21 +103,21 @@
 
 ## Acceptance Criteria
 
-- [ ] `grep -rn "v0\.5\.2\|v0\.5\.2-Beta"`（排除 `node_modules`/归档/workspace）零命中，即上游版本号已从后端常量与前端字面量中彻底消失
-- [ ] `grep -rn "APP_VERSION" web/src` 零命中（硬编码与 `APP_VERSION_BADGE` 均已删除）
-- [ ] `GET /api/public/system-config` 返回体含 `"version":"v0.0.44"`，且原有 3 个字段（`index_account_switch_mode`/`compact_home_enabled`/`header_effects_enabled`）均未丢失
-- [ ] 新增 Go 单测覆盖版本字段（注入值可被断言），`GOWORK=off go test ./internal/api/` 通过
-- [ ] `web/src/stores/appInfo.ts` 存在，`load()` 具备 inflight 去重与已加载短路；`AppFooter.vue`、`AdminAccountChip.vue` 均经 store 取值
-- [ ] `web/src/version.ts` 的 `GITHUB_URL` 为 `https://github.com/zhemed/LitePan`
-- [ ] `internal/buildinfo/version.go` 为 `v0.0.44`；`README.md`（2 处）与 `docker-compose.yml`（1 处）镜像 tag 均为 `v0.0.44`
-- [ ] `cd web && npm run build` 后 `internal/api/web/**` 已更新并提交（`git status` 无遗留未提交的 embed 变更）
-- [ ] 质量门全绿：`make lint` 0 issues、`GOWORK=off go vet ./...`、`GOWORK=off go test ./...`、`cd web && npm run type-check`
-- [ ] GHCR 上 `ghcr.io/zhemed/litepan` 出现 tag 组 `v0.0.44` + `0.0.44` + `latest`，且三者指向**同一 digest**
-- [ ] `git tag v0.0.44` 已推送到 origin，且 `gh api repos/zhemed/LitePan/git/ref/tags/v0.0.44` 指向的 commit 与本地一致
-- [ ] `gh release view v0.0.44` 存在
-- [ ] 临时验证容器（5212）三项全过：health 200、`public/system-config` 返回 `version=v0.0.44`、表单登录成功；验证后容器已删除
-- [ ] `ss -ltnp` 确认 `5211` 仍空闲、`3080/3081` 仍由 DSH 监听；仓库内无新增 `data/`/`mounts/`
-- [ ] `git status --short` 改动逐条可追溯到 D1–D5，无越界文件
+- [x] `grep -rn "v0\.5\.2\|v0\.5\.2-Beta"`（排除 `node_modules`/归档/workspace）零命中 —— 实测 `web/src`+`internal/`+`drivers/`+`cmd/`+`pkg/` 全零命中。**该验收项在实施期抓出了侦察时遗漏的第三处硬编码**（`internal/httpx/user_agent.go`），详见 D1b
+- [x] `grep -rn "APP_VERSION" web/src` 零命中 —— 实测零命中；`version.ts` 已删除 `APP_VERSION` 与 `APP_VERSION_BADGE`
+- [x] `GET /api/public/system-config` 返回体含 `"version":"v0.0.44"`，且原有 3 个字段均未丢失 —— 实测（拉回的发布镜像内）：`{"compact_home_enabled":false,"header_effects_enabled":true,"index_account_switch_mode":"dropdown","version":"v0.0.44"}`
+- [x] 新增 Go 单测覆盖版本字段，`go test ./internal/api/` 通过 —— 新增 `internal/api/public_version_test.go`，两个子测试（回传注入值 / 既有字段不丢失）均 PASS
+- [x] `web/src/stores/appInfo.ts` 存在，`load()` 具备 inflight 去重与已加载短路；两个组件均经 store 取值 —— 实测 store 已建；`AppFooter.vue`、`AdminAccountChip.vue` 均改为经 store 取值并各自触发 `load()`
+- [x] `web/src/version.ts` 的 `GITHUB_URL` 为 `https://github.com/zhemed/LitePan` —— 实测 `version.ts:5` 已改
+- [x] `internal/buildinfo/version.go` 为 `v0.0.44`；`README.md`（2 处）与 `docker-compose.yml`（1 处）均为 `v0.0.44` —— 实测；且 `grep v0\.0\.44` 在**全部代码**中只命中 `version.go` 一处，单一真值达成
+- [x] `cd web && npm run build` 后 `internal/api/web/**` 已更新并提交 —— 实测 109 个产物变更（54 新/54 删/1 改）并已随提交推送；解压复核产物内 0 处含上游版本号
+- [x] 质量门全绿 —— 实测 `make lint` **0 issues**；`go vet` exit=0；`go test` **28 包全 ok 无失败**；`vue-tsc -b` exit=0
+- [x] GHCR 上出现 `v0.0.44` + `0.0.44` + `latest` 且同 digest —— 实测 GHCR API 返回**单条 version（id 1240621421）挂载全部三个 tag**，digest 均为 `sha256:a864057d46acfaa980f8064f7724b867342090827b91b99fb5161c50b035c903`
+- [x] `git tag v0.0.44` 已推送且远端 commit 与本地一致 —— 实测远端 `593d1253aa5dc2e1e72fb12701cecfa92fd1bdc4` == 本地，未重演 0.0.39 的旧 main 头问题
+- [x] `gh release view v0.0.44` 存在 —— 实测 `tag=v0.0.44  name=v0.0.44 — 版本号收敛为单一来源（后端），前端运行期读取  published=2026-09-12T12:11:13Z`
+- [x] 临时验证容器（5212）三项全过；验证后容器已删除 —— 实测 health 200、version=`v0.0.44`、表单登录 200（新库默认 `admin/admin`）；**且删除本地镜像后从 GHCR 真拉回来重测一遍**，digest 与构建一致、三项再验全过；容器与临时目录均已清理
+- [x] `ss -ltnp` 确认 `5211` 仍空闲、`3080/3081` 仍由 DSH 监听；仓库内无新增 `data/`/`mounts/` —— 实测 5211/5212 均空闲、DSH 2 个监听在位、`data`/`mounts` 不存在、`docker ps -a` 无 litepan 容器
+- [x] `git status --short` 改动逐条可追溯到 D1–D5，无越界文件 —— 实测提交 `593d125` 含 13 个受跟踪文件改动 + 2 个新文件 + embed 更新；`internal/domain`/上传/缓存/鉴权零改动
 
 ## Notes
 
@@ -125,3 +125,45 @@
 - 方案 C 后，版本真值仍是**手工维护的 Go 常量**（发版时改一处）。若日后希望由 tag 自动注入，那是被搁置的方案 A（`Dockerfile ARG` + `-ldflags` + Vite define），本任务不预埋。
 - **本任务不做**：LitePan 的正式部署（用户明确搁置，5211 保持空闲）；`internal/api/web` 与 Docker 构建产物的字节级一致性（Dockerfile 内会重新构建前端，属既有权衡）。
 - 发版属不可逆对外动作，已获用户明确授权（"一并完整发版 v0.0.44"）。
+
+## 检查记录（trellis-check，2026-09-12）
+
+**Step 1 变更识别**：提交 `593d125` 含 13 个受跟踪文件改动 + 2 个新文件（`internal/api/public_version_test.go`、`web/src/stores/appInfo.ts`）+ 109 个 embed 产物变更（54 新/54 删/1 改）。业务路径零改动：`internal/domain`、上传、缓存、鉴权均未触碰。
+
+**Step 2 规范对齐**：实施前已读 `spec/web/frontend/api-client.md`（按域模块 + 类型集中）、`state-and-routing.md`（Pinia setup 风格 + `inflightLoad` 去重）、`spec/backend/backend/quality-guidelines.md`；实现方式与三处约定逐条对齐（版本经 store 而非组件直连、DTO 加在既有 `public.ts` 而非新建重复类型、Deps 注入而非在 handler 内直接 import）。
+
+**Step 3 项目质量门（全部实测）**
+
+| 检查 | 命令 | 结果 |
+|---|---|---|
+| Lint | `make lint` | `0 issues.` exit=0 |
+| Vet | `GOWORK=off go vet ./...` | exit=0 |
+| Test | `GOWORK=off go test ./...` | 28 包 `ok`，**无失败** |
+| 新测试 | `go test ./internal/api/ -run PublicSystemConfig -v` | 2 个子测试 PASS |
+| 类型检查 | `cd web && npm run type-check` | `vue-tsc -b` exit=0 |
+| 构建 | `cd web && npm run build` | 成功；解压复核 102 个产物内 0 处含上游版本号 |
+
+**Step 4 清单核对**
+
+- 代码质量：lint / vet / test / type-check 全绿；新增代码无 debug 输出、无 `//nolint`、无 `any`。
+- **测试覆盖：本任务实际新增了测试**（与近期几个维护任务不同）—— `internal/api/public_version_test.go` 覆盖"注入什么就回传什么"与"既有字段不丢失"两个断言，前者正是本次改动的核心契约。
+- **Spec 同步：已执行** —— 在 `spec/backend/backend/api-layering.md` 的 "Service Injection via Deps" 后新增「版本号：单一来源」小节，写明真值位置、注入路径、前端读取方式、发版只改一处，并附历史教训与回归 grep 命令。**理由**：不定这条约定，后人会再写死一份版本号，本次修的 bug 就会复发。
+- 范围纪律：改动逐条对应 D1–D5b；未顺手格式化、未重命名、未重构无关代码。
+
+**Step 5 跨层一致性（本任务正是跨层改动，逐层核对）**
+
+- 读写链路完整：`buildinfo.Version` → `Deps` → `Handler.version` → `/public/system-config` → `PublicSystemConfig` DTO → `appInfo` store → 两个组件。四层全部实测贯通（API 实测 + 构建产物解压检索）。
+- 错误路径已处理：取版本失败时 store 捕获并保持空串，组件隐藏版本展示 —— **不设 fallback 字面量**，否则等于把硬编码换个地方藏。
+- 反向兼容已验证：既有 3 个字段在真实容器响应中均存在（实测）。
+
+**诚实记录：偏离、发现与未决事项**
+
+1. **规划期遗漏一处（由验收项抓出）**：侦察时只找到 Go 与 TS 两处硬编码，漏了 `internal/httpx/user_agent.go`。是验收项「`internal/` 内 `v0.5.2` 零命中」在执行中把它逼出来的。已补写 PRD 的 D1b 段落而非静默修掉 —— 这是**规划漏项**，不是我顺手扩大了范围。
+2. **驱动层唯一例外**：`drivers/115_Open/upload.go` 的 `const ossUserAgent` 必须改 `var`（常量无法由运行期值派生）。只改关键字，值与 3 处用法均未动，已在 Constraints 中显式声明。
+3. **匿名访问受 `public_index_enabled` 门控**（实测发现）：全新库该开关默认关闭，匿名请求 `/public/system-config` 得 401。**判定为可接受**：此时匿名用户被路由守卫送到登录页、根本不渲染 footer，不存在"该显示却没有"的场景；store 的降级路径恰好吃住这个 401。但这是实施期才确认的行为，属设计假设的实测验证。
+4. **未顺手修 gofmt**：`internal/api/router.go` 与 `internal/app/wire_http.go` **原本就不符合 gofmt**（上游继承，分别建议改 64/50 行）。我只保证新增的 8 行风格一致，不做全文件格式化 —— 否则会制造与本次改动无关的大 diff。
+5. **本机是全新库**：默认口令是 `admin/admin`（`must_change_password:true`、`password_change_reason:default_credentials`），**不是** `AGENTS.md` 记录的 `123456` —— 那是上一台机器经授权重置后的值。此处如实记录以免混淆。
+6. **UI 层未做浏览器级验证**（本机无无头浏览器）：以「API 实测返回 v0.0.44」+「构建产物解压后确认已含 `public/system-config` 且不含任何版本字面量」作为替代证据。若需像素级确认，需后续在真实浏览器打开首页 footer 与后台「关于」。
+7. **镜像仅 linux/amd64**，与既有发布惯例一致（`DOCKER_PLATFORM=linux/amd64`）；未做多架构。
+8. **已做"拉回再验"**：删本地镜像 → 从 GHCR 真拉 → digest 与构建一致（`sha256:a864057d…`）→ 再跑一遍三项验证全过。避免"只验证了本地构建产物"的假安全感。
+9. **未决观察（不在本任务范围，未擅自改）**：README 首屏声称 `118M`，实测 v0.0.44 **压缩后 41.8 MiB**、`docker images` 未压缩 **161MB** —— 三个口径互不一致。`118M` 是 `v0.0.1` 时代写下的数字（当时镜像内容少得多）。是否更新、以及该以哪个口径对外宣称，需你决定。
