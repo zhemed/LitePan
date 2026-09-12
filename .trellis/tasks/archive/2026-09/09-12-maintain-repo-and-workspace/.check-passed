@@ -1,0 +1,2 @@
+checked_at=2026-09-12 11:49:47
+note=维护质量门全绿：make lint 0 issues（.golangci.yml run.go 1.26.4→1.26.6 后仍解析正常）；go vet exit=0；go test ./... 全包 ok；vue-tsc -b exit=0；脚本自检三连（get_context/task.py list/flow_gate）通过。零源码改动（internal/drivers/pkg/cmd/web/go.mod/go.sum/Makefile/README 改动数均为 0）。spec 同步已执行（quality-guidelines.md 版本号 + 新增 shell-script-guide.md 并登记索引）。trellis update 0.6.16→0.6.17 走 skip-all 保护路径，config.yaml 逐字节未变。

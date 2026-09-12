@@ -24,6 +24,7 @@ These guides help you **ask the right questions before coding**.
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 | [Trellis 强制流程自检指南](./trellis-flow-guide.md) | 九步序列 + 门禁 + 四条硬性禁止 | 会话开始 / 任何写操作前 / 归档前 |
+| [Shell Script Verification Guide](./shell-script-guide.md) | `pipefail` SIGPIPE 假失败、版本断言的 `v` 前缀陷阱、版本可取性核实、幂等可复跑 | 编写/修改任何 `.sh`、写版本或能力断言、排查"命令明明输出正确却报失败" |
 
 ---
 

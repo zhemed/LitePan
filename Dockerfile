@@ -16,7 +16,7 @@ FROM golang:1.26.6-bookworm AS build
 
 WORKDIR /src
 
-# 与 go.mod 的 go 1.26.4 对齐；local 禁止再去拉 toolchain，避免 proxy.golang.org 中断
+# 与 go.mod 的 go 1.26.6 对齐；local 禁止再去拉 toolchain，避免 proxy.golang.org 中断
 ENV GOTOOLCHAIN=local \
     CGO_ENABLED=0 \
     GOPROXY=https://goproxy.cn,direct

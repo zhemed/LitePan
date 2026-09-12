@@ -14,7 +14,7 @@ Configured in `.golangci.yml` (v2):
 
 ```yaml
 run:
-  go: "1.26.4"
+  go: "1.26.6"
   modules-download-mode: readonly
 linters:
   enable: [depguard, errcheck, govet, staticcheck]
