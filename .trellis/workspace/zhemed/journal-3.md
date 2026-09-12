@@ -456,3 +456,32 @@
 ### Next Steps
 
 - 待用户确认：P7+P9（顺带优化）是否立即开工；P8（铃铛改 SSE 推送）属功能项需单独确认
+
+
+## Session 134: 候选清单收尾：P7/P8/P9 归档（含 P7 已等价与有意差异核实）
+<!-- trellis-session: v=2 fp=d85b5beaa2b7c94d -->
+
+**Date**: 2026-09-12
+**Task**: 候选清单收尾：P7/P8/P9 归档（含 P7 已等价与有意差异核实）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户指示归档候选 P7/P8/P9（零代码改动），并逐项核实后再记录：P7（ae75882 子集）——① 取消语义本方已内联等价（internal/api/upload.go:34/64/102 与上游 isClientGone/isCancelError 判断完全一致，上游只是抽 helper，移植零收益）；② local_upload 的 batchName 派生（local_upload.go:288-290）是面板显示文件夹批次所需的有意行为，照搬上游删除会造成显示回归；③ upload/resume.go 定时器简化属代码卫生无行为差异；重启条件=出现取消/中断处理类缺陷。P8（adca0ee 铃铛 SSE 推送）——功能增强非修复，本方轮询无缺陷，重启条件=需秒级通知或减少轮询。P9（46a0a89 播放诊断）——排障能力，本方 playback 无诊断且无故障驱动，重启条件=出现播放/直链故障需定位。候选清单最终状态：3 项已落地（P1 0.0.38+0.0.39、P2 0.0.43、P5 0.0.43）、2 项作废/不适用（P6 死代码作废、P4 目标动作已删）、4 项按用户决定归档（P3/P7/P8/P9）——清单全部关闭。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读取证：grep 行号定位 + 文件阅读 + 候选对照；零代码改动（git status 仅任务目录）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 候选清单已全部关闭；后续如遇认证类问题、通知实时性需求或播放故障，可按记录的重启条件对应重启 P3/P8/P9
