@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 142
+- **Total Sessions**: 143
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~822 | Active |
+| `journal-3.md` | ~864 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 143 | 2026-09-12 | 死代码复扫：核对遗留 9 处 + 交叉验证新发现 14 条测试层死代码 | `e6ae23a` | `main` |
 | 142 | 2026-09-12 | 把浏览器验收判据写入前端 spec（填补零自动化测试的验证空白） | `d7c29b2`, `ef461ab` | `main` |
 | 141 | 2026-09-12 | 同步管理员口令记录到本机实例（用户 2026-09-12 改密） | `4236da0`, `c95dd14` | `main` |
 | 140 | 2026-09-12 | 修正 NAS compose 过期 tag 与目录分歧、清除三处不可核实的体积数字 | `106bfc0`, `343b6d8` | `main` |

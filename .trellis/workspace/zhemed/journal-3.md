@@ -820,3 +820,45 @@
 ### Next Steps
 
 - 后续前端任务按新判据执行：改 web/src/** 且效果只在渲染后可见时，用 bw 做浏览器验收并在 prd.md 检查记录中写明证据来源
+
+
+## Session 143: 死代码复扫：核对遗留 9 处 + 交叉验证新发现 14 条测试层死代码
+<!-- trellis-session: v=2 fp=3ba323ece69b1fdc -->
+
+**Date**: 2026-09-12
+**Task**: 死代码复扫：核对遗留 9 处 + 交叉验证新发现 14 条测试层死代码
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+对 0.0.41 之后的代码做死代码复扫（零代码改动，只装 deadcode v0.50.0）。核心结论：deadcode prod 9→9，0 新增 0 消除——0.0.42/0.0.43/0.0.44 与多轮维护改动均未引入新的生产不可达符号。三处纠错与新发现：① B 簇 internal/domain/pause_reason.go 上次记为『仅测试可达』，实测为全文件（类型+3常量+2函数）零引用含测试——deadcode 只报函数不报类型常量，故上次低估了规模；② 本轮首次把 golangci-lint --enable=unused 用作交叉验证，暴露 14 条测试层死代码（deadcode 看不见测试内部），其中 internal/settings/service_test.go 整文件 28 行是死的（只有未使用的 mock，无任何 Test 函数）——该批上次被记为『接口实现桩不是死代码』，本轮经实例化核查（无任何 &apiKeyRepo{} / memoryConfigRepo{}）否证；③ 前端新增发现 TimeWindowField.vue（122 行零引用，构建产物交叉验证 0 命中而对照 TimeWheelPicker 命中）与未使用依赖 @fontsource-variable/noto-serif-sc，并排除 @vue/devtools-api 误报（实为 pinia 的 peerDependency + vue-router 的 dependency）。保留项 FlexibleString.UnmarshalJSON 的保留理由复核通过（3 个驱动配置在用、encoding/json 反射调用）。端点复现上次结论：1 条孤儿 /accounts/{id}/refresh-auth（待定）。方法论结论：deadcode 与 unused 视角互补、结果零重叠，必须并用；涉及接口的方法下结论前必须先核查是否被实例化。
+
+### Main Changes
+
+- 仅新增报告：.trellis/tasks/archive/2026-09/09-12-rescan-dead-code/research.md（296 行 / 10 章节）+ prd.md；git diff 为空，零代码改动
+- 宿主工具：安装 golang.org/x/tools/cmd/deadcode v0.50.0 到 /root/go/bin（仓库外，未改 .golangci.yml）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e6ae23a` | chore(task): archive 09-12-rescan-dead-code |
+
+### Testing
+
+- [OK] [OK] deadcode ./cmd/litepan → 9 行，与基线逐条一致（0 新增 0 消除）；-test ./... → 15 行
+- [OK] [OK] golangci-lint run --enable=unused → 14 issues，与 deadcode 零重叠；14 条逐个做了「是否被实例化」核查
+- [OK] [OK] 前端：199 文件参与判定，仅 1 个零引用；构建产物交叉验证 0 命中；依赖 24 个中 1 个未使用 + 1 个误报已排除
+- [OK] [OK] 约束：git diff 为空；未改 .golangci.yml；未删除任何代码；实例未受影响（Up + health 200）
+- [OK] [自我纠错] 我先把 14 条测试层死代码判成「非死代码」（沿用上版说法），经实例化核查后否证并已写入报告醒目段落；同类思维捷径上一版也犯过（§10 第 5 条）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 可安全清理 ≈182 行 + 1 依赖（P1: settings/service_test.go 整文件 28 行 + pause_reason.go 整文件 17 行；P2: TimeWindowField.vue 122 行 + noto-serif 依赖 + automation 的 10 个死符号），需另开清理任务
+- 待决策 2 项：孤儿端点 /accounts/{id}/refresh-auth（可能是外部 API 预留）；SourceTypeOfflineHandoff 生产分支是否仍需兼容历史记录
+- 建议（未擅自执行）：把「deadcode 与 unused 必须并用 + 接口方法先核查实例化」写进 spec，本轮 PRD 未声明故未扩大范围
