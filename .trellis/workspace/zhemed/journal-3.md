@@ -740,3 +740,43 @@
 ### Next Steps
 
 - 已知影响待你判断：NAS 用户从 v0.0.31 直接跳到 v0.0.44 会跨 13 个版本（含 STRM/跨盘秒传/多驱动删除），如需分步升级请改中间版本自行验证
+
+
+## Session 141: 同步管理员口令记录到本机实例（用户 2026-09-12 改密）
+<!-- trellis-session: v=2 fp=4637916f7e116f57 -->
+
+**Date**: 2026-09-12
+**Task**: 同步管理员口令记录到本机实例（用户 2026-09-12 改密）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户在本机 :5211 实例界面完成改密后，同步 AGENTS.md 的权威记录（单文件 2 insertions/1 deletion，零代码改动）。原记录停留在上一台机器：哈希 aa9764 与其备份路径 /tmp/litepan-backup-20260909-201827.db 均不属于本机（后者早前已实测不存在）。主记录更新为本机现状（2026-09-12 改密、新盐哈希 af0dac85f9dad16、库位于 /root/LitePan/data/litepan.db、must_change_password 已解除），并新增「口令变更史」标注每一条属于哪台机器以防混淆；流程约束原文保留。核实：新口令 admin/123456 登录 200、旧口令 admin/admin 401；DB mtime 与任务开始前逐位一致，证明未触碰运行数据；Trellis 托管块零改动。风险事实（仓库 public + 实例监听 0.0.0.0 ⇒ 该记录等同公开凭据）已在提问中明示并给出三个替代方案，用户答复『这个是给你维护用的，你记一下就行了』后按原做法执行，事实已留档。
+
+### Main Changes
+
+- AGENTS.md：口令主记录更新为本机现状（af0dac85f9dad16 / 2026-09-12 / /root/LitePan/data/litepan.db / must_change_password 已解除）
+- AGENTS.md：新增「口令变更史」，标注 aa9764 与 /tmp 备份属上一台机器、该备份不在本机
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4236da0` | chore(docs): 同步管理员口令记录到本机实例（2026-09-12 改密） |
+| `c95dd14` | chore(task): archive 09-12-update-admin-credential-record |
+
+### Testing
+
+- [OK] [OK] 新口令登录 200 且 must_change_password:false；旧口令 401（改密确实生效）
+- [OK] [OK] DB mtime 与任务开始前逐位一致（12:22:03.940111862），未触碰运行数据
+- [OK] [OK] 实例未受影响：容器 Up、/api/health 200
+- [OK] [OK] Trellis 托管块零改动（diff 中标记出现 0 次），不会被 trellis update 覆盖
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 若日后要收紧凭据暴露：有效手段是『不记录 + 改强口令』，而非改记哈希（123456 的 pbkdf2 可秒破）
