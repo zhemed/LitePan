@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 128
+- **Total Sessions**: 129
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~283 | Active |
+| `journal-3.md` | ~323 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 129 | 2026-09-12 | 死代码清理 P1 并发布 0.0.41（3 孤儿包 + 23 死函数） | `69a3177` | `main` |
 | 128 | 2026-09-12 | 死代码全面排查：3 孤儿包 + 24 死函数 + 12 前端文件 | - | `main` |
 | 127 | 2026-09-12 | 调查 P6 必要性：目录整理模块已是死代码，P6 作废 | - | `main` |
 | 126 | 2026-09-12 | 驱动超时统一 30s 并发布 0.0.39（含两处流程偏差复盘） | `7243a27` | `main` |

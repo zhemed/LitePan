@@ -281,3 +281,43 @@
 - 待用户决策是否执行清理：建议 P1（3 死包 + 24 死函数）合并为一个纯删除任务并发版
 - P2 前端 12 文件建议分两步：先删已删功能相关的 4 个，再确认 FUSE/WebDAV/缓存三块未接线 UI 是否保留
 - P3 drivers/template 与 httpx OAuth 链路：若不再新增驱动则整链清理（438+~150 行），否则保留
+
+
+## Session 129: 死代码清理 P1 并发布 0.0.41（3 孤儿包 + 23 死函数）
+<!-- trellis-session: v=2 fp=1f45fe4ce9bcd6d4 -->
+
+**Date**: 2026-09-12
+**Task**: 死代码清理 P1 并发布 0.0.41（3 孤儿包 + 23 死函数）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+执行排查报告 §9 P1：① 删除 3 个零消费者包 internal/proxybase、internal/taskauth、pkg/strutil（删前 grep 0 import + 不在 cmd/litepan 依赖图）；② 删除 23 个真死函数（backuprestore 孤儿清理三连、apikey Validate/ValidateTask、automation normalizePath/ternaryStatus、upload offlineHandoffGroupID/progressForBytes/joinUploadDisplayPath/taskLocalPath、uploadutil HashMD5/UploadedBytesByPartKeys、file asAlignInt、settings stringSpec、api streamSSEMessages、notification DeleteByRef、driver WithExtraAPIDelay/LocalUploadEpochMillis、189Cloud signedForm、pkg/security RequestBaseURL、pkg/speedsmoother NewDefault），并整文件删除 uploadutil/progress.go（类型未使用）与 backuprestore/maintenance.go（仅剩无用类型）；③ 排除 1 项：pkg/jsonvalue.FlexibleString.UnmarshalJSON —— 实现 json.Unmarshaler、由 encoding/json 反射调用，deadcode(RTA) 观察不到，删除会改变解码语义，保留并记录（判据修正：凡实现标准接口的方法先人工复核）。验证：deadcode prod 32→9（无新增），go vet/test/build + web 三连全绿，tidy -diff 空；共 24 文件 -781 行；二进制体积不变（20885666B，差分为链接布局）。发版 0.0.41：三 tag 同 digest 6617d652、tag=69a3177（API 复核）、release 已建（顺序 push→tag→push tag→release）、本地容器重建三连通过。
+
+### Main Changes
+
+- 删除 internal/proxybase、internal/taskauth、pkg/strutil 三个零消费者包
+- 删除 23 个真死函数 + 2 个整文件（progress.go、maintenance.go）
+- 保留 FlexibleString.UnmarshalJSON（反射调用语义），并沉淀「标准接口方法先复核」判据
+- 版本 0.0.41 + 镜像三 tag + tag/release + 本地部署
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `69a3177` | chore: remove dead code P1 (3 orphan packages + 23 dead funcs), bump to 0.0.41 |
+
+### Testing
+
+- [OK] 删除前后 deadcode 对比（32→9，差集=23 消除、0 新增）；go vet ./... 全绿；go test ./... 全包 ok；go build 通过；web type-check+build+check:memo MEMO-ALL-PASS；go mod tidy -diff 为空；本地容器 health/表单登录/任务汇总三连通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 待用户决策 P2：前端 12 个零引用文件（建议先删已删功能相关的 4 个，FUSE/WebDAV/缓存 8 个待确认）
+- P3：drivers/template + httpx OAuth 测试专用链路（默认保留，若不再新增驱动可整链清理 ~588 行）
+- P4：/accounts/{id}/refresh-auth 预留端点，建议文档标注而非删除
