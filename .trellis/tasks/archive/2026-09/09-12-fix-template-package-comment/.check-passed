@@ -1,0 +1,2 @@
+checked_at=2026-09-12 14:07:09
+note=单行注释修正（1 删 3 增，非注释行改动=0）：drivers/template/driver.go 的包注释原写『按 README 实现』，但该目录只有 6 个 .go 文件、无 README（全仓库仅此一处指向它）。改为指向真实存在的 .trellis/spec/backend/backend/driver-development.md:69『Adding a New Driver FooCloud』，并保留其余已核实为真的三处指引（复制目录/改包名与 Config.Name/all.go 空导入/勿注册本包）。验收：README 字样零命中、spec 章节 grep 命中、all.go 实际存在、四项准确指引仍在、gofmt 干净。质量门：make lint 0 issues、vet exit=0、go test 27 包 ok；死代码基线未变（deadcode 7、unused 0）。
