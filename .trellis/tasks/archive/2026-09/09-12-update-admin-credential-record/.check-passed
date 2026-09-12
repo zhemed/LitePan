@@ -1,0 +1,2 @@
+checked_at=2026-09-12 12:37:51
+note=规则文件同步（单文件 2 insertions/1 deletion，零代码改动）：把 AGENTS.md 的口令记录从上一台机器状态更新为本机现状——新盐哈希 af0dac85f9dad16、2026-09-12、库位于 /root/LitePan/data/litepan.db、must_change_password 已解除；原 aa9764 哈希与 /tmp 备份路径移入『口令变更史』并显式标注属上一台机器、该备份不在本机。流程约束原文保留；Trellis 托管块零改动（diff 中标记出现 0 次）。核实：新口令登录 200、旧口令 401；DB mtime 与任务开始前逐位一致，证明未触碰运行数据。风险事实（public 仓库 + 0.0.0.0 监听 ⇒ 记录等同公开凭据）已在提问中明示，用户知情后选择照旧记录。
