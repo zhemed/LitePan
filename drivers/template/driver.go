@@ -1,4 +1,6 @@
-// Package template 是新驱动脚手架：复制本目录为 drivers/<名>/，改包名与 Config.Name，按 README 实现后再于 all.go 空导入（勿注册本包）。
+// Package template 是新驱动脚手架：复制本目录为 drivers/<名>/，改包名与 Config.Name，
+// 实现 driver 各接口方法后，到 drivers/all.go 空导入本包（勿注册 template 自身）。
+// 完整步骤见 .trellis/spec/backend/backend/driver-development.md 的「Adding a New Driver FooCloud」。
 package template
 
 import (
