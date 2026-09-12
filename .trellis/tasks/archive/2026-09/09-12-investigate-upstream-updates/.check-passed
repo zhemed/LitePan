@@ -1,0 +1,2 @@
+checked_at=2026-09-12 15:26:26
+note=只读调查任务：零代码改动（git status 仅任务目录；git diff HEAD 为空）；go vet ./... 全绿；产物 research.md（上游 47 提交全量清单+四类判定+与 0.0.32~0.0.37 并排对照+9 项候选排序）、prd.md 验收项全勾；无 API/DB/驱动契约变更故 spec 无需更新
