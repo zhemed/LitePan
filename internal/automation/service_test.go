@@ -295,24 +295,3 @@ func (r *automationRunRepo) List(context.Context, int64, int) ([]*domain.Automat
 }
 
 func (r *automationRunRepo) Clear(context.Context) (int, error) { return 0, nil }
-
-func (r *automationRunRepo) count() int {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return len(r.runs)
-}
-
-type apiKeyRepo struct {
-	key *domain.ApiKey
-}
-
-func (r *apiKeyRepo) List(context.Context) ([]*domain.ApiKey, error) {
-	return []*domain.ApiKey{r.key}, nil
-}
-func (r *apiKeyRepo) Get(context.Context, int64) (*domain.ApiKey, error)        { return r.key, nil }
-func (r *apiKeyRepo) GetByHash(context.Context, string) (*domain.ApiKey, error) { return r.key, nil }
-func (r *apiKeyRepo) Count(context.Context) (int, error)                        { return 1, nil }
-func (r *apiKeyRepo) Create(context.Context, *domain.ApiKey) (int64, error)     { return 1, nil }
-func (r *apiKeyRepo) Update(context.Context, *domain.ApiKey) error              { return nil }
-func (r *apiKeyRepo) Delete(context.Context, int64) error                       { return nil }
-func (r *apiKeyRepo) TouchLastUsed(context.Context, int64, time.Time) error     { return nil }

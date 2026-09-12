@@ -25,6 +25,7 @@ These guides help you **ask the right questions before coding**.
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 | [Trellis 强制流程自检指南](./trellis-flow-guide.md) | 九步序列 + 门禁 + 四条硬性禁止 | 会话开始 / 任何写操作前 / 归档前 |
 | [Shell Script Verification Guide](./shell-script-guide.md) | `pipefail` SIGPIPE 假失败、版本断言的 `v` 前缀陷阱、版本可取性核实、幂等可复跑 | 编写/修改任何 `.sh`、写版本或能力断言、排查"命令明明输出正确却报失败" |
+| [Dead Code Analysis Guide](./dead-code-guide.md) | `deadcode` + `unused` 必须并用（零重叠）、接口方法先查实例化、引用计数须剥注释、构建产物零 churn 反证、迭代到不动点 | 死代码排查、删除前判定、评估"这个还在用吗" |
 
 ---
 
