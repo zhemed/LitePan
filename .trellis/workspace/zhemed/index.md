@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 147
+- **Total Sessions**: 148
 - **Last Active**: 2026-09-12
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1019 | Active |
+| `journal-3.md` | ~1056 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 148 | 2026-09-12 | 发布 v0.0.45：把 API 秘钥功能移除发出去并把本机 :5211 更新到新版本 | `a6c6c54`, `30e2010`, `9d4e99a` | `main` |
 | 147 | 2026-09-12 | 完全移除 API 秘钥功能（前端+接口+包+接线+数据表） | `b61ee9d`, `0fac3f1` | `main` |
 | 146 | 2026-09-12 | 归档死代码 P3/P4 处置：四项均保留（附重启条件），候选清单全部关闭 | `2f6c03a` | `main` |
 | 145 | 2026-09-12 | 修正 drivers/template 包注释指向不存在的 README | `241a24c`, `47b0a50` | `main` |

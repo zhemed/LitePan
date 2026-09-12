@@ -1017,3 +1017,40 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 是否发版由用户决定：本轮是用户可见的功能移除（后台少一个 tab），比上轮纯死代码删除更够格；要发版须另开任务走 build→GHCR 三 tag→tag→release→本地容器验证，并把 README/compose 的 v0.0.44 一并推进；② 待办：单独任务同步 error-handling.md / api-layering.md / api-client.md 中既有的僵尸内容（writeDomainError、internal/api/errors.go、CodeInvalid/CodeConflict/CodeUnauthorized/CodeForbidden 均已不存在；实测出口为 resp.go: writeErr，映射在 domain/errors.go: codeTable+HTTPStatus()，响应字段是 error_type）；③ 待办：dead-code-guide.md 回填「功能级死代码」识别法（管理侧可达、消费侧缺席，deadcode/unused 查不出来）—— 本任务按 PRD 明确未做。
+
+
+## Session 148: 发布 v0.0.45：把 API 秘钥功能移除发出去并把本机 :5211 更新到新版本
+<!-- trellis-session: v=2 fp=c1c791aa2645cd6c -->
+
+**Date**: 2026-09-12
+**Task**: 发布 v0.0.45：把 API 秘钥功能移除发出去并把本机 :5211 更新到新版本
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 按 design.md 顺序执行：① 版本号单一来源 internal/buildinfo/version.go v0.0.44→v0.0.45，README×2 + docker-compose.yml + docker-compose.fnos.yml 同步（恰 4 文件 5 处，embed 零改动 —— 版本号不在前端源码里，由 /api/public/system-config 运行期下发）；② 部署前用 SQLite 在线备份 API 落 data/backups/manual-pre-0024-20260912-143827.db（实测库有 53KB 未检查点 WAL，裸 cp 会拿过期快照）；③ 镜像 ghcr.io/zhemed/litepan:v0.0.45 构建 + 补 0.0.45/latest 两 tag + 推 GHCR 三 tag；④ 严格顺序 git tag→push tag→gh release create（说明文件写明判定『没有消费侧』的实测证据、移除清单、升级提示）；⑤ docker compose pull + up -d 更新本机容器（不手搓 docker run，避免丢 compose 网络标签把部署形态改掉）；⑥ spec 同步 2 行（发版清单补 docker-compose.fnos.yml、死代码基线更新到 v0.0.45）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a6c6c54` | chore(release): 版本号推进到 v0.0.45（发布 API 秘钥功能移除） |
+| `30e2010` | docs(spec): 发版清单补上 docker-compose.fnos.yml，死代码基线更新到 v0.0.45 |
+| `9d4e99a` | chore(task): archive 09-12-release-0-0-45 |
+
+### Testing
+
+- [OK] 质量门：make lint 0 issues / go vet exit=0 / go test 27 包全 ok / vue-tsc -b exit=0（发布前跑一次、发版后对同一棵树复跑一次）。镜像内二进制 grep -c 'v0.0.45'=1、'v0.0.44'=0（证明版本真的注入了）。GHCR 单条 version(id 1240890917) 含 v0.0.45/0.0.45/latest 三 tag 同 digest 236392d85380…，v0.0.44 仍指向旧 digest a864057d46ac…（回滚退路完好）。远端 tag sha a6c6c540… == 本地、release 非草稿且标 Latest（0.0.39 教训的直接防御）。部署后：/api/health 200、登录 200、system-config version=v0.0.45；实例库 schema_migrations 23→24、表数 11→10、api_keys 与 idx_api_keys_status 消失、configs 仍 7 行（零数据损）；docker inspect 12 项配置与部署前逐项一致（仅镜像与容器 ID 变）；docker compose logs level=ERROR=0。浏览器验收真实例：DOM tabs=[账号安全,首页设置,其他设置]、hasApiKeyTab=false、首页页脚渲染『当前版本 LitePan v0.0.45』（二进制→API→UI 闭环）、window.__err=[]。备份校验 integrity_check=ok、version 23、api_keys 在。越界零：Dockerfile/.golangci.yml/Makefile/业务代码/web/src 未动。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 待办（上一任务登记、本轮未做）：error-handling.md / api-layering.md / api-client.md 里的僵尸内容同步（writeDomainError、internal/api/errors.go、CodeInvalid/CodeConflict/CodeUnauthorized/CodeForbidden 均已不存在；实测出口 resp.go: writeErr，映射在 domain/errors.go: codeTable+HTTPStatus()，响应字段 error_type）；② 待办：dead-code-guide.md 回填『功能级死代码』识别法（管理侧可达、消费侧缺席）；③ 可选：清理 GHCR 上 0.0.42/0.0.43 等旧 version（保留 v0.0.44 三个 tag 作回滚退路）；④ 回滚三件套已备：compose 改回 v0.0.44 + docker compose up -d（本地镜像仍在）、从 manual-pre-0024 快照恢复库、gh release delete v0.0.45 --cleanup-tag + 删 GHCR version。
