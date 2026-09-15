@@ -1089,3 +1089,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 若用户确认删除：建议拆两个任务——『FUSE 主体删除』（前端→HTTP→装配→store→领域/设置/通知→删三包→迁移 0025→构建与部署面去 privileged/pid/devices→重建 embed→spec 15 处同步）与紧随其后的『playback RemoteReader/remoteWindowReader 二级死代码处置』；删除顺序、验证点、回滚点已写在 research.md §7。② 高危注意：internal/store/backup.go 的 BackupCounts 会 SELECT COUNT(1) FROM fuse_mounts，表删了不改这里会让创建备份直接报错；去掉 privileged/pid:host 后需部署回归（health/登录/播放/上传/备份）。③ 顺带发现：Dockerfile:53 的 EXPOSE 42069 是 08-31 移除内置离线下载(磁力)时的残留（与 FUSE 无关，可一并清）。④ 部署残留：data/fuse_read_cache/ 与空的 ./mounts/ 可在删除后人工清理。
+
+
+## Session 150: 彻底移除 FUSE 本地挂载功能（含部署特权面收窄）
+<!-- trellis-session: v=2 fp=dcd227c80aa23d11 -->
+
+**Date**: 2026-09-15
+**Task**: 彻底移除 FUSE 本地挂载功能（含部署特权面收窄）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 按 research.md §7 的分层清单执行（叶子优先，先摘接线后删包）。① 前端：删 web/src/api/fuse.ts，DashboardManagement.vue 去 import/ref/两个 computed/请求/卡片/firstLoad 条件，LocalDirBrowserModal 快速路径去 /app/mounts。② HTTP：删 api/{fuse_admin,fuse_read_cache_admin}.go（12 handler），router 摘掉 /fuse 下 11 条端点与 Deps/Handler 字段，local_fs.go 去掉 fusemount.MountRoot 候选根，slow_dashboard_log(+test) 白名单去掉 fuse 路径。③ 装配：删 wire_fuse_read_cache.go，app.go/wire_services.go/account_lifecycle.go/wire_http.go 去 fuse/readCache 字段、Start/Stop/12s 关闭预算、账号删除级联。④ 存储：store.go 去 bundle 字段，删 fuse_mount_repo.go，backup.go 去 sanitize 的 UPDATE fuse_mounts **并去掉 BackupCounts 统计列表里的 fuse_mounts**。⑤ 删包：internal/fusemount（7 文件）、internal/fusereadcache（7）、internal/share 整棵（11，share 仅剩它）。⑥ 收尾：删 domain/fuse_mount.go、settings 4 键 + 4 spec、notification 的 fuse_mount_warn 常量、playback 的 fuseReaderUA 兜底（RemoteReader 圈按计划留给后续任务，仅改了同文件 3 处已失效注释）。⑦ 新增迁移 internal/store/migrations/0025_drop_fuse.sql（幂等 DROP TABLE IF EXISTS + DELETE fuse_* 键 + 清 fuse_mount_warn 通知），历史迁移 0008 零改动。⑧ 构建/部署面：Dockerfile 去 ARG BUILD_TAGS/fuse3/fuse.conf//app/mounts 卷、Makefile 去 -tags fuse（build-nofuse 合并）、两个 compose 与 README 去 privileged/pid host//dev/fuse/mounts 绑定、go mod tidy。⑨ spec 同步 7 文件（directory-structure/logging-guidelines/database-guidelines/concurrency-and-scheduling/index/quality-guidelines/api-client，含同句已过期的 strm/quark 示例一并改准）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `726fb7a` | refactor(fuse): 彻底移除 FUSE 本地挂载功能（前端/接口/包/数据表/部署特权） |
+
+### Testing
+
+- [OK] 质量门：make lint 0 issues / go vet exit=0 / go test 26 包 ok 0 FAIL（原 27，删掉的 fusereadcache 带走 1 个测试包）/ vue-tsc -b exit=0 / vite build 成功且产物 grep 『FUSE 挂载点』= 0。迁移实测（旧库场景：预置 1 行挂载 + 6 个 fuse 配置键 + 1 条 fuse 通知）：迁移后表与索引消失、6 键清空、该通知删除、其它通知保留、version=25，幂等重跑无报错；0008 sha256 与基线一致。新增回归测试 TestBackupCountsAfterMigrations 并**反向验证**（临时写回 fuse_mounts → 必 FAIL『no such table: fuse_mounts』→ 还原后 PASS）。非特权容器实测：本轮从工作区构建镜像（无 privileged/pid/devices/mounts，数据用实例库副本）→ health 200、登录 200、**POST /api/admin/backups 201 备份创建成功**（打穿 BackupCounts，schema_version 25）、accounts/notifications/automation/local-upload/settings/cache/logs 全 200、旧 fuse 端点 404、设置载荷 15 项无 fuse、日志 0 ERROR；bw 验收仪表盘 3 张卡片布局完好。基线：deadcode 7→7、unused 0、前端零引用 0、gofmt 17→16（零新增）。越界核对：internal/upload 仅 maintenance.go 注释 1 行、drivers/.golangci.yml/buildinfo 零改动。线上 :5211 与 data/ 全程未动。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 待办（本次按计划未做）：playback 的 RemoteReader/remoteWindowReader/local_reader 圈已成为二级死代码（OpenRemoteReader 唯一调用者已删），需单独任务复核后处置。② 待办：Dockerfile 的 EXPOSE 42069 是 08-31 移除内置离线下载（磁力）时的残留；upload.ActiveTempPaths 零调用者。③ 是否发版（v0.0.46）并把本机 :5211 换成非特权 compose 重建容器，由用户决定 —— 本轮刻意未 bump 版本、未动容器；发版时迁移 0025 会在容器启动时执行（实例上 fuse_mounts 是 0 行空表，但仍应先备份）。④ 部署残留可人工清理：data/fuse_read_cache/（空 blocks + 空索引）与宿主 ./mounts/（空目录）。

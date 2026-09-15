@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 149
+- **Total Sessions**: 150
 - **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1091 | Active |
+| `journal-3.md` | ~1126 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 150 | 2026-09-15 | 彻底移除 FUSE 本地挂载功能（含部署特权面收窄） | `726fb7a` | `main` |
 | 149 | 2026-09-15 | 调查：FUSE 挂载点相关全部内容能否彻底移除（结论：可以） | `b58e91a` | `main` |
 | 148 | 2026-09-12 | 发布 v0.0.45：把 API 秘钥功能移除发出去并把本机 :5211 更新到新版本 | `a6c6c54`, `30e2010`, `9d4e99a` | `main` |
 | 147 | 2026-09-12 | 完全移除 API 秘钥功能（前端+接口+包+接线+数据表） | `b61ee9d`, `0fac3f1` | `main` |
