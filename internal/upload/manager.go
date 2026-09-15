@@ -60,7 +60,6 @@ type Manager struct {
 	broadcastDeletedTaskIDs map[string]struct{}
 	subMu                   sync.Mutex
 	clientTaskIndex         map[string]string
-	tempRegistry            *TempRegistry
 	targetDirCache          *uploadTargetDirCache
 	runCtx                  context.Context
 	runCancel               context.CancelFunc
@@ -112,7 +111,6 @@ func NewManager(opts Options) *Manager {
 	if m.log == nil {
 		m.log = slog.Default()
 	}
-	m.tempRegistry = NewTempRegistry()
 	_ = m.RefreshConcurrencyLimit(context.Background())
 	m.restoreTasks()
 	m.initTempCleanup()

@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 )
 
@@ -15,43 +14,6 @@ const (
 
 func TempDir(dataDir string) string {
 	return filepath.Join(dataDir, "upload_tasks")
-}
-
-type TempRegistry struct {
-	mu    sync.RWMutex
-	paths map[string]struct{}
-}
-
-func NewTempRegistry() *TempRegistry {
-	return &TempRegistry{paths: make(map[string]struct{})}
-}
-
-func (r *TempRegistry) Track(path string) func() {
-	path = filepath.Clean(path)
-	if path == "" {
-		return func() {}
-	}
-	r.mu.Lock()
-	r.paths[path] = struct{}{}
-	r.mu.Unlock()
-	return func() {
-		r.mu.Lock()
-		delete(r.paths, path)
-		r.mu.Unlock()
-	}
-}
-
-func (r *TempRegistry) Snapshot() map[string]struct{} {
-	if r == nil {
-		return nil
-	}
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	out := make(map[string]struct{}, len(r.paths))
-	for p := range r.paths {
-		out[p] = struct{}{}
-	}
-	return out
 }
 
 func CleanupTempDir(dir string, active map[string]struct{}, maxAge time.Duration) (int, error) {
@@ -100,21 +62,12 @@ func (m *Manager) activeTempPaths() map[string]struct{} {
 		active[filepath.Clean(st.localPath)] = struct{}{}
 	}
 	m.mu.Unlock()
-	if m.tempRegistry != nil {
-		for p := range m.tempRegistry.Snapshot() {
-			active[p] = struct{}{}
-		}
-	}
 	return active
 }
 
 func (m *Manager) CleanupOrphanTempFiles(maxAge time.Duration) (int, error) {
 	active := m.activeTempPaths()
 	return CleanupTempDir(m.TempDir(), active, maxAge)
-}
-
-func (m *Manager) TempRegistry() *TempRegistry {
-	return m.tempRegistry
 }
 
 func (m *Manager) StartTempCleanup(ctx context.Context) {
