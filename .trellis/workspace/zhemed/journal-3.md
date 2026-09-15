@@ -1124,3 +1124,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 待办（本次按计划未做）：playback 的 RemoteReader/remoteWindowReader/local_reader 圈已成为二级死代码（OpenRemoteReader 唯一调用者已删），需单独任务复核后处置。② 待办：Dockerfile 的 EXPOSE 42069 是 08-31 移除内置离线下载（磁力）时的残留；upload.ActiveTempPaths 零调用者。③ 是否发版（v0.0.46）并把本机 :5211 换成非特权 compose 重建容器，由用户决定 —— 本轮刻意未 bump 版本、未动容器；发版时迁移 0025 会在容器启动时执行（实例上 fuse_mounts 是 0 行空表，但仍应先备份）。④ 部署残留可人工清理：data/fuse_read_cache/（空 blocks + 空索引）与宿主 ./mounts/（空目录）。
+
+
+## Session 151: 清理 FUSE 移除后的二级死代码：playback 的 RemoteReader 圈（-977 行）
+<!-- trellis-session: v=2 fp=064bd3983515123d -->
+
+**Date**: 2026-09-15
+**Task**: 清理 FUSE 移除后的二级死代码：playback 的 RemoteReader 圈（-977 行）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 按 09-15-remove-fuse 的计划内后续执行：删除 internal/playback/{remote_reader.go(116),remote_window_reader.go(391),local_reader.go(57),remote_reader_test.go(413)} 共 977 行。判据为调用点计数而非工具：全仓 grep RemoteReader/remoteWindowReader/localFileReader/OpenRemoteReader/newRemoteReader 零命中（FUSE 的 share/fuse/nodes.go:393 曾是唯一入口）。特别记录方法学：deadcode 与 unused 都**没有**报出这批导出符号（deadcode 7 项中 0 相关、unused 0 issues），『工具不报 ≠ 活代码』再次得到实证。保留并逐文件确认零改动：local_file.go（serveLocalFile，HTTP 播放本地分支）、range_proxy.go、streamer.go、service.go、account_range_limiter.go、seeker.go、response.go。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0d28d94` | refactor(playback): 删除 FUSE 移除后失去唯一入口的 RemoteReader 圈（-977 行） |
+
+### Testing
+
+- [OK] 质量门：make lint 0 issues / go vet exit=0 / go test 26 包 ok 0 FAIL / vue-tsc -b exit=0。playback 单测 23→13（减少的 10 个全部位于被删的 remote_reader_test.go 内，非覆盖流失）。基线：deadcode 7→7、unused 0→0、gofmt 16→16 零新增。diff 精确为 4 files changed / 977 deletions；embed 零改动、go.mod 零改动、spec 无被删符号引用。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 待办：Dockerfile 的 EXPOSE 42069 残留（08-31 内置离线下载移除时遗留）、upload.ActiveTempPaths 零调用者 —— 可另案一次性清理。② 是否发版 v0.0.46 并把本机 :5211 换成非特权 compose 重建容器，由用户决定（本轮两项删除均未 bump 版本、未动容器；发版时迁移 0025 会随容器启动执行，实例上 fuse_mounts 是 0 行空表，仍建议先备份）。③ 部署残留可人工清理：data/fuse_read_cache/ 与宿主 ./mounts/（皆为空）。
