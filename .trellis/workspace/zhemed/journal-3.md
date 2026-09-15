@@ -1054,3 +1054,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 待办（上一任务登记、本轮未做）：error-handling.md / api-layering.md / api-client.md 里的僵尸内容同步（writeDomainError、internal/api/errors.go、CodeInvalid/CodeConflict/CodeUnauthorized/CodeForbidden 均已不存在；实测出口 resp.go: writeErr，映射在 domain/errors.go: codeTable+HTTPStatus()，响应字段 error_type）；② 待办：dead-code-guide.md 回填『功能级死代码』识别法（管理侧可达、消费侧缺席）；③ 可选：清理 GHCR 上 0.0.42/0.0.43 等旧 version（保留 v0.0.44 三个 tag 作回滚退路）；④ 回滚三件套已备：compose 改回 v0.0.44 + docker compose up -d（本地镜像仍在）、从 manual-pre-0024 快照恢复库、gh release delete v0.0.45 --cleanup-tag + 删 GHCR version。
+
+
+## Session 149: 调查：FUSE 挂载点相关全部内容能否彻底移除（结论：可以）
+<!-- trellis-session: v=2 fp=2314d2ca200d3f05 -->
+
+**Date**: 2026-09-15
+**Task**: 调查：FUSE 挂载点相关全部内容能否彻底移除（结论：可以）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 只读调查（零写操作），产出 .trellis/tasks/archive/2026-09/09-15-investigate-fuse-removal/research.md（10 节）。方法与证据：① 构成盘点——32 个受跟踪文件、后端 3634 行（含测试 234）+ 前端 85 行，覆盖 internal/fusemount(7 文件 1073 行)、internal/fusereadcache(7 文件 778 行)、internal/share/fuse(11 文件 1248 行，internal/share 已只剩它)、api 两个 handler、app 装配、domain/store 仓储与迁移 0008、web fuse.ts；另列必须修改的 20 处。② 使用面运行期实测——fuse_mounts 0 行、无任何 fuse_* 配置键、/api/admin/fuse/status 返回 enabled=false、mounts=[]、读缓存 block_count=0/used_bytes=0、宿主 /proc/mounts 无 FUSE 挂载、容器内 /app/mounts 空、全量日志零 FUSE 活动、通知表 0 行、设置页实测不渲染 FUSE 读缓存项。③ 前端可达性——fuse.ts 11 个导出仅 fetchFuseMounts 被调用 1 处（仪表盘只读卡片），其余 10 个零调用，『创建挂载』入口根本不存在。④ 构建标签矩阵——-tags fuse 只切换 share/fuse 的实现(stub vs 真实现)，无标签时 fuse 三包仍在依赖图中、go-fuse 子包 9→0，故标签不是移除机制。⑤ 部署面——FUSE 是唯一需要 privileged+pid:host+/dev/fuse 的功能（全仓 /proc 读取仅 mountpoint_linux.go、fusermount3 仅它调用），删除后可退回非特权容器。⑥ 两工具盲区复核 deadcode 中 FUSE 相关 0、unused 0 issues。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a4b920e` | chore: record journal |
+
+### Testing
+
+- [OK] 只读验证与复核：git status 受跟踪改动 0（仅任务目录）；容器 litepan 仍 v0.0.45 Up、实例库 migration=24、fuse_mounts 0 行全程未变；报告 §9 的全部可复跑命令在本机原样执行通过（前端 11 导出的引用计数、两种 build tags 的 go list -deps、deadcode/unused 盲区复核、只读 sqlite 与 docker inspect）；fetchFuseMounts=2 而其余 10 个=0 逐条打印；tags='fuse' go-fuse 子包=9 / tags='<none>'=0。报告同时给出反例清单（历史迁移 0008 必须保留、playback HTTP 链路与 upload TempRegistry 不删、LocalFs 驱动无关）与两处必须同步的高风险项（store/backup.go 的 BackupCounts tables 列表、playback RemoteReader 圈的二级死代码），并标注 spec 15 处待同步（按 PRD 只登记不修改）。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 若用户确认删除：建议拆两个任务——『FUSE 主体删除』（前端→HTTP→装配→store→领域/设置/通知→删三包→迁移 0025→构建与部署面去 privileged/pid/devices→重建 embed→spec 15 处同步）与紧随其后的『playback RemoteReader/remoteWindowReader 二级死代码处置』；删除顺序、验证点、回滚点已写在 research.md §7。② 高危注意：internal/store/backup.go 的 BackupCounts 会 SELECT COUNT(1) FROM fuse_mounts，表删了不改这里会让创建备份直接报错；去掉 privileged/pid:host 后需部署回归（health/登录/播放/上传/备份）。③ 顺带发现：Dockerfile:53 的 EXPOSE 42069 是 08-31 移除内置离线下载(磁力)时的残留（与 FUSE 无关，可一并清）。④ 部署残留：data/fuse_read_cache/ 与空的 ./mounts/ 可在删除后人工清理。
