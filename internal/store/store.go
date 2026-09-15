@@ -10,7 +10,6 @@ type Store struct {
 	Configs          domain.ConfigRepository
 	Notifications    domain.NotificationRepository
 	UploadTasks     domain.UploadTaskRepository
-	FuseMounts      domain.FuseMountRepository
 	AutomationRules  domain.AutomationRuleRepository
 	AutomationRuns   domain.AutomationRunRepository
 }
@@ -24,7 +23,6 @@ func New(db *DB) *Store {
 		Configs:          &configRepo{db: db},
 		Notifications:    &notificationRepo{db: db},
 		UploadTasks:     &uploadTaskRepo{db: db},
-		FuseMounts:      &fuseMountRepo{db: db},
 		AutomationRules:  &automationRuleRepo{db: db},
 		AutomationRuns:   &automationRunRepo{db: db},
 	}

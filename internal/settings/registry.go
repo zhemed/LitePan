@@ -14,10 +14,6 @@ const (
 	KeyCachePersistenceEnabled     = "cache_persistence_enabled"
 	KeyCachePersistenceIntervalMin = "cache_persistence_interval_minutes"
 	KeyUploadTaskConcurrency       = "upload_task_concurrency"
-	KeyFuseReadCacheEnabled        = "fuse_read_cache_enabled"
-	KeyFuseReadCacheMaxGB          = "fuse_read_cache_max_gb"
-	KeyFuseReadCacheRetentionDays  = "fuse_read_cache_retention_days"
-	KeyFuseReadCacheEvictionPolicy = "fuse_read_cache_eviction_policy"
 	KeyAuthActiveRefresh           = "auth_active_refresh_enabled"
 	KeyAccountShowProfile          = "account_show_profile"
 	KeyAccountShowMembership       = "account_show_membership"
@@ -93,13 +89,6 @@ func defaultSpecs() []Spec {
 		boolSpec(KeyCachePersistenceEnabled, "performance", "启用缓存持久化", "开启后定期将未过期的目录缓存写入磁盘，重启后可快速恢复，无需重新拉取。", "true"),
 		intSpec(KeyCachePersistenceIntervalMin, "performance", "持久化间隔", "将内存中的缓存同步到磁盘的时间间隔，修改后立即生效。", "10", "分钟", 1, 1440),
 		intSpec(KeyUploadTaskConcurrency, "performance", "任务并发数", "同时进行的最大上传任务数；修改后新调度的任务立即生效。", "3", "个", 1, 5),
-		boolSpec(KeyFuseReadCacheEnabled, "performance", "FUSE 读缓存", "开启后通过 FUSE 读取的文件块会缓存到本地磁盘，加速重复读取；与目录元数据缓存相互独立。需在「文件共享 → 本地挂载」页配置。", "false"),
-		intSpec(KeyFuseReadCacheMaxGB, "performance", "FUSE 读缓存容量上限", "本地磁盘块缓存允许占用的最大空间，超出后按淘汰策略清理。需在「文件共享 → 本地挂载」页配置。", "10", "GB", 1, 500),
-		intSpec(KeyFuseReadCacheRetentionDays, "performance", "FUSE 读缓存保留天数", "未被访问的缓存块超过该天数后自动清理，用于回收长期未用的磁盘空间。需在「文件共享 → 本地挂载」页配置。", "7", "天", 1, 90),
-		selectSpec(KeyFuseReadCacheEvictionPolicy, "performance", "FUSE 读缓存淘汰策略", "磁盘占用达到上限时的清理方式。需在「文件共享 → 本地挂载」页配置。", "lru", []Option{
-			{Value: "lru", Label: "最近最少使用（LRU）"},
-			{Value: "large_file", Label: "大文件优先"},
-		}),
 		boolSpec(KeyAuthActiveRefresh, "system", "智能主动认证刷新", "开启后系统会根据 Token 有效期在后台自动刷新并检查 Cookie 健康度；关闭后仅在访问失效时被动刷新。", "true"),
 		boolSpec(KeyAccountShowProfile, "account_display", "显示账号信息", "开启后在账号卡片第二行展示昵称、手机号或邮箱；关闭则显示账号创建时间。", "true"),
 		boolSpec(KeyAccountShowMembership, "account_display", "显示会员标签", "开启后在账号名称旁展示网盘返回的会员等级，如 VIP / SVIP。", "true"),

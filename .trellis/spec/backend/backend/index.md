@@ -1,6 +1,6 @@
 # Backend Development Guidelines
 
-> Go 1.26.6 backend for LitePan — single Go module `litepan`, chi router, `modernc.org/sqlite`, FUSE, and pluggable drivers.
+> Go 1.26.6 backend for LitePan — single Go module `litepan`, chi router, `modernc.org/sqlite`, and pluggable drivers（2026-09-15 起已移除 FUSE，无需构建标签）。
 
 ---
 

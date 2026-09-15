@@ -5,14 +5,10 @@ import (
 	"fmt"
 
 	"litepan/internal/favorites"
-	"litepan/internal/fusemount"
-	"litepan/internal/fusereadcache"
 	"litepan/internal/upload"
 )
 
 type accountLifecycle struct {
-	fuse      *fusemount.Service
-	readCache *fusereadcache.Service
 	favorites *favorites.Service
 	uploads   *upload.Manager
 }
@@ -32,16 +28,6 @@ func (a accountLifecycle) OnAccountEnabled(ctx context.Context, accountID int64)
 func (a accountLifecycle) OnAccountDeleted(ctx context.Context, accountID int64) error {
 	if accountID <= 0 {
 		return nil
-	}
-	if a.fuse != nil {
-		if err := a.fuse.OnAccountDeleted(ctx, accountID); err != nil {
-			return err
-		}
-	}
-	if a.readCache != nil {
-		if err := a.readCache.InvalidateAccount(ctx, accountID); err != nil {
-			return fmt.Errorf("清理 FUSE 读缓存失败: %w", err)
-		}
 	}
 	if a.favorites != nil {
 		if err := a.favorites.Delete(ctx, accountID); err != nil {

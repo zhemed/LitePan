@@ -66,11 +66,10 @@ For `logx`/`favorites`: use `t.TempDir()` file DB; for `store`: `Memory:true`.
 
 ```bash
 GOWORK=off go vet ./...                # covered by govet
-GOWORK=off go build -tags fuse ./...   # -tags fuse required (FUSE optional)
-GOWORK=off go build ./...              # build-nofuse
+GOWORK=off go build ./...              # 无构建标签（2026-09-15 移除 FUSE 后不再需要 -tags fuse）
 ```
 
-- `Dockerfile` builds with `CGO_ENABLED=0 GOTOOLCHAIN=local GOPROXY=https://goproxy.cn,direct go build -tags "${BUILD_TAGS}"`.
+- `Dockerfile` builds with `CGO_ENABLED=0 GOTOOLCHAIN=local GOPROXY=https://goproxy.cn,direct go build -trimpath -ldflags="-s -w"`.
 - Frontend type-check: `cd web && npm run type-check` (`vue-tsc -b`).
 
 ---

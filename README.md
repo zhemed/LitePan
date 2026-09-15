@@ -35,18 +35,13 @@ services:
     container_name: litepan
     restart: always
     network_mode: host
-    pid: "host"
-    privileged: true
     environment:
       - TZ=Asia/Shanghai
     volumes:
       # LitePan 核心数据
       - /vol1/1000/docker/litepan/data:/app/data
-      - /vol1/1000/docker/litepan/mounts:/app/mounts:shared
       # 映本地目录（不含 docker）
       - /vol1/1000/我的文件:/vol1/1000/我的文件:ro
-    devices:
-      - /dev/fuse:/dev/fuse
 ```
 
 ## 支持网盘

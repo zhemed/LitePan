@@ -15,7 +15,7 @@ const maximumRangeConcurrency = 8
 // 否则会拖垮整个拉流（如 FFmpeg 等 30 秒才超时）。超时快速失败让调用方可感知并恢复。
 const acquireTimeout = 10 * time.Second
 
-// accountRangeLimiter 让同一账号的本地代理与 FUSE Range 请求共享驱动声明的并发上限。
+// accountRangeLimiter 让同一账号的多个 Range 请求共享驱动声明的并发上限。
 type accountRangeLimiter struct {
 	mu       sync.Mutex
 	accounts map[int64]chan struct{}

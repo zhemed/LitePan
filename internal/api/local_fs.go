@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"litepan/internal/domain"
-	"litepan/internal/fusemount"
 )
 
 type localDirEntry struct {
@@ -24,8 +23,7 @@ type localBrowseResult struct {
 	Writable bool            `json:"writable"`
 }
 
-// browseDefaultPath 返回本地目录浏览器默认落点：
-// 数据目录、FUSE 挂载根优先，再回退到常见挂载位置。
+// browseDefaultPath 返回本地目录浏览器默认落点：数据目录优先，再回退到常见挂载位置。
 func (h *Handler) browseDefaultPath() string {
 	seen := map[string]struct{}{}
 	var candidates []string
@@ -41,7 +39,6 @@ func (h *Handler) browseDefaultPath() string {
 		candidates = append(candidates, p)
 	}
 	add(h.dataDir)
-	add(fusemount.MountRoot)
 	for _, p := range []string{"/data", "/mnt", "/media", "/"} {
 		add(p)
 	}

@@ -19,7 +19,7 @@ const (
 	remoteSequentialGap     = 1 << 20
 )
 
-// remoteWindowReader 用有界窗口合并 FUSE 小读，并按驱动建议并发预取顺序数据。
+// remoteWindowReader 用有界窗口合并频繁的小读，并按驱动建议并发预取顺序数据。
 type remoteWindowReader struct {
 	svc         *Service
 	ctx         context.Context
@@ -183,7 +183,7 @@ func (r *remoteWindowReader) observeRead(off, length int64) {
 	if r.progressEnd < r.windowOff {
 		r.progressEnd = r.windowOff
 	}
-	// 允许 FUSE 预读交错一个 I/O 请求大小，但大跨度跳读不触发预取。
+	// 允许预读交错一个 I/O 请求大小，但大跨度跳读不触发预取。
 	if off > r.progressEnd+remoteSequentialGap {
 		return
 	}

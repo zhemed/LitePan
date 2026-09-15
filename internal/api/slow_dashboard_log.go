@@ -14,7 +14,6 @@ const slowDashboardRequestThreshold = time.Second
 var dashboardOverviewPaths = map[string]struct{}{
 	"/api/admin/accounts":                   {},
 	"/api/admin/cache/stats":                {},
-	"/api/admin/fuse/mounts":                {},
 	"/api/admin/notifications":              {},
 	"/api/admin/notifications/unread-count": {},
 	"/api/logs/stats":                       {},

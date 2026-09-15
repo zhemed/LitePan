@@ -20,7 +20,6 @@ WORKDIR /src
 ENV GOTOOLCHAIN=local \
     CGO_ENABLED=0 \
     GOPROXY=https://goproxy.cn,direct
-ARG BUILD_TAGS=fuse
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -28,20 +27,18 @@ RUN go mod download
 COPY . .
 COPY --from=web /src/internal/api/web /src/internal/api/web
 
-RUN go build -tags "${BUILD_TAGS}" -trimpath -ldflags="-s -w" -o /out/litepan ./cmd/litepan
+RUN go build -trimpath -ldflags="-s -w" -o /out/litepan ./cmd/litepan
 
 
 FROM debian:bookworm-slim AS runtime
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates tzdata fuse3 \
-    && sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf 2>/dev/null || true \
-    && grep -q '^user_allow_other' /etc/fuse.conf || echo user_allow_other >> /etc/fuse.conf \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN mkdir -p /app/data/log /app/mounts
+RUN mkdir -p /app/data/log
 
 COPY --from=build /out/litepan /app/litepan
 
@@ -52,6 +49,6 @@ ENV LITEPAN_DATA_DIR=/app/data \
 
 EXPOSE 5211 42069/tcp 42069/udp
 
-VOLUME ["/app/data", "/app/mounts"]
+VOLUME ["/app/data"]
 
 ENTRYPOINT ["/app/litepan"]

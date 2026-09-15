@@ -27,7 +27,6 @@ import (
 		"litepan/internal/domain"
 	"litepan/internal/favorites"
 	"litepan/internal/file"
-	"litepan/internal/fusemount"
 	"litepan/internal/logx"
 	"litepan/internal/notification"
 	"litepan/internal/playback"
@@ -53,7 +52,6 @@ type Deps struct {
 	Uploads    *upload.Manager
 	Playback   *playback.Service
 	Automation        *automation.Service
-	Fuse              *fusemount.Service
 	Auth              *auth.Service
 	AuthSched         *auth.Scheduler
 	AdminAuth         *adminauth.Service
@@ -82,7 +80,6 @@ type Handler struct {
 	uploads   *upload.Manager
 	playback  *playback.Service
 	automation        *automation.Service
-	fuse              *fusemount.Service
 	auth              *auth.Service
 	authSched         *auth.Scheduler
 	adminAuth         *adminauth.Service
@@ -116,7 +113,6 @@ func NewRouter(d Deps) http.Handler {
 		uploads:   d.Uploads,
 		playback:  d.Playback,
 		automation:        d.Automation,
-		fuse:              d.Fuse,
 		auth:              d.Auth,
 		authSched:         d.AuthSched,
 		adminAuth:         d.AdminAuth,
@@ -209,19 +205,6 @@ func NewRouter(d Deps) http.Handler {
 					r.Get("/runs", h.listAutomationRuns)
 					r.Post("/runs/clear", h.clearAutomationRuns)
 					r.Get("/options", h.automationOptions)
-				})
-				r.Route("/fuse", func(r chi.Router) {
-					r.Get("/status", h.fuseStatus)
-					r.Put("/config", h.updateFuseConfig)
-					r.Get("/read-cache", h.getFuseReadCache)
-					r.Put("/read-cache", h.updateFuseReadCache)
-					r.Post("/read-cache/clear", h.clearFuseReadCache)
-					r.Get("/mounts", h.listFuseMounts)
-					r.Post("/mounts", h.createFuseMount)
-					r.Put("/mounts/{id}", h.updateFuseMount)
-					r.Delete("/mounts/{id}", h.deleteFuseMount)
-					r.Post("/mounts/{id}/mount", h.mountFuse)
-					r.Post("/mounts/{id}/unmount", h.unmountFuse)
 				})
 			})
 			r.Post("/oauth/start", h.startOAuth)

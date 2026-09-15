@@ -10,8 +10,6 @@ import (
 		"litepan/internal/domain"
 	"litepan/internal/favorites"
 	"litepan/internal/file"
-	"litepan/internal/fusemount"
-	"litepan/internal/fusereadcache"
 	"litepan/internal/logx"
 	"litepan/internal/playback"
 	"litepan/internal/settings"
@@ -25,8 +23,6 @@ type servicesBundle struct {
 	account        *account.Service
 	accountProfile *accountprofile.Service
 	automation     *automation.Service
-	fuse           *fusemount.Service
-	fuseReadCache  *fusereadcache.Service
 	favorites      *favorites.Service
 }
 
@@ -39,25 +35,7 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	fileSvc := file.NewService(core.exec, core.cache, st.store.Accounts, core.bus, st.settings, core.listHits)
 	fileSvc.SetLogger(logs.For(logx.ModuleFileOp))
 	playbackSvc := playback.NewService(core.exec, core.cache)
-	fuseReadCache := wireFuseReadCacheOrNil(context.Background(), cfg, logs, st, core.bus)
-	fusemount.ApplyConfiguredMountRoot(context.Background(), st.store.Configs)
-	fuseSvc := fusemount.New(fusemount.Options{
-		Repo:      st.store.FuseMounts,
-		Configs:   st.store.Configs,
-		Accounts:  st.store.Accounts,
-		Notify:    st.store.Notifications,
-		Files:     fileSvc,
-		Playback:  playbackSvc,
-		ReadCache: fuseReadCache,
-		Bus:       core.bus,
-		Log:       logs.For(logx.ModuleSystem),
-	})
-	fuseSvc.SetStartupGate(startupGate)
-	fuseSvc.Register(core.bus)
-	_ = fuseSvc.PrepareMountRoot()
 	lifecycle := &accountLifecycle{
-		fuse:      fuseSvc,
-		readCache: fuseReadCache,
 		favorites: favoritesSvc,
 	}
 	accountSvc := account.NewService(account.Options{
@@ -86,7 +64,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		StartupGate: startupGate,
 	})
 	lifecycle.uploads = uploadSvc
-	fuseSvc.SetUploads(uploadSvc)
 	automationSvc := automation.New(automation.Options{
 		Rules:    st.store.AutomationRules,
 		Runs:     st.store.AutomationRuns,
@@ -104,8 +81,6 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		account:        accountSvc,
 		accountProfile: accountProfileSvc,
 		automation:     automationSvc,
-		fuse:           fuseSvc,
-		fuseReadCache:  fuseReadCache,
 		favorites:      favoritesSvc,
 	}
 }

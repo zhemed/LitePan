@@ -9,8 +9,6 @@ import (
 	"litepan/internal/domain"
 )
 
-const fuseReaderUA = "LitePan-FUSE/1.0"
-
 type RemoteReader struct {
 	mu     sync.Mutex
 	window *remoteWindowReader
@@ -20,10 +18,8 @@ type RemoteReader struct {
 	closed bool
 }
 
+// OpenRemoteReader 打开一个可随机读的远端读取器。ua 由调用方给出并原样透传给驱动。
 func (s *Service) OpenRemoteReader(ctx context.Context, accountID int64, fileID, ua string) (*RemoteReader, error) {
-	if ua == "" {
-		ua = fuseReaderUA
-	}
 	baseCtx := context.Background()
 	if ctx == nil {
 		ctx = baseCtx

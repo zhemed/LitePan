@@ -9,11 +9,3 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - ./data:/app/data
-      - ./mounts:/app/mounts:shared
-
-      # 可选：将 FUSE 读缓存单独映射，建议放到更快的磁盘
-      # - ./fuse_read_cache:/app/data/fuse_read_cache
-    devices:
-      - /dev/fuse:/dev/fuse
-    pid: "host"
-    privileged: true

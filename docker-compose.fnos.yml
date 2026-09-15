@@ -6,10 +6,5 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - /vol1/1000/docker/litepan/data:/app/data
-      - /vol1/1000/docker/litepan/mounts:/app/mounts:shared
-    devices:
-      - /dev/fuse:/dev/fuse
-    privileged: true
-    pid: "host"
     network_mode: "host"
     restart: always

@@ -16,7 +16,6 @@ func TestIsDashboardOverviewPath(t *testing.T) {
 	cases := map[string]bool{
 		"/api/admin/accounts":                   true,
 		"/api/admin/cache/stats":                true,
-		"/api/admin/fuse/mounts":                true,
 		"/api/admin/notifications":              true,
 		"/api/admin/notifications/unread-count": true,
 		"/api/logs/stats":                       true,

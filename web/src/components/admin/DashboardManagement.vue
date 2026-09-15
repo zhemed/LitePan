@@ -3,7 +3,6 @@ import { computed, defineAsyncComponent, onMounted, ref } from "vue";
 import { accountsApi } from "@/api/accounts";
 import { clearCache, fetchCacheStats, type CacheStats } from "@/api/cache";
 import { getApiErrorMessage } from "@/api/client";
-import { fetchFuseMounts, type FuseMount } from "@/api/fuse";
 import { logsApi, type LogStats } from "@/api/logs";
 import { fetchNotifications, fetchUnreadCount, type NotificationItem } from "@/api/notifications";
 import type { Account } from "@/api/types";
@@ -32,7 +31,6 @@ const logPresetSeq = ref(0);
 
 const accounts = ref<Account[]>([]);
 const cacheStats = ref<CacheStats | null>(null);
-const fuseMounts = ref<FuseMount[]>([]);
 const notifications = ref<NotificationItem[]>([]);
 const unreadCount = ref(0);
 const logStats = ref<LogStats | null>(null);
@@ -44,7 +42,6 @@ useAdminPageLoading("dashboard", computed(() => activeTab.value === OVERVIEW_TAB
 
 type OverviewResult =
   | Account[]
-  | FuseMount[]
   | CacheStats
   | { items: NotificationItem[] }
   | { count: number }
@@ -58,8 +55,6 @@ const cooldownAccountCount = computed(() => accounts.value.filter((account) => i
 
 const enabledTaskCount = computed(() => 0);
 const totalTaskCount = computed(() => 0);
-const mountedFuseCount = computed(() => fuseMounts.value.filter((mount) => mount.state === "mounted").length);
-const totalFuseCount = computed(() => fuseMounts.value.length);
 
 const recentErrorCount = computed(() => logStats.value?.recent_unacknowledged_errors ?? 0);
 const recentErrorTotal = computed(() => logStats.value?.recent_errors ?? 0);
@@ -111,14 +106,13 @@ const taskSummaries = computed(() => [] as Array<{
 }>);
 
 async function loadOverview() {
-  const firstLoad = !accounts.value.length && !fuseMounts.value.length;
+  const firstLoad = !accounts.value.length && !cacheStats.value;
   loading.value = firstLoad;
   refreshing.value = !firstLoad;
   loadError.value = "";
   try {
     const requests = [
       accountsApi.list(),
-      fetchFuseMounts(),
       fetchCacheStats(),
       fetchNotifications({ limit: 1, offset: 0 }),
       fetchUnreadCount(),
@@ -131,18 +125,15 @@ async function loadOverview() {
       accounts.value = value;
     });
     assignSettled(results[1], (value) => {
-      fuseMounts.value = value;
-    });
-    assignSettled(results[2], (value) => {
       cacheStats.value = value;
     });
-    assignSettled(results[3], (value) => {
+    assignSettled(results[2], (value) => {
       notifications.value = value.items ?? [];
     });
-    assignSettled(results[4], (value) => {
+    assignSettled(results[3], (value) => {
       unreadCount.value = value.count ?? 0;
     });
-    assignSettled(results[5], (value) => {
+    assignSettled(results[4], (value) => {
       logStats.value = value;
     });
 
@@ -353,15 +344,6 @@ onMounted(() => {
       </div>
 
       <section class="overview-cards" aria-label="运行概况卡片">
-        <article class="overview-card">
-          <div class="overview-card__icon">
-            <i class="fas fa-folder-tree" />
-          </div>
-          <div>
-            <strong>{{ mountedFuseCount }}/{{ totalFuseCount }}</strong>
-            <span>FUSE 挂载点</span>
-          </div>
-        </article>
         <article class="overview-card">
           <div class="overview-card__icon">
             <i class="fas fa-list-check" />

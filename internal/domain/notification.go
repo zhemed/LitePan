@@ -3,7 +3,6 @@ package domain
 import "time"
 
 const NotificationCategoryCacheScopeWarn = "cache_scope_warn"
-const NotificationCategoryFuseMountWarn = "fuse_mount_warn"
 
 type Notification struct {
 	ID        int64

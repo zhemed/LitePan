@@ -32,20 +32,20 @@ mgr, _ := logx.New(logx.Options{
     Stdout: os.Stdout,
 })
 defer mgr.Close()
-log := mgr.For(logx.ModuleAPI) // or ModuleStrm, ModuleFuse, ModuleCache ...
+log := mgr.For(logx.ModuleAPI) // or ModuleCache, ModuleAuth, ModuleFileOp ...
 ```
 
 - `Options.DisableFile` for tests; pass `Dir: t.TempDir()` in tests.
 - `Manager.For(module)` returns `*slog.Logger` tagged with `module` attr.
-- Modules: `ModuleSystem`, `ModuleAPI`, `ModuleStrm`, `ModuleFuse`, `ModuleCache`, `ModuleAuth`, etc. in `internal/logx/module.go`.
+- Modules: `ModuleSystem`, `ModuleDriver`, `ModuleAPI`, `ModuleWeb`, `ModuleDriverSystem`, `ModuleCache`, `ModuleDatabase`, `ModuleAuth`, `ModuleFileOp`, `ModuleConfig` in `internal/logx/module.go`。
 
 ---
 
 ## Writing Logs
 
 ```go
-log.Info("strm task started", "task_id", id, "account_id", accountID, "path", task.Path)
-log.Warn("rate limited, retrying", "account_id", id, "driver", "quark", "retry_after", delay)
+log.Info("upload task started", "task_id", id, "account_id", accountID, "path", task.Path)
+log.Warn("rate limited, retrying", "account_id", id, "driver", "115_open", "retry_after", delay)
 log.Error("refresh failed", "error", err, "account_id", accountID, "driver_name", driverName)
 
 // With module automatically injected via recordToEntry:
@@ -62,7 +62,7 @@ Reference: `internal/logx/handler.go: recordToEntry`, `internal/logx/storage.go:
 ## Storage & Query
 
 - File queue → SQLite `logs` table via `Storage.Enqueue(Entry)` async batch.
-- API: `GET /admin/logs?level=error&module=strm&keyword=115&limit=50` via `internal/api/logs.go` → `logx.Manager.Query(QueryFilter)`.
+- API: `GET /admin/logs?level=error&module=driver&keyword=115&limit=50` via `internal/api/logs.go` → `logx.Manager.Query(QueryFilter)`（`module` 取值见上表，如 `driver`/`api`/`auth`）。
 - Retention: `internal/logx/manager.go: cleanupRetention` + `LITEPAN_LOG_RETENTION_DAYS` (default 30) via `internal/api/logs.go`.
 - Frontend: `web/src/views/AdminView.vue` Log panel + `web/src/api/logs.ts`.
 
@@ -72,8 +72,8 @@ Reference: `internal/logx/handler.go: recordToEntry`, `internal/logx/storage.go:
 
 | Level | When | Example |
 |-------|------|---------|
-| DEBUG | High-volume tracing, only when `LITEPAN_LOG_LEVEL=debug` | `ListFiles` each dir, FUSE read cache hit/miss |
-| INFO | Normal lifecycle | `account created`, `strm generation started`, `upload success` |
+| DEBUG | High-volume tracing, only when `LITEPAN_LOG_LEVEL=debug` | `ListFiles` each dir, per-request driver traces |
+| INFO | Normal lifecycle | `account created`, `upload task started`, `upload success` |
 | WARN | Recoverable, retryable | `auth cooldown`, `rate limited`, `cache skip due to window` |
 | ERROR | Requires attention, persisted as RecentErrors | `refresh failed`, `DB write failed`, `driver Ping failed` |
 

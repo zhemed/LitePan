@@ -44,8 +44,8 @@ Test: `internal/driver/delay_test.go`.
 All coordinators integrate with `internal/app/account_lifecycle.go`:
 
 ```go
-func (a accountLifecycle) OnAccountDisabled(ctx, id) { strm.PauseByAccount(id); retention.PauseByAccount(id) }
-func (a accountLifecycle) OnAccountDeleted(ctx, id) { fuse.OnAccountDeleted(id); readCache.InvalidateAccount(id); strm.RemoveTasksByAccount(id); ... }
+func (a accountLifecycle) OnAccountDisabled(ctx, id) {}  // 目前为空钩子（精简后无副作用）
+func (a accountLifecycle) OnAccountDeleted(ctx, id) { favorites.Delete(id); uploads.RemoveTasksByAccount(id) }
 ```
 
 Reference: `internal/app/account_lifecycle.go:87`, `internal/app/app.go`.

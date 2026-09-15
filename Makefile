@@ -17,9 +17,6 @@ test:
 	@GOWORK=off go test -race ./...
 
 build:
-	@GOWORK=off go build -tags fuse ./...
-
-build-nofuse:
 	@GOWORK=off go build ./...
 
 docker-build:

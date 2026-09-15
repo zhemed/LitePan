@@ -50,7 +50,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Uploads:   svc.uploads,
 		Playback:  svc.playback,
 		Automation:       svc.automation,
-		Fuse:             svc.fuse,
 		Auth:             core.auth,
 		AuthSched:        core.sched,
 		AdminAuth:        adminauth.New(st.store.Configs, core.secret, logs.For(logx.ModuleAPI)),

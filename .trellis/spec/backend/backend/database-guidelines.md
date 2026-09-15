@@ -6,7 +6,7 @@
 
 ## Engine & Connection
 
-- Driver: `modernc.org/sqlite` pure Go, `GOTOOLCHAIN=local`, `CGO_ENABLED=0` (see `Dockerfile` build: `go build -tags fuse`).
+- Driver: `modernc.org/sqlite` pure Go, `GOTOOLCHAIN=local`, `CGO_ENABLED=0` (see `Dockerfile` build: `go build -trimpath -ldflags="-s -w"`, 2026-09-15 起不再需要 `-tags fuse`).
 - Entrypoint: `internal/store/db.go: func Open(ctx, Options{DataDir, DBPath, Memory bool}) (*DB, error)` — creates `db.read` + `db.write` `*sql.DB` with `journal=WAL`.
 - Config: `LITEPAN_DATA_DIR` → `filepath.Join(v, "litepan.db")` (override via `LITEPAN_DB_PATH`) in `internal/config/config.go`.
 
@@ -17,7 +17,7 @@ Reference: `internal/store/db.go`, `internal/config/config.go: Load()`.
 ## Schema & Migrations
 
 - Migrations live in `internal/store/migrate.go: func (db *DB) Migrate(ctx) error` — idempotent `CREATE TABLE IF NOT EXISTS` + `ALTER TABLE` additions. No external migration tool.
-- Tables: `cloud_accounts`, `account_auth_states`, `configs`, `upload_tasks`, `fuse_mounts`, `notifications`, `automation_rules`, `automation_runs`（+ `schema_migrations` 迁移台账）。
+- Tables: `cloud_accounts`, `account_auth_states`, `configs`, `upload_tasks`, `notifications`, `automation_rules`, `automation_runs`（+ `schema_migrations` 迁移台账）。`fuse_mounts` 已随 2026-09-15 的 FUSE 移除由迁移 `0025` 删除。
 - Adding a migration: append `_, err = tx.ExecContext(ctx, `ALTER TABLE x ADD COLUMN y TEXT`)` guarded by `SELECT` of `pragma_table_info`; keep `Migrate` ordered chronologically; test via `store.Open(Memory:true)` in `*_test.go`.
 
 Reference: `internal/store/migrate.go`, `internal/store/db.go: wrapDB`.
@@ -27,7 +27,7 @@ Reference: `internal/store/migrate.go`, `internal/store/db.go: wrapDB`.
 ## Repository Pattern
 
 - `internal/domain/*.go` declares `type FooRepository interface{ List/Create/Get/Update/Delete... }` + structs.
-- `internal/store/*.go` implements one file per aggregate: `accountRepo`, `authStateRepo`, `configRepo`, `uploadTaskRepo`, `fuseMountRepo`, `automationRuleRepo` etc.
+- `internal/store/*.go` implements one file per aggregate: `accountRepo`, `authStateRepo`, `configRepo`, `notificationRepo`, `uploadTaskRepo`, `automationRuleRepo` etc.
 - **Store is the only implementor**: `internal/api` and services receive `domain.FooRepository` via `Deps`/wiring, never `*store.DB` directly.
 
 Example:

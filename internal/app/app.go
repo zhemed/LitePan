@@ -18,7 +18,6 @@ import (
 	"litepan/internal/driver"
 		"litepan/internal/eventbus"
 	"litepan/internal/file"
-	"litepan/internal/fusemount"
 	"litepan/internal/logx"
 	"litepan/internal/playback"
 	"litepan/internal/settings"
@@ -46,7 +45,6 @@ type App struct {
 	uploads  *upload.Manager
 	playback *playback.Service
 	automation       *automation.Service
-	fuse             *fusemount.Service
 	httpSrv          *http.Server
 	httpBaseCancel   context.CancelFunc
 	restartCh        <-chan struct{}
@@ -123,7 +121,6 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		uploads:  svc.uploads,
 		playback: svc.playback,
 		automation:       svc.automation,
-		fuse:             svc.fuse,
 		httpSrv:          httpSrv,
 		httpBaseCancel:   httpBaseCancel,
 		restartCh:        restartCh,
@@ -140,9 +137,6 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.automation != nil {
 		a.automation.Start(ctx)
-	}
-	if a.fuse != nil {
-		a.fuse.Start(ctx)
 	}
 	if a.uploads != nil {
 		a.uploads.StartTempCleanup(ctx)
@@ -169,12 +163,11 @@ func (a *App) Run(ctx context.Context) error {
 
 const (
 	shutdownHTTPBudget  = 8 * time.Second
-	shutdownFuseBudget  = 12 * time.Second
 	shutdownBusBudget   = 3 * time.Second
 	shutdownUploadBudget = 20 * time.Second
 )
 
-// Shutdown 按依赖反序优雅关闭：先停 HTTP，再卸载 FUSE，最后关 DB。
+// Shutdown 按依赖反序优雅关闭：先停 HTTP，最后关 DB。
 func (a *App) Shutdown(ctx context.Context) error {
 	a.log.Info("正在优雅关闭各组件")
 	if a.sched != nil {
@@ -194,11 +187,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	if a.fuse != nil {
-		fuseCtx, cancelFuse := context.WithTimeout(ctx, shutdownFuseBudget)
-		a.fuse.Stop(fuseCtx)
-		cancelFuse()
-	}
 	if a.uploads != nil {
 		uploadCtx, cancelUpload := context.WithTimeout(ctx, shutdownUploadBudget)
 		if err := a.uploads.Stop(uploadCtx); err != nil {

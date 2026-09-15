@@ -22,10 +22,10 @@
 │   ├── store/                   # sqlite impl of domain repositories (modernc.org/sqlite)
 │   ├── driver/                  # driver abstractions: Manager, DelayController, Config, registry
 │   ├── file/ playback/ upload/  # file operations, streaming, upload manager
-│   ├── fusemount/ fusereadcache/ cache/
+│   ├── cache/
 │   ├── auth/ adminauth/ account/ accountprofile/
 │   ├── logx/ httpx/ eventbus/ notification/
-│   └── ... (automation, backuprestore, share, settings, favorites, taskauth, startupwait)
+│   └── ... (automation, backuprestore, settings, favorites, startupwait)
 ├── pkg/                         # pure utils: jsonvalue, secretkey, singleflight, strutil, timeutil, speedsmoother
 ├── web/                         # Vue 3 + Vite frontend, builds to internal/api/web
 ├── docs/pictures/               # README assets
@@ -53,7 +53,7 @@ Reference: `internal/app/app.go` wires 30+ services via `Deps` structs; `drivers
 | `internal/driver` | `Manager`, `Registry`, `DelayController`, `Config`, `Lister` interfaces | `internal/file/auth/upload` is forbidden for `drivers` |
 | `drivers/*` | One driver per directory, `Config()` + `GetAddition()` + `ListFiles` etc. | `internal/file, internal/auth, internal/upload` (drivers-pure) |
 | `pkg/*` | Pure helpers, no business logic | `litepan/internal` (pkg-must-be-pure) |
-| `internal/app` | Lifecycle: `accountLifecycle.OnAccountDeleted` cascades to fuse/readCache/strm/retention/media/favorites/offline/uploads | — |
+| `internal/app` | Lifecycle: `accountLifecycle.OnAccountDeleted` cascades to favorites/uploads（`internal/app/account_lifecycle.go`）| — |
 
 Guard source: `.golangci.yml` → `linters.settings.depguard.rules`.
 
@@ -61,8 +61,8 @@ Guard source: `.golangci.yml` → `linters.settings.depguard.rules`.
 
 ## Naming Conventions
 
-- **Package**: `internal/<feature>` lowercase, e.g. `strmscrape`, `cacheretention`, `fusereadcache`.
-- **Handler file**: `internal/api/<feature>*.go` — e.g. `strm_admin.go`, `space_cleanup.go`, `cross_transfer_admin.go`.
+- **Package**: `internal/<feature>` lowercase, e.g. `automation`, `favorites`, `playback`.
+- **Handler file**: `internal/api/<feature>*.go` — e.g. `accounts.go`, `backup_restore.go`, `file_favorites.go`.
 - **Driver file**: `drivers/<DriverName>/{driver,config,auth,ops,transport,upload}.go`.
 - **Service**: `internal/<feature>/service.go` with `type Service struct{...}` and `NewService`.
 - **Store repo**: `internal/store/<feature>.go` with `type <feature>Repo struct{db *DB}` + `wrapDB`.
@@ -86,11 +86,11 @@ Guard source: `.golangci.yml` → `linters.settings.depguard.rules`.
 
 ## Wire / Dependency Injection
 
-- `internal/app/wire_*.go` (`wire_core.go`, `wire_http.go`, `wire_services.go`, `wire_store.go`, `wire_strm.go` etc.) assemble `Deps` structs.
+- `internal/app/wire_*.go` (`wire_core.go`, `wire_http.go`, `wire_services.go`, `wire_store.go` etc.) assemble `Deps` structs。
 - `internal/api.NewRouter(Deps)` receives only services/interfaces, never `*store.DB` directly.
 - Adding a new service: 1) define in `internal/<feature>/service.go`, 2) construct in `wire_services.go`, 3) add field to `api.Deps` and `app.accountLifecycle` if it needs disable/delete hooks.
 
-Reference: `internal/app/app.go: accountLifecycle{ fuse, readCache, strm, retention, media, favorites, offline, uploads, quarktv }` + `OnAccountDeleted` ordering.
+Reference: `internal/app/app.go: accountLifecycle{ favorites, uploads }` + `OnAccountDeleted` ordering（`2026-09-15` 起仅剩这两项；`internal/store/migrations/` 的历史迁移是了解已删功能接线顺序的权威来源）。
 
 ---
 
@@ -113,6 +113,6 @@ Reference: `internal/app/app.go: accountLifecycle{ fuse, readCache, strm, retent
 
 ## Examples
 
-- Well-organized feature: `internal/strm/{service.go, coordinator.go}` + `domain/strm.go` + `store/strm*.go` + `api/strm_admin.go` — full vertical slice.
+- Well-organized feature: `internal/automation/{service.go, service_run.go}` + `domain/automation.go` + `store/automation_repo.go` + `api/automation.go` — full vertical slice.
 - Driver example: `drivers/115_Open/driver.go: type Driver struct{...}; func (d *Driver) Config() driver.Config { Name:"115_open", ... }`
-- Lifecycle example: `internal/app/account_lifecycle.go: OnAccountDeleted` deletes in order `fuse → readCache → strm → retention → media → favorites → offline → uploads → quarktv`.
+- Lifecycle example: `internal/app/account_lifecycle.go: OnAccountDeleted` 现在按 `favorites → uploads` 顺序清理（2026-09-15 精简后）。
