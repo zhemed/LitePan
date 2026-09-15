@@ -1265,3 +1265,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 若用户确认删除：可开一个轻量任务按 research.md §5 的四层清单执行（前端模板+脚本+样式，后端零改动），验证点与回滚点已列全；注意共享选择器只删 .task-list, 一行、brutal.css 的同处 .account-row 必须保留。② 替代方案（若用户想保留展示）：把两处 computed 改接真实接口 GET /api/files/upload/tasks/summary（实测可用，返回 {total,counts}），而不是继续显示硬编码 0。③ 后续可选：仪表盘右列删除后台任务面板后只剩『日志与通知』，建议目视确认留白是否可接受，必要时上移或合并。
+
+
+## Session 155: 删除仪表盘三处假任务展示（运行任务/任务总数/后台任务，-140 行）
+<!-- trellis-session: v=2 fp=2f1c1824cac0fb9f -->
+
+**Date**: 2026-09-15
+**Task**: 删除仪表盘三处假任务展示（运行任务/任务总数/后台任务，-140 行）
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 按 09-15-investigate-task-display-removal/research.md §5 的四层清单执行：① 模板删三块——「运行任务」hero-metric、「任务总数」overview-card、整个「后台任务」dashboard-panel（含恒空列表与空态文案）；② 脚本删三个计算属性 enabledTaskCount(computed(()=>0))、totalTaskCount(computed(()=>0))、taskSummaries(computed(()=>[]))；③ 样式——共享选择器 .account-list/.dashboard-side/.task-list/.notice-list 只去掉 .task-list 一行，删 .task-row*/.task-progress* 整块（70 行），brutal 皮肤删 3 条 .dashboard-page .task-* 规则（同处 .account-row 保留）；④ 后端零改动。净删除 140 行、0 新增，2 个非 embed 文件 + 95 项 embed churn。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7ce9900` | refactor(dashboard): 删除三处假任务展示（运行任务 / 任务总数 / 后台任务） |
+
+### Testing
+
+- [OK] 质量门：vue-tsc -b exit=0 / vite build 成功 / make lint 0 issues / go vet exit=0 / go test 26 包 ok 0 FAIL。产物交叉验证：被删的四处文案（运行任务/任务总数/暂无后台任务/个运行中）在**全部** js chunk 零命中，保留的五处（缓存空间/未读通知/日志与通知/存储账号/待确认错误）各 1 命中。浏览器验收（ 后用数据副本在 :5311 直跑新代码，不碰 :5211）：dashboard DOM 断言 hero=3 项[接入/在线/待确认错误]、cards=2 张[缓存空间/未读通知]、panels=[存储账号,日志与通知]（右列 1 个）、无任务相关文案、window.__err=null；截图目视确认卡片行无空洞、右列无塌陷。反例回归：自动联动页正常；上传任务面板因实例 0 账号无法点开（文件页只显示空态），改用三重证据——7 个近名文件 git 零改动、上传 API（tasks/tasks/summary/runtime）实测 200、面板文案与样式仍在重建产物（IndexView chunk 18 处『上传任务』、CSS 命中 2）。基线：deadcode 7→7、unused 0→0、前端零引用 0→0、gofmt 16→16 零新增。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 是否发版（v0.0.47 或并入下次）由用户决定——本轮是用户可见的界面精简（仪表盘少 1 指标/1 卡片/1 面板），未 bump、未部署，:5211 仍在跑 v0.0.46（旧界面）。② 遗留观察（本轮按范围纪律未改）：DashboardManagement.vue 状态句『账号、任务与缓存服务状态正常』仍含任务字样（状态描述，非计数展示）；SystemSettings.vue:706 帮助文案的『后台任务』属 NAS 常驻说明。③ 若想恢复任务展示，正确做法是接真实接口 GET /api/files/upload/tasks/summary（research.md §0 已留档）。

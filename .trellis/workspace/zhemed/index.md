@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 154
+- **Total Sessions**: 155
 - **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1267 | Active |
+| `journal-3.md` | ~1302 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 155 | 2026-09-15 | 删除仪表盘三处假任务展示（运行任务/任务总数/后台任务，-140 行） | `7ce9900` | `main` |
 | 154 | 2026-09-15 | 调查：仪表盘「运行任务/任务总数/后台任务」能否彻底移除（结论：可以，且三处全是假数据） | `c7a77c0` | `main` |
 | 153 | 2026-09-15 | 发布 v0.0.46：FUSE 移除上线，本机实例切到非特权运行（+ 三处尾巴清理补交） | `26a96c0`, `aa9d244` | `main` |
 | 152 | 2026-09-15 | 清理 FUSE 移除后的三处尾巴（僵尸 EXPOSE 42069 + ActiveTempPaths + TempRegistry 链） | `bcd38f0` | `main` |
