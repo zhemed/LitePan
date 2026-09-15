@@ -1230,3 +1230,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 后续可选：GHCR 旧版本清理（保留 v0.0.45/v0.0.44 作回滚退路）；offline_handoff 命名漂移。② 回滚须知（本轮已写进 release notes）：迁移 0025 已执行，回到 ≤v0.0.45 镜像不完整（旧 BackupCounts 会查 fuse_mounts），完整回滚需用 data/backups/manual-pre-0025-20260915-131329.db 恢复整库。③ 全仓已无 FUSE 引用与相关部署特权；deadcode/unused 基线 7/0 保持。
+
+
+## Session 154: 调查：仪表盘「运行任务/任务总数/后台任务」能否彻底移除（结论：可以，且三处全是假数据）
+<!-- trellis-session: v=2 fp=e433249dd2d3810a -->
+
+**Date**: 2026-09-15
+**Task**: 调查：仪表盘「运行任务/任务总数/后台任务」能否彻底移除（结论：可以，且三处全是假数据）
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 只读调查（零写操作），产物 .trellis/tasks/archive/2026-09/09-15-investigate-task-display-removal/research.md（230 行 / 10 节）。核心结论：仪表盘三处展示全是假数据 —— 运行任务=enabledTaskCount computed(()=>0)、任务总数=totalTaskCount computed(()=>0)、后台任务面板列表=taskSummaries computed(()=>[])，来历由 git 实锤：提交 1bcfac8（2026-08-30 移除缓存任务与目录整理）把三者真实实现就地换成桩，此后一路发布都在显示假 0。零后端依赖（loadOverview 只发 accounts/cache/notifications×2/logs 五个请求；全仓无通用 /tasks 端点；三标识符组件外引用 0；OverviewResult 不含任务类型；构建产物交叉验证四处文案各命中 1 次）。给出四层删除清单：模板三块 :327-330/:347-355/:441-467、脚本三处 computed :56/:57/:97-106、样式 :825 单行 + :984-1052 整块 + brutal.css:66-79 三条（.account-row 保留）、后端零改动；并给出删除后可见面变化（状态行 4→3、卡片 3→2、右列面板 2→1）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c7a77c0` | chore(task): archive 09-15-investigate-task-display-removal |
+
+### Testing
+
+- [OK] 只读与复核：git status 受跟踪改动 0（仅任务目录）；容器仍 v0.0.46、实例库 migration=25 未变；报告 §9 的命令块原样复跑通过（三标识符组件外引用=0、通用 /tasks 路由=0、upload/tasks 路由=10、git log -S 回溯到 1bcfac8、三表行数各 0、皮肤规则=3）。反例清单逐项验证并给出证据：上传任务面板 TaskPanel.vue（FileBrowser.vue:1043 渲染）、/api/files/upload/* 10 条路由（实测 tasks/summary/tasks/runtime 均 200）、automation 的 TaskManagement→AutomationPanel（nav tasks 页签）、页脚 AppFooter.vue:38,130 openTaskPanel（指向上传面板）、同文件其它卡片全接真实数据、upload-task-panel.css 的同名类必须保留。运行期：真实例 DOM 断言 hero=[0=接入,0=在线,0=运行任务,0=待确认错误]、cards=[0=任务总数,…]、panels 含『后台任务 | 0 个任务 · 0 个运行中 | 暂无后台任务』、taskRows=0、taskList=0（列表分支从未渲染）。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 若用户确认删除：可开一个轻量任务按 research.md §5 的四层清单执行（前端模板+脚本+样式，后端零改动），验证点与回滚点已列全；注意共享选择器只删 .task-list, 一行、brutal.css 的同处 .account-row 必须保留。② 替代方案（若用户想保留展示）：把两处 computed 改接真实接口 GET /api/files/upload/tasks/summary（实测可用，返回 {total,counts}），而不是继续显示硬编码 0。③ 后续可选：仪表盘右列删除后台任务面板后只剩『日志与通知』，建议目视确认留白是否可接受，必要时上移或合并。
