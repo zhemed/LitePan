@@ -1159,3 +1159,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 待办：Dockerfile 的 EXPOSE 42069 残留（08-31 内置离线下载移除时遗留）、upload.ActiveTempPaths 零调用者 —— 可另案一次性清理。② 是否发版 v0.0.46 并把本机 :5211 换成非特权 compose 重建容器，由用户决定（本轮两项删除均未 bump 版本、未动容器；发版时迁移 0025 会随容器启动执行，实例上 fuse_mounts 是 0 行空表，仍建议先备份）。③ 部署残留可人工清理：data/fuse_read_cache/ 与宿主 ./mounts/（皆为空）。
+
+
+## Session 152: 清理 FUSE 移除后的三处尾巴（僵尸 EXPOSE 42069 + ActiveTempPaths + TempRegistry 链）
+<!-- trellis-session: v=2 fp=dda8e6a5264e7652 -->
+
+**Date**: 2026-09-15
+**Task**: 清理 FUSE 移除后的三处尾巴（僵尸 EXPOSE 42069 + ActiveTempPaths + TempRegistry 链）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- ① Dockerfile: EXPOSE 5211 42069/tcp+udp → EXPOSE 5211（42069 是 08-31 移除内置离线下载/磁力时的遗留，全仓代码/compose/install 脚本零引用）。② 删 internal/upload/maintenance.go（文件内只有零调用的导出方法 ActiveTempPaths）。③ 删 TempRegistry 链：类型/NewTempRegistry/Track/Snapshot/Manager.tempRegistry 字段/Manager.TempRegistry() 访问器，以及 activeTempPaths() 中读它的分支；顺带去掉 temp.go 不再需要的 sync import。判据：Track 的唯一调用者是已随 FUSE 删除的 share/fuse/write_support.go:332 ⇒ 该 map 恒为空 ⇒ 读它的分支是死重。保留 activeTempPaths（小写，仍被 CleanupOrphanTempFiles 使用）与上传业务逻辑不动。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bcd38f0` | chore(cleanup): 清掉 FUSE 移除后的三处尾巴（僵尸端口声明 + 两个零调用者） |
+
+### Testing
+
+- [OK] 行为等价性**实测**（本任务的核心）：新增 internal/upload/temp_cleanup_test.go 的 TestCleanupOrphanTempFilesKeepsActiveAndFreshPaths，先在实际删除代码**之前**运行并 PASS（记录行为基线），删除后再运行仍 PASS（结果一致）；该测试永久锁定『过期且无主才删、在途任务的 localPath 与未过期的都保留、maxAge=0 只保留在途』的判定。质量门：make lint 0 issues / go vet exit=0 / go test 26 包 ok 0 FAIL（upload 单测 69→70，新增即该行为测试）/ vue-tsc -b exit=0。基线：deadcode 7→7、unused 0→0、gofmt 16→16 零新增。保留项逐一核对在位：activeTempPaths(2)/CleanupTempDir(2)/CleanupOrphanTempFiles(9)/StartTempCleanup(2, 含 app.go:142 调用)/TempDir(67)/TempMaxAge(2)。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 接下来执行发布任务 release-0-0-46：bump 版本 → 质量门 → 提交推送 → 构建并推 GHCR 三 tag → git tag + release → 部署前备份 → 用**去特权**的 compose 重建本机 :5211 容器（迁移 0025 随启动执行）→ 清理 data/fuse_read_cache/ 与 ./mounts/ 两个空残留目录 → health/登录/备份/浏览器全面验收。
