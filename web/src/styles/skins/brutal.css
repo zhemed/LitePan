@@ -63,21 +63,6 @@
   box-shadow: 1px 1px 0 var(--brutal-ink);
 }
 
-:root[data-skin="brutal"] .dashboard-page .task-row {
-  border-bottom-width: var(--brutal-bw);
-  border-bottom-color: var(--brutal-ink);
-}
-
-:root[data-skin="brutal"] .dashboard-page .task-progress {
-  background: var(--surface-sunken);
-  border: 1px solid color-mix(in srgb, var(--brutal-ink) 12%, var(--surface-sunken));
-  border-radius: 0;
-}
-
-:root[data-skin="brutal"] .dashboard-page .task-progress span {
-  border-radius: 0;
-}
-
 :root[data-skin="brutal"] .dashboard-page .account-row {
   border: 0;
   box-shadow: none;

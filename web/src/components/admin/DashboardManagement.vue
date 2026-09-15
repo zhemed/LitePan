@@ -53,9 +53,6 @@ const inactiveAccountCount = computed(() => Math.max(0, accountCount.value - act
 const authErrorAccountCount = computed(() => accounts.value.filter((account) => isAccountAuthError(account)).length);
 const cooldownAccountCount = computed(() => accounts.value.filter((account) => isAccountCooldown(account)).length);
 
-const enabledTaskCount = computed(() => 0);
-const totalTaskCount = computed(() => 0);
-
 const recentErrorCount = computed(() => logStats.value?.recent_unacknowledged_errors ?? 0);
 const recentErrorTotal = computed(() => logStats.value?.recent_errors ?? 0);
 const systemStatus = computed(() => {
@@ -94,16 +91,6 @@ const sortedAccounts = computed(() =>
     return a.id - b.id;
   }),
 );
-const taskSummaries = computed(() => [] as Array<{
-  title: string;
-  icon: string;
-  count: number;
-  enabled: number;
-  detail: string;
-  progress: number;
-  tone: string;
-  updated: string;
-}>);
 
 async function loadOverview() {
   const firstLoad = !accounts.value.length && !cacheStats.value;
@@ -324,10 +311,6 @@ onMounted(() => {
             <strong>{{ activeAccountCount }}</strong>
             <span>在线</span>
           </div>
-          <div class="hero-metric">
-            <strong>{{ enabledTaskCount }}</strong>
-            <span>运行任务</span>
-          </div>
           <div class="hero-metric" :class="{ 'is-warn': recentErrorCount > 0 }">
             <strong>{{ recentErrorCount }}</strong>
             <span>待确认错误</span>
@@ -344,15 +327,6 @@ onMounted(() => {
       </div>
 
       <section class="overview-cards" aria-label="运行概况卡片">
-        <article class="overview-card">
-          <div class="overview-card__icon">
-            <i class="fas fa-list-check" />
-          </div>
-          <div>
-            <strong>{{ totalTaskCount }}</strong>
-            <span>任务总数</span>
-          </div>
-        </article>
         <article class="overview-card overview-card--cache">
           <div class="overview-card__icon">
             <i class="fas fa-database" />
@@ -438,34 +412,6 @@ onMounted(() => {
         </article>
 
         <aside class="dashboard-side">
-          <article class="dashboard-panel">
-            <header class="dashboard-panel__head">
-            <div>
-              <h3>后台任务</h3>
-              <p>{{ totalTaskCount }} 个任务 · {{ enabledTaskCount }} 个运行中</p>
-            </div>
-          </header>
-
-            <div v-if="taskSummaries.length" class="task-list">
-              <div v-for="task in taskSummaries" :key="task.title" class="task-row">
-                <div class="task-row__icon" :class="`task-row__icon--${task.tone}`">
-                  <i class="fas" :class="task.icon" />
-                </div>
-                <div class="task-row__main">
-                  <div class="task-row__title">
-                    <strong>{{ task.title }}</strong>
-                    <span>{{ task.count }} 个</span>
-                  </div>
-                  <div class="task-progress" aria-hidden="true">
-                    <span :style="{ width: `${task.progress}%` }" />
-                  </div>
-                  <small>{{ task.detail }} · {{ task.updated }}</small>
-                </div>
-              </div>
-            </div>
-            <div v-else class="panel-empty" style="min-height: 80px">暂无后台任务</div>
-          </article>
-
           <article class="dashboard-panel">
             <header class="dashboard-panel__head">
               <div>
@@ -822,7 +768,6 @@ onMounted(() => {
 
 .account-list,
 .dashboard-side,
-.task-list,
 .notice-list {
   display: grid;
   gap: 10px;
@@ -979,76 +924,6 @@ onMounted(() => {
   border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: 13px;
-}
-
-.task-row {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.task-row:last-child {
-  border-bottom: 0;
-}
-
-.task-row__icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
-  color: var(--brand);
-}
-
-.task-row__icon--purple {
-  background: color-mix(in srgb, #8b5cf6 12%, var(--surface));
-  color: #8b5cf6;
-}
-
-.task-row__icon--amber {
-  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
-  color: var(--warning);
-}
-
-.task-row__main {
-  min-width: 0;
-}
-
-.task-row__title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.task-row__title strong {
-  color: var(--text);
-  font-size: 14px;
-}
-
-.task-row__title span,
-.task-row small {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.task-progress {
-  height: 4px;
-  margin: 8px 0 6px;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--border-soft);
-}
-
-.task-progress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--brand-gradient-h);
 }
 
 .log-snapshot {
