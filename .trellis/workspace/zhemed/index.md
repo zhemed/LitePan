@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 155
+- **Total Sessions**: 156
 - **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1302 | Active |
+| `journal-3.md` | ~1337 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 156 | 2026-09-15 | 发布 v0.0.47：仪表盘三处假任务展示的删除上线，本机容器更新 | `1c23251` | `main` |
 | 155 | 2026-09-15 | 删除仪表盘三处假任务展示（运行任务/任务总数/后台任务，-140 行） | `7ce9900` | `main` |
 | 154 | 2026-09-15 | 调查：仪表盘「运行任务/任务总数/后台任务」能否彻底移除（结论：可以，且三处全是假数据） | `c7a77c0` | `main` |
 | 153 | 2026-09-15 | 发布 v0.0.46：FUSE 移除上线，本机实例切到非特权运行（+ 三处尾巴清理补交） | `26a96c0`, `aa9d244` | `main` |

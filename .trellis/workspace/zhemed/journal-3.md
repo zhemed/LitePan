@@ -1300,3 +1300,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 是否发版（v0.0.47 或并入下次）由用户决定——本轮是用户可见的界面精简（仪表盘少 1 指标/1 卡片/1 面板），未 bump、未部署，:5211 仍在跑 v0.0.46（旧界面）。② 遗留观察（本轮按范围纪律未改）：DashboardManagement.vue 状态句『账号、任务与缓存服务状态正常』仍含任务字样（状态描述，非计数展示）；SystemSettings.vue:706 帮助文案的『后台任务』属 NAS 常驻说明。③ 若想恢复任务展示，正确做法是接真实接口 GET /api/files/upload/tasks/summary（research.md §0 已留档）。
+
+
+## Session 156: 发布 v0.0.47：仪表盘三处假任务展示的删除上线，本机容器更新
+<!-- trellis-session: v=2 fp=4fc7ca96d981b944 -->
+
+**Date**: 2026-09-15
+**Task**: 发布 v0.0.47：仪表盘三处假任务展示的删除上线，本机容器更新
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- ① 版本号 → v0.0.47（5 处：version.go 唯一真值 + README×2 + 两个 compose；不重建 embed，前端已在 7ce9900 重建）。② 构建并推 GHCR：v0.0.47/0.0.47/latest 三 tag 同 digest 2ae2b2265…（镜像内二进制 v0.0.47=1、v0.0.46=0）。③ git tag v0.0.47（远端 sha 1c23251b… == 本地）+ GitHub Release（说明含删了哪三处、为什么是假数据、无 DB 变更与回滚方式）。④ docker compose pull+up -d 更新本机 :5211 容器到 v0.0.47。⑤ 本轮无新迁移（最新仍是 0025），故未做部署前备份 —— 判据写在 PRD Background 与 design KD1，并用部署后库状态反证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1c23251` | chore(release): 版本号推进到 v0.0.47（发布仪表盘三处假任务展示的删除） |
+
+### Testing
+
+- [OK] 质量门：make lint 0 issues / go vet exit=0 / go test 26 包 ok 0 FAIL / vue-tsc -b exit=0；embed 零改动。部署前后比对：docker inspect 的 9 个非镜像字段（Mounts/Privileged/PidMode/Devices/Binds/PortBindings/RestartPolicy/Env/NetworkMode）**逐项不变**，仅 Image/ImageName 由 v0.0.46 变 v0.0.47；库 migration=25、表数=9、configs=7 行、fuse_mounts 不存在 —— 与部署前一致。实例验收：health 200、登录 200、system-config version=v0.0.47；日志 level=ERROR=0；上传任务 API（tasks/tasks/summary/runtime）全 200。浏览器验收（真实例 DOM）：heroCount=3[接入/在线/待确认错误]、cardCount=2[缓存空间/未读通知]、右列 sidePanels=[日志与通知]、hasTaskText=false、window.__err=null，首页页脚 v0.0.47，截图目视布局无塌陷。**另一处实测发现**：design KD2 预留的『镜像内 grep 嵌入资源』路径不可用（前端 gz 后 go:embed，明文 grep 不到，v0.0.46 镜像同样为 0），已按 B 路径改用部署后浏览器实测作最终判据并披露。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 仪表盘已完成两轮瘦身（v0.0.46 删 FUSE 卡片、v0.0.47 删三处假任务展示）：状态行 4→3、卡片 3→2、右列面板 2→1。② 后续可选（已在任务记录里留档，本轮按范围纪律未做）：把状态句『账号、任务与缓存服务状态正常』里的任务改准；若要恢复任务计数，接真实接口 GET /api/files/upload/tasks/summary。③ 回滚：compose 改回 v0.0.46 + up -d 即可，无数据动作；对外删 release/tag/GHCR version。
