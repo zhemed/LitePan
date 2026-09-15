@@ -1194,3 +1194,39 @@ Session summary was not supplied.
 ### Next Steps
 
 - 接下来执行发布任务 release-0-0-46：bump 版本 → 质量门 → 提交推送 → 构建并推 GHCR 三 tag → git tag + release → 部署前备份 → 用**去特权**的 compose 重建本机 :5211 容器（迁移 0025 随启动执行）→ 清理 data/fuse_read_cache/ 与 ./mounts/ 两个空残留目录 → health/登录/备份/浏览器全面验收。
+
+
+## Session 153: 发布 v0.0.46：FUSE 移除上线，本机实例切到非特权运行（+ 三处尾巴清理补交）
+<!-- trellis-session: v=2 fp=7164878e2fc863e4 -->
+
+**Date**: 2026-09-15
+**Task**: 发布 v0.0.46：FUSE 移除上线，本机实例切到非特权运行（+ 三处尾巴清理补交）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- ① 版本号 → v0.0.46（5 处：version.go 唯一真值 + README×2 + 两个 compose），不重建 embed。② 构建并推 GHCR：ghcr.io/zhemed/litepan:v0.0.46 / 0.0.46 / latest 三 tag 同 digest 31b122a678d5（镜像内二进制 v0.0.46=1、v0.0.45=0；镜像内已无 fusermount3、无 /app/mounts）。③ git tag v0.0.46（远端 sha 与本地一致 26a96c02…）+ GitHub Release（说明含升级提示与「完整回滚需恢复整库备份」的警告）。④ 部署前 SQLite 在线备份 manual-pre-0025-20260915-131329.db 并回读校验。⑤ docker compose pull+up -d 重建本机 :5211 容器：特权项按仓库 compose（FUSE 任务已改）一并去掉。⑥ 清理两个残留空目录 ./mounts/ 与 data/fuse_read_cache/。另外补交上一任务漏加暂存的三个文件（Dockerfile/temp.go/manager.go，即 aa9d244）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `26a96c0` | chore(release): 版本号推进到 v0.0.46（发布 FUSE 移除 + 部署去特权） |
+| `aa9d244` | chore(cleanup): 补交尾部清理的主体改动（前一次提交漏加暂存） |
+
+### Testing
+
+- [OK] 部署面逐项比对（docker inspect 前后）：Privileged True→False、PidMode host→''、Devices /dev/fuse→None、Mounts 去掉 mounts:shared；Binds/PortBindings/RestartPolicy/Env/NetworkMode 逐项不变 —— 收益兑现且未误改其它形态。实例验收：health 200、登录 200、system-config version=v0.0.46；库迁移 24→25、fuse_mounts 与索引消失、fuse_* 键 0、configs 仍 7 行、表数 10→9；POST /api/admin/backups 201「备份创建成功」(schema_version=25)；旧 /api/admin/fuse/* 三端点 404；accounts/settings/notifications/automation/local-upload/backups 全 200；设置载荷 15 项无 fuse；日志 level=ERROR=0。浏览器（真实例）：仪表盘 3 张卡片无 FUSE、设置页两组无 FUSE 读缓存、首页页脚 v0.0.46、无 JS 错误。质量门：make lint 0 issues / go vet exit=0 / go test 26 包 ok 0 FAIL / vue-tsc -b exit=0；deadcode 7、unused 0。备份校验 integrity_check=ok、version 24、fuse_mounts 在、configs 7 行。**自我纠错**：发现上一任务 bcd38f0 漏加暂存，先用临时 worktree 验证该树仍可编译（无坏提交）再补交。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 后续可选：GHCR 旧版本清理（保留 v0.0.45/v0.0.44 作回滚退路）；offline_handoff 命名漂移。② 回滚须知（本轮已写进 release notes）：迁移 0025 已执行，回到 ≤v0.0.45 镜像不完整（旧 BackupCounts 会查 fuse_mounts），完整回滚需用 data/backups/manual-pre-0025-20260915-131329.db 恢复整库。③ 全仓已无 FUSE 引用与相关部署特权；deadcode/unused 基线 7/0 保持。

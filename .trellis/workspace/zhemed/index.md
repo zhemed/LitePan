@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 152
+- **Total Sessions**: 153
 - **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1196 | Active |
+| `journal-3.md` | ~1232 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 153 | 2026-09-15 | 发布 v0.0.46：FUSE 移除上线，本机实例切到非特权运行（+ 三处尾巴清理补交） | `26a96c0`, `aa9d244` | `main` |
 | 152 | 2026-09-15 | 清理 FUSE 移除后的三处尾巴（僵尸 EXPOSE 42069 + ActiveTempPaths + TempRegistry 链） | `bcd38f0` | `main` |
 | 151 | 2026-09-15 | 清理 FUSE 移除后的二级死代码：playback 的 RemoteReader 圈（-977 行） | `0d28d94` | `main` |
 | 150 | 2026-09-15 | 彻底移除 FUSE 本地挂载功能（含部署特权面收窄） | `726fb7a` | `main` |
