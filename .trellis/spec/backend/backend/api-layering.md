@@ -101,6 +101,13 @@ Reference: `internal/api/accounts.go:6205`, `admin_middleware.go:1187`.
 - **Leaking driver types to frontend**: handler must translate `drivers/*` models to `api/types` DTOs.
 - **Ignoring `r.Context()` cancellation**: driver calls must respect `ctx.Done()` (see `driver/delay.go: accountGate.Wait`).
 - **Writing to `internal/api/web` manually**: only `web/` build writes there via `vite outDir`.
+- **Re-resolving the same filesystem root per file** (`internal/api/local_upload.go`): a batch upload
+  resolves the mapping root **once** (`filepath.EvalSymlinks(m.Path)` at the top of
+  `createLocalUploadTasksSync`) and then checks each file against that resolved root
+  (`resolveLocalUploadSourceUnderRoot`). Per-file resolution repeats a syscall storm on large folders
+  and reports one broken root as N unrelated file errors; an unresolvable root must fail the whole
+  batch with a message naming the mapping path. Symlink escapes out of the root stay rejected at both
+  levels (`isWithinRoot` on the requested path, resolved-path check per file).
 
 ---
 

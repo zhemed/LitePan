@@ -79,6 +79,15 @@ Reference: `internal/logx/handler.go: recordToEntry`, `internal/logx/storage.go:
 
 - `ERROR` increments `logx.Stats.RecentErrors` + `RecentUnacknowledgedErrors` shown in `GET /admin/logs/stats`.
 
+**Per-request diagnostics belong at DEBUG, with noise control.** Slow background-overview requests
+(`internal/api/slow_dashboard_log.go`: `/api/admin/accounts`, `/api/admin/cache/stats`,
+`/api/admin/notifications`, `/api/logs/stats`, …) are written at DEBUG and only for whitelisted GET
+paths above `slowDashboardRequestThreshold`. Logging is additionally rate-limited per path by
+`slowDashboardLogInterval` (30 min): within the window only a counter grows, and the next logged
+entry reports it as `suppressed_count`. A request that is fast again reports the count once and
+closes the window — **only** when there is something suppressed, so a poll that happens to be fast
+cannot silence an intermittently slow endpoint.
+
 ---
 
 ## Common Mistakes

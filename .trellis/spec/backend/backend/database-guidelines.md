@@ -90,6 +90,16 @@ Run with `GOWORK=off go test -race ./internal/store`.
 - **Raw `sql` in service** — service must call repo methods, not `db.write.ExecContext`.
 - **Adding GORM or other ORM** — LitePan uses raw `database/sql` only.
 - **Ignoring `wrapDB`** — losing `CodeNotFound` mapping breaks `api/errors.go` → 404.
+- **Caching the whole `configs` table inside one service** — the table is shared: `adminauth` caches
+  only its own keys (`serviceOwnedConfigKeys` in `internal/adminauth/service.go`) because
+  `internal/settings/service.go` writes `oauth_server_url`, `upload_task_concurrency`,
+  `log_retention_days`, `auth_active_refresh_enabled`, which `adminauth.SystemConfig` also reads. A
+  whole-table cache would serve stale values right after the settings page saves.
+  Rule of thumb: cache in-process **only keys your service is the sole writer of**; read the rest
+  through. Writes that matter go through the same helper that refreshes the snapshot
+  (`setConfig`), and only after the DB write succeeded. Backup/restore is no exception: it writes a
+  *staging* database and `internal/app/app.go` applies it via `ApplyPending` **before** the store is
+  opened — restoring always restarts the process.
 
 ---
 
