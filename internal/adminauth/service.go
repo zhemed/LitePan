@@ -34,7 +34,6 @@ const (
 	KeyHeaderEffectsEnabled       = "header_effects_enabled"
 	KeyAdminTempPasswordHash      = "admin_temp_password_hash"
 	KeyAdminTempPasswordExpiresAt = "admin_temp_password_expires_at"
-	KeyAdminTempPasswordLastReset = "admin_temp_password_last_reset_at"
 	KeyAdminSessionGeneration     = "admin_session_generation"
 )
 
@@ -99,10 +98,35 @@ type UpdateCredentialsRequest struct {
 	AuthActiveRefreshEnabled *bool    `json:"auth_active_refresh_enabled"`
 }
 
+// serviceOwnedConfigKeys 是本服务独占写入的 configs 键，也是唯一允许进进程内缓存的键。
+//
+// 其余键（系统设置页、本地上传、日志等）由别的服务写同一张 configs 表，
+// 缓存它们会在对方更新后一直读到陈旧值，因此一律直读。新增本服务独占键时
+// 必须同时加到这里，否则不会进缓存（只会退化为直读，不影响正确性）。
+var serviceOwnedConfigKeys = map[string]struct{}{
+	KeyAdminUsername:              {},
+	KeyAdminPassword:              {},
+	KeySessionTimeout:             {},
+	KeyPublicIndexEnabled:         {},
+	KeyIndexAccountSwitchMode:     {},
+	KeyCompactHomeEnabled:         {},
+	KeyAdminHomeReturnMode:        {},
+	KeyHeaderEffectsEnabled:       {},
+	KeyAdminTempPasswordHash:      {},
+	KeyAdminTempPasswordExpiresAt: {},
+	KeyAdminSessionGeneration:     {},
+}
+
 type Service struct {
 	configs domain.ConfigRepository
 	secret  []byte
 	log     *slog.Logger
+
+	// configMu 保护配置缓存；configLoaded 为真时 configValues 才是完整快照，
+	// 否则（含 All() 读取失败）调用方回退为直读配置表。
+	configMu     sync.Mutex
+	configLoaded bool
+	configValues map[string]string
 
 	resetIPCooldown sync.Map
 	resetLastAt     int64
@@ -291,9 +315,8 @@ func (s *Service) ResetPassword(ctx context.Context, r *http.Request) (map[strin
 	password := randomPassword(12)
 	hash := security.HashPassword(password)
 	expiresAt := now + tempPasswordTTL
-	_ = s.configs.Set(ctx, KeyAdminTempPasswordHash, hash)
-	_ = s.configs.Set(ctx, KeyAdminTempPasswordExpiresAt, strconv.FormatInt(expiresAt, 10))
-	_ = s.configs.Set(ctx, KeyAdminTempPasswordLastReset, strconv.FormatInt(now, 10))
+	_ = s.setConfig(ctx, KeyAdminTempPasswordHash, hash)
+	_ = s.setConfig(ctx, KeyAdminTempPasswordExpiresAt, strconv.FormatInt(expiresAt, 10))
 	s.resetLastAt = now
 	if ip != "" {
 		s.resetIPCooldown.Store(ip, now)
@@ -408,7 +431,7 @@ func (s *Service) UpdateCredentials(ctx context.Context, r *http.Request, w http
 		return err
 	}
 	for _, update := range updates {
-		if err := s.configs.Set(ctx, update.key, update.value); err != nil {
+		if err := s.setConfig(ctx, update.key, update.value); err != nil {
 			return domain.Wrap(domain.CodeInternal, err)
 		}
 	}
@@ -528,7 +551,7 @@ func (s *Service) adminCredentials(ctx context.Context) (string, string) {
 	password := s.configString(ctx, KeyAdminPassword, "")
 	if password == "" || (username == defaultAdminUsername && strings.TrimSpace(password) == defaultAdminPassword) {
 		password = security.HashPassword(defaultAdminPassword)
-		_ = s.configs.Set(ctx, KeyAdminPassword, password)
+		_ = s.setConfig(ctx, KeyAdminPassword, password)
 	}
 	return username, password
 }
@@ -588,37 +611,96 @@ func (s *Service) sessionTimeout(ctx context.Context) int {
 type tempPasswordState struct {
 	Hash      string
 	ExpiresAt int64
-	LastReset int64
 	Valid     bool
 }
 
 func (s *Service) tempPasswordState(ctx context.Context) tempPasswordState {
 	hash := s.configString(ctx, KeyAdminTempPasswordHash, "")
 	expiresAt := int64(s.configInt(ctx, KeyAdminTempPasswordExpiresAt, 0))
-	lastReset := int64(s.configInt(ctx, KeyAdminTempPasswordLastReset, 0))
 	now := time.Now().Unix()
 	return tempPasswordState{
 		Hash:      hash,
 		ExpiresAt: expiresAt,
-		LastReset: lastReset,
 		Valid:     hash != "" && expiresAt > now,
 	}
 }
 
+// configValue 读取一个配置值：本服务独占的键走进程内缓存，其余键直读配置表。
+func (s *Service) configValue(ctx context.Context, key string) (string, bool) {
+	if _, owned := serviceOwnedConfigKeys[key]; !owned {
+		return readConfigValue(ctx, s.configs, key)
+	}
+	s.configMu.Lock()
+	if !s.configLoaded {
+		s.loadConfigLocked(ctx)
+	}
+	if s.configLoaded {
+		value, ok := s.configValues[key]
+		s.configMu.Unlock()
+		return value, ok
+	}
+	s.configMu.Unlock()
+	return readConfigValue(ctx, s.configs, key)
+}
+
+// loadConfigLocked 在持有 configMu 的前提下一次性载入独占键快照。
+// 读取失败时保持未置位（下次访问再试），结构上不会留下半成品快照。
+func (s *Service) loadConfigLocked(ctx context.Context) {
+	all, err := s.configs.All(ctx)
+	if err != nil {
+		return
+	}
+	values := make(map[string]string, len(serviceOwnedConfigKeys))
+	for key := range serviceOwnedConfigKeys {
+		if value, ok := all[key]; ok {
+			values[key] = strings.TrimSpace(value)
+		}
+	}
+	s.configValues = values
+	s.configLoaded = true
+}
+
+// setConfig 写配置并在写库成功后同步内存快照。
+//
+// 写库成功才更新缓存，且更新在 loadConfigLocked 的临界区之外排队：
+// 若并发的一次快照加载读到的是旧值，本次更新也会落在其后，缓存不会回退。
+func (s *Service) setConfig(ctx context.Context, key, value string) error {
+	if err := s.configs.Set(ctx, key, value); err != nil {
+		return err
+	}
+	if _, owned := serviceOwnedConfigKeys[key]; !owned {
+		return nil
+	}
+	s.configMu.Lock()
+	if s.configLoaded {
+		s.configValues[key] = strings.TrimSpace(value)
+	}
+	s.configMu.Unlock()
+	return nil
+}
+
+func readConfigValue(ctx context.Context, repo domain.ConfigRepository, key string) (string, bool) {
+	value, ok, err := repo.Get(ctx, key)
+	if err != nil || !ok {
+		return "", false
+	}
+	return strings.TrimSpace(value), true
+}
+
 func (s *Service) configString(ctx context.Context, key, fallback string) string {
-	v, ok, err := s.configs.Get(ctx, key)
-	if err != nil || !ok || strings.TrimSpace(v) == "" {
+	v, ok := s.configValue(ctx, key)
+	if !ok || v == "" {
 		return fallback
 	}
-	return strings.TrimSpace(v)
+	return v
 }
 
 func (s *Service) configInt(ctx context.Context, key string, fallback int) int {
-	v, ok, err := s.configs.Get(ctx, key)
-	if err != nil || !ok || strings.TrimSpace(v) == "" {
+	v, ok := s.configValue(ctx, key)
+	if !ok || v == "" {
 		return fallback
 	}
-	n, err := strconv.Atoi(strings.TrimSpace(v))
+	n, err := strconv.Atoi(v)
 	if err != nil {
 		return fallback
 	}
@@ -626,11 +708,11 @@ func (s *Service) configInt(ctx context.Context, key string, fallback int) int {
 }
 
 func (s *Service) configBool(ctx context.Context, key string, fallback bool) bool {
-	v, ok, err := s.configs.Get(ctx, key)
-	if err != nil || !ok {
+	v, ok := s.configValue(ctx, key)
+	if !ok {
 		return fallback
 	}
-	switch strings.ToLower(strings.TrimSpace(v)) {
+	switch strings.ToLower(v) {
 	case "1", "true", "yes", "on":
 		return true
 	case "0", "false", "no", "off":

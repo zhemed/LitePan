@@ -71,7 +71,16 @@ func (h *Handler) oauthForward(w http.ResponseWriter, r *http.Request, method, u
 		_, _ = w.Write(data)
 		return
 	}
-	_ = lastErr
+	// 重试全部失败必须留下告警：否则用户只看到“OAuth 服务暂时不可用”，
+	// 运维侧无从判断是网络不通、超时还是对端返回了坏数据。
+	if lastErr != nil {
+		requestLogger(r.Context()).Warn(
+			"OAuth 转发重试均失败",
+			"url", url,
+			"attempts", maxRetries+1,
+			"err", lastErr,
+		)
+	}
 	writeErr(w, domain.Errorf(domain.CodeDriverError, "OAuth 服务暂时不可用，请稍后再试或手动输入 Token"))
 }
 

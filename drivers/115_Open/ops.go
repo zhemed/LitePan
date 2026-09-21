@@ -13,6 +13,9 @@ import (
 	"litepan/internal/driver"
 )
 
+// maxPickCodeCacheEntries 明文 pickcode 缓存的最大条目数（超出后整体清空重来）。
+const maxPickCodeCacheEntries = 100_000
+
 func normalizeIDs(fileIDs []string) []string {
 	out := make([]string, 0, len(fileIDs))
 	for _, id := range fileIDs {
@@ -115,6 +118,11 @@ func (d *Driver) rememberPickCode(entry fileEntry) {
 	if d.pickBy == nil {
 		d.pickBy = make(map[string]string)
 	}
+	// 明文 pickcode 缓存不做无上限增长：达到上限且是新键时整体清空重来
+	// （命中率回退一次，但避免大库长期运行把内存吃掉）。
+	if _, exists := d.pickBy[id]; !exists && len(d.pickBy) >= maxPickCodeCacheEntries {
+		clear(d.pickBy)
+	}
 	d.pickBy[id] = pc
 	d.pickMu.Unlock()
 }
@@ -135,10 +143,21 @@ func (d *Driver) DeleteFiles(ctx context.Context, fileIDs []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
+	var err error
 	if d.deleteMode() == "delete" {
-		return d.permanentDelete(ctx, ids)
+		err = d.permanentDelete(ctx, ids)
+	} else {
+		err = d.trashFiles(ctx, ids)
 	}
-	return d.trashFiles(ctx, ids)
+	// 删除成功后顺手清掉明文 pickcode 缓存，避免残留已不存在的文件凭据。
+	if err == nil {
+		d.pickMu.Lock()
+		for _, id := range ids {
+			delete(d.pickBy, id)
+		}
+		d.pickMu.Unlock()
+	}
+	return err
 }
 
 func (d *Driver) trashFiles(ctx context.Context, ids []string) error {

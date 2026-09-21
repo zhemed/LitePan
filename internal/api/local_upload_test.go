@@ -40,7 +40,11 @@ func TestResolveLocalUploadSourceRejectsEscapingSymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resolved, err := resolveLocalUploadSource(inside, root)
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := resolveLocalUploadSourceUnderRoot(inside, resolvedRoot)
 	if err != nil {
 		t.Fatalf("映射目录内文件被错误拒绝: %v", err)
 	}
@@ -51,8 +55,43 @@ func TestResolveLocalUploadSourceRejectsEscapingSymlink(t *testing.T) {
 	if resolved != want {
 		t.Fatalf("inside resolved=%q want %q", resolved, want)
 	}
-	if _, err := resolveLocalUploadSource(link, root); err == nil {
+	if _, err := resolveLocalUploadSourceUnderRoot(link, resolvedRoot); err == nil {
 		t.Fatal("指向映射目录外的链接未被拒绝")
+	}
+}
+
+// 映射根自身是符号链接时，批次级解析出的真实根仍必须接受根内的文件——
+// 逐个文件解析真实路径会同时解析到链接之外的绝对路径，误判为越界。
+func TestResolveLocalUploadSourceUnderRootAcceptsSymlinkedRoot(t *testing.T) {
+	realRoot := t.TempDir()
+	file := filepath.Join(realRoot, "影片.mkv")
+	if err := os.WriteFile(file, []byte("movie"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	linkRoot := filepath.Join(t.TempDir(), "mount-link")
+	if err := os.Symlink(realRoot, linkRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	resolvedRoot, err := filepath.EvalSymlinks(linkRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 走映射路径（含链接）收集到的源文件也必须通过边界检查。
+	resolved, err := resolveLocalUploadSourceUnderRoot(filepath.Join(linkRoot, "影片.mkv"), resolvedRoot)
+	if err != nil {
+		t.Fatalf("符号链接根内的文件被错误拒绝: %v", err)
+	}
+	if resolved != filepath.Join(realRoot, "影片.mkv") {
+		t.Fatalf("resolved=%q want %q", resolved, filepath.Join(realRoot, "影片.mkv"))
+	}
+}
+
+// 根不存在时批次必须快速失败，且错误里要说明是哪个映射目录。
+func TestResolveLocalUploadSourceUnderRootFailsOnMissingRoot(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "不存在")
+	if _, err := filepath.EvalSymlinks(missing); err == nil {
+		t.Fatal("不存在的映射根应解析失败")
 	}
 }
 

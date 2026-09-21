@@ -79,6 +79,21 @@ func TestPublicIndexIsDisabledByDefault(t *testing.T) {
 	if svc.publicIndexEnabled(ctx) {
 		t.Fatal("public index should be disabled by default")
 	}
+	// 生产路径是设置页写入（经本服务的 setConfig），独占键的进程内缓存靠这条路径同步。
+	if err := svc.setConfig(ctx, KeyPublicIndexEnabled, "true"); err != nil {
+		t.Fatalf("enable public index: %v", err)
+	}
+	if !svc.publicIndexEnabled(ctx) {
+		t.Fatal("saved public index setting should override the default")
+	}
+	if stored, ok, err := configs.Get(ctx, KeyPublicIndexEnabled); err != nil || !ok || stored != "true" {
+		t.Fatalf("设置未落库：value=%q ok=%v err=%v", stored, ok, err)
+	}
+}
+
+// 冷启动（缓存尚未加载）时必须读回库里已有的值，无论它此前由谁写入。
+func TestPublicIndexReadsPersistedValueBeforeCacheWarmup(t *testing.T) {
+	svc, configs, ctx := newBareTestAuth(t)
 	if err := configs.Set(ctx, KeyPublicIndexEnabled, "true"); err != nil {
 		t.Fatalf("enable public index: %v", err)
 	}

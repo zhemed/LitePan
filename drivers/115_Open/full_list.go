@@ -5,17 +5,21 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"litepan/internal/domain"
 	"litepan/internal/driver"
 )
 
-const fullListPageSize = 1150
+const (
+	fullListPageSize       = 1150
+	fullListEmptyRetryWait = 250 * time.Millisecond
+)
 
 // ListAllFiles 使用 cur=0 让服务端递归展开 rootID 下全部文件，分页拉取。
 // 该模式不返回文件夹，条目自带 pid，由上层结合 pid→路径 缓存还原目录结构。
-// 完整性策略：只以空页作为结束信号，不把 Count 或短页当作可靠终点。115 的 Count 可能因
-// 厂商缓存或并发变更暂时偏小；若据此提前停止，会让上层把未扫到的目录误判为已删除。
+// 完整性策略：分页只以连续空页作为结束信号，不用 Count 或短页提前结束；
+// Count 仅在结束时用于拦截“明确少于服务端声明数量”的不完整清单。
 func (d *Driver) ListAllFiles(ctx context.Context, rootID string) ([]driver.FullListEntry, error) {
 	root := d.normalizeParent(rootID)
 	return collectFullListPages(ctx, func(ctx context.Context, offset, limit int) (listPageResp, error) {
@@ -40,6 +44,7 @@ type fullListPageFetcher func(context.Context, int, int) (listPageResp, error)
 func collectFullListPages(ctx context.Context, fetch fullListPageFetcher) ([]driver.FullListEntry, error) {
 	var entries []driver.FullListEntry
 	offset := 0
+	expectedCount := int64(0)
 	seenIDs := make(map[string]struct{})
 	for {
 		if err := ctx.Err(); err != nil {
@@ -49,8 +54,36 @@ func collectFullListPages(ctx context.Context, fetch fullListPageFetcher) ([]dri
 		if err != nil {
 			return nil, err
 		}
+		if page.Count > expectedCount {
+			expectedCount = page.Count
+		}
 		if len(page.Data) == 0 {
-			break
+			// 首次空页可能是厂商缓存或并发变更造成的抖动：等一拍再确认一次，
+			// 避免把“暂时读不到”当成“已经读完”。
+			timer := time.NewTimer(fullListEmptyRetryWait)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return nil, ctx.Err()
+			case <-timer.C:
+			}
+			page, err = fetch(ctx, offset, fullListPageSize)
+			if err != nil {
+				return nil, err
+			}
+			if page.Count > expectedCount {
+				expectedCount = page.Count
+			}
+			if len(page.Data) == 0 {
+				// 终局空页：只在这里用 Count 拦截“明确少于服务端声明数量”的不完整清单，
+				// 宁可报错让上层知道扫描不完整，也不要静默返回残缺结果。
+				if expectedCount > int64(len(seenIDs)) {
+					return nil, domain.Errorf(domain.CodeDriverError,
+						"115 全量清单不完整：应有 %d 个文件，实际只获取 %d 个，已停止扫描",
+						expectedCount, len(seenIDs))
+				}
+				break
+			}
 		}
 		newIDs := 0
 		for _, f := range page.Data {
@@ -84,11 +117,11 @@ func collectFullListPages(ctx context.Context, fetch fullListPageFetcher) ([]dri
 	return entries, nil
 }
 
-// ResolveDirPath 通过 /open/folder/get_info 拼出目录完整路径。
-// 注意：接口返回的 paths 只是“父目录链”（不含目录自身），必须再追加目录自身名称。
+// ResolveDirPath 通过 /open/folder/get_info 拼出相对于账号挂载根的目录路径。
 func (d *Driver) ResolveDirPath(ctx context.Context, dirID string) (string, error) {
 	id := strings.TrimSpace(dirID)
-	if id == "" || id == "0" || id == d.rootID() {
+	rootID := d.rootID()
+	if id == "" || id == "0" || id == rootID {
 		return "", nil
 	}
 	query := urlValues(map[string]string{"file_id": id})
@@ -97,27 +130,57 @@ func (d *Driver) ResolveDirPath(ctx context.Context, dirID string) (string, erro
 		return "", err
 	}
 	if info.entryID() == "" {
-		return "", nil
+		return "", domain.Errf(domain.CodeNotFound)
 	}
-	return buildDirPath(info.Paths, info.entryName()), nil
+	path, ok := buildDirPath(info.Paths, info.entryName(), rootID)
+	if !ok {
+		return "", domain.Errorf(domain.CodeDriverError, "115 目录不在账号挂载根下，已停止扫描")
+	}
+	return path, nil
 }
 
 // buildDirPath 把 get_info 的父目录链（不含自身）与目录自身名称拼成完整路径。
-// 父链中 file_id 为 0 的根段跳过；结果不含首尾斜杠。
-func buildDirPath(paths []dirPathEntry, selfName string) string {
+// 父链中 file_id 为 0 的段跳过；遇到 rootID 段即截断，使结果相对账号挂载根；
+// 若父链里始终没有出现 rootID（目录不在挂载根下），返回 ok=false。
+// 结果不含首尾斜杠。
+func buildDirPath(paths []dirPathEntry, selfName, rootID string) (string, bool) {
 	segs := make([]string, 0, len(paths)+1)
+	foundRoot := rootID == "0"
 	for _, p := range paths {
-		if strings.TrimSpace(p.FileID.String()) == "0" {
+		id := strings.TrimSpace(p.FileID.String())
+		if id == rootID {
+			foundRoot = true
+			segs = segs[:0]
 			continue
 		}
-		if name := strings.TrimSpace(p.FileName); name != "" {
+		if id == "0" || !foundRoot {
+			continue
+		}
+		if name := pathSegmentName(p.FileName); name != "" {
 			segs = append(segs, name)
 		}
 	}
-	if name := strings.TrimSpace(selfName); name != "" {
+	if !foundRoot {
+		return "", false
+	}
+	if name := pathSegmentName(selfName); name != "" {
 		segs = append(segs, name)
 	}
-	return strings.Join(segs, "/")
+	return strings.Join(segs, "/"), true
+}
+
+// pathSegmentName 把目录名里会被误当成层级的分隔符替换掉。
+//
+// 网盘目录名允许包含 "/"。直接把名字拼进以 "/" 分隔的路径里，上层
+// 就再也分不清「一个名字带斜杠的目录」和「多层目录」，会把路径用错位置。
+// 段内去掉分隔符即可杜绝伪造层级。
+func pathSegmentName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	name = strings.ReplaceAll(name, "/", "_")
+	return strings.ReplaceAll(name, "\\", "_")
 }
 
 var (

@@ -51,12 +51,8 @@ func viewToDTO(v account.View) accountDTO {
 		dto.DriverCardColor = info.CardColor
 		dto.DriverCardLogo = info.CardLogo
 	}
-	if !a.CreatedAt.IsZero() {
-		dto.CreatedAt = FormatAPITime(a.CreatedAt)
-	}
-	if !a.UpdatedAt.IsZero() {
-		dto.UpdatedAt = FormatAPITime(a.UpdatedAt)
-	}
+	dto.CreatedAt = FormatAPITime(a.CreatedAt)
+	dto.UpdatedAt = FormatAPITime(a.UpdatedAt)
 	return dto
 }
 

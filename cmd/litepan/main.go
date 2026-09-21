@@ -45,7 +45,7 @@ func main() {
 
 	a, err := app.New(ctx, app.Options{Config: cfg, Logs: logs})
 	if err != nil {
-		logs.Root().Error("startup failed", "err", err)
+		logs.Root().Error("启动失败", "err", err)
 		os.Exit(1)
 	}
 
@@ -56,11 +56,11 @@ func main() {
 	shCtx, cancel := context.WithTimeout(context.Background(), shutdownBudget)
 	defer cancel()
 	if err := a.Shutdown(shCtx); err != nil {
-		logs.Root().Error("shutdown error", "err", err)
+		logs.Root().Error("关闭出错", "err", err)
 		os.Exit(1)
 	}
 	if runErr != nil && !restarting {
-		logs.Root().Error("run error", "err", runErr)
+		logs.Root().Error("运行出错", "err", runErr)
 		os.Exit(1)
 	}
 }

@@ -9,7 +9,7 @@ RUN npm config set registry https://registry.npmmirror.com \
     && npm ci
 
 COPY web/ ./
-RUN npm run build
+RUN npm run type-check && npm run build
 
 
 FROM golang:1.26.6-bookworm AS build

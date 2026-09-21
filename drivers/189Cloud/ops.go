@@ -21,6 +21,9 @@ const (
 	downloadConcurrency = 3
 )
 
+// insecureSchemeRe 匹配明文 http 前缀，用于把下载链接升级为 https。
+var insecureSchemeRe = regexp.MustCompile(`(?i)^http://`)
+
 func (d *Driver) ResolveDownload(ctx context.Context, req driver.DownloadRequest) (*domain.DownloadInfo, error) {
 	fileID := strings.TrimSpace(req.FileID)
 	if fileID == "" {
@@ -48,7 +51,7 @@ func (d *Driver) ResolveDownload(ctx context.Context, req driver.DownloadRequest
 		return nil, domain.Errorf(domain.CodeDriverError, "天翼云盘未返回下载链接")
 	}
 	downloadURL = strings.ReplaceAll(downloadURL, "&amp;", "&")
-	downloadURL = regexp.MustCompile(`(?i)^http://`).ReplaceAllString(downloadURL, "https://")
+	downloadURL = insecureSchemeRe.ReplaceAllString(downloadURL, "https://")
 	fileName := ""
 	size := int64(0)
 	if d.isFamily() {

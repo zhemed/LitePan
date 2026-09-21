@@ -87,6 +87,7 @@ type Handler struct {
 	backupRestore     *backuprestore.Service
 	dataDir           string
 	onSettingsUpdated func(map[string]string)
+	slowLogs          slowRequestLogs
 
 	devMu       sync.Mutex
 	devUnlocked bool

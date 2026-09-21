@@ -17,9 +17,7 @@ type fileDTO struct {
 
 func fileToDTO(f domain.FileItem) fileDTO {
 	dto := fileDTO{ID: f.ID, Name: f.Name, Size: f.Size, IsDir: f.IsDir}
-	if !f.ModTime.IsZero() {
-		dto.ModTime = FormatAPITime(f.ModTime)
-	}
+	dto.ModTime = FormatAPITime(f.ModTime)
 	return dto
 }
 

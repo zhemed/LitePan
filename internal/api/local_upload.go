@@ -316,6 +316,12 @@ func (h *Handler) createLocalUploadTasksSync(
 	sources []localUploadSource,
 ) ([]*upload.Task, error) {
 	const batchSize = 100
+	// 批次级解析一次映射根：根不可解析或不可访问时整批快速失败并说明原因，
+	// 而不是逐个文件重复解析符号链接、把同一个根问题报成一堆文件错误。
+	resolvedRoot, err := filepath.EvalSymlinks(m.Path)
+	if err != nil {
+		return nil, domain.Errorf(domain.CodeValidation, "映射目录 %s 无法访问：%v", m.Path, err)
+	}
 	batch := make([]upload.CreateParams, 0, batchSize)
 	seq := 0
 	var tasks []*upload.Task
@@ -385,13 +391,13 @@ func (h *Handler) createLocalUploadTasksSync(
 			targetParent = parent
 			targetDirs[s.relDir] = targetParent
 		}
-		localPath, err := resolveLocalUploadSource(s.abs, m.Path)
+		localPath, err := resolveLocalUploadSourceUnderRoot(s.abs, resolvedRoot)
 		if err != nil {
 			h.logError("检查服务器上传文件失败", "path", s.abs, "err", err.Error())
 			recordFailure(fmt.Errorf("检查文件 %s 失败：%w", filepath.Base(s.abs), err))
 			continue
 		}
-		info, err := statLocalFile(localPath)
+		info, err := os.Stat(localPath)
 		if err != nil {
 			h.logError("读取本地文件失败", "path", localPath, "err", err.Error())
 			recordFailure(fmt.Errorf("读取文件 %s 失败：%w", filepath.Base(s.abs), err))
@@ -503,16 +509,9 @@ func buildLocalUploadSources(abs, rel string, isDir bool) ([]localUploadSource, 
 	return sources, nil
 }
 
-func statLocalFile(abs string) (fs.FileInfo, error) {
-	return os.Stat(abs)
-}
-
-// 解析符号链接后检查边界。
-func resolveLocalUploadSource(abs, root string) (string, error) {
-	resolvedRoot, err := filepath.EvalSymlinks(root)
-	if err != nil {
-		return "", err
-	}
+// resolveLocalUploadSourceUnderRoot 解析单个文件的符号链接并检查边界。
+// resolvedRoot 由调用方按批次解析一次（见 createLocalUploadTasksSync）。
+func resolveLocalUploadSourceUnderRoot(abs, resolvedRoot string) (string, error) {
 	resolvedPath, err := filepath.EvalSymlinks(abs)
 	if err != nil {
 		return "", err

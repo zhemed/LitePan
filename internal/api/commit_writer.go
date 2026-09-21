@@ -21,10 +21,8 @@ func (w *commitWriter) WriteHeader(code int) {
 }
 
 func (w *commitWriter) Write(b []byte) (int, error) {
-	if !w.committed {
-		w.committed = true
-		w.WriteHeader(http.StatusOK)
-	}
+	// 幂等由 WriteHeader 内部保证：已提交则原样返回，未提交则补 200。
+	w.WriteHeader(http.StatusOK)
 	return w.ResponseWriter.Write(b)
 }
 
