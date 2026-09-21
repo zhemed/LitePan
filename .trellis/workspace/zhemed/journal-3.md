@@ -1418,3 +1418,45 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 是否发 v0.0.48 由用户决定（本轮按范围纪律未 bump 版本）；② 上游「高级定时」AutomationTriggerAdvanced 已留档未做，需要时另开任务；③ 三批在一个提交里，若要单批回滚：A 组 drivers/*、B 组 internal/{adminauth,api}、C 组 Dockerfile+cmd+若干 api 文件可分别 revert（B1 缓存是最需要留意的单点）
+
+
+## Session 159: 移植评审跟进：修并发写缓存顺序 + 补 A4/B3 单测 + 三处口径更正
+<!-- trellis-session: v=2 fp=7fb7b5caafffb855 -->
+
+**Date**: 2026-09-21
+**Task**: 移植评审跟进：修并发写缓存顺序 + 补 A4/B3 单测 + 三处口径更正
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+对 a54fd7ae 的移植做独立对抗性评审（子代理，只读）：确认 C1-C5 与上游逐字一致、C2/C3 行为等价经证、B1 独占键清单完整且无旁路写入者，同时发现 1 处 MAJOR（并发写同一缓存键可能让缓存永久停在旧值）与 2 处测试缺口。本会话完成修复、补测并按证据更正三处口径。
+
+### Main Changes
+
+- MAJOR 修复：internal/adminauth/service.go 的 setConfig 原为『先写库再取 configMu』，两次并发写同一独占键可落地为『库 A→B、缓存 B→A』，缓存永久陈旧且无自愈路径（旧密码哈希一直生效到下次写入或重启）。改为独占键先取锁再写库（非独占键仍无锁直写）；回归测试用『第一次 Set 已落库未返回』的假仓库复现交错，已验证旧实现 FAIL、修复 PASS。
+- 补 B3 单测：抽出 resolveLocalUploadRoot（返回带映射路径的 CodeValidation）并测『根不存在报错含路径』『符号链接根解析为真实路径』；替换原来只断言标准库行为的空用例。
+- 补 A4 单测：抽出 forgetPickCodes（DeleteFiles 成功后才调用），新增 pickcode_cache_test.go 四条（满容量新增键清空、满容量覆盖已有键不清空、不完整条目不入缓存、只清已删除 ID）；已验证去掉上限后容量用例 FAIL（100001）。
+- 口径更正①：115 全量清单链路在本方无调用方（file.Service 的 ListAllFiles/SupportsFullList/ResolveDirPath 零调用点、前端无入口），故 A1-A3 是『上游同款移植进未接线代码』，不是线上行为修复；已在 full_list.go 注释写明，并纠正 Session 157 journal 的『清单模式在用该路径』说法。
+- 口径更正②：deadcode 基线可复现，但二进制在 /root/go/bin 且不在任何门禁里（make lint 只开 depguard/errcheck/govet/staticcheck），评审因 PATH 未见；核验命令 PATH=/root/go/bin:$PATH deadcode ./cmd/litepan = 7。
+- 口径更正③：临时实例验收里『日志无 ERROR』仅成立于干净启动阶段；后段 B3 快速失败是故意注入，产生了 1 条对应 ERROR。
+- spec：database-guidelines 补『缓存键必须先取锁再写库，落库顺序需与快照更新顺序一致』的顺序规则。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2adc1bd1` | fix(upstream): 修正并发写缓存顺序，补齐 A4/B3 单测 [task:port-upstream-fixes-0921] |
+
+### Testing
+
+- [OK] 跟进后重跑全量门：make lint 0 issues、golangci-lint --enable=unused 0 issues、go vet exit=0、go test ./... 26 包 ok 0 FAIL、go test -race 三个改动包全 ok、gofmt 仍 15 个既有脏文件。
+- [OK] 测试数再增：drivers/115_Open 23→27（+4 pickcode）、internal/adminauth 16→17（+1 并发一致性）、internal/api 替换 1 增 1；两个关键新用例都做了『旧实现必失败』的反向验证。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 是否发 v0.0.48 仍由用户决定；② 若将来接线 115 清单模式，需先用真实账号核对 Count 口径（是否含目录、是否按挂载子目录计数），否则终局完整性判据会误报；③ 上游『高级定时』继续留档。

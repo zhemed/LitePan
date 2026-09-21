@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 158
+- **Total Sessions**: 159
 - **Last Active**: 2026-09-21
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1420 | Active |
+| `journal-3.md` | ~1462 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 159 | 2026-09-21 | 移植评审跟进：修并发写缓存顺序 + 补 A4/B3 单测 + 三处口径更正 | `2adc1bd1` | `main` |
 | 158 | 2026-09-21 | 移植上游三批修复（115 完整性 / 性能可观测 / 清洁） | `a54fd7ae`, `827b9a86`, `ae162c5a` | `main` |
 | 157 | 2026-09-21 | 调查上游 LitePan 最新更新（11 提交）：7 组可用、1 项待拍板、4 提交不适用 | `45ede01c` | `main` |
 | 156 | 2026-09-15 | 发布 v0.0.47：仪表盘三处假任务展示的删除上线，本机容器更新 | `1c23251` | `main` |
