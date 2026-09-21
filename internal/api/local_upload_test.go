@@ -3,7 +3,10 @@ package api
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"litepan/internal/domain"
 )
 
 func TestCleanRelativePath(t *testing.T) {
@@ -87,11 +90,41 @@ func TestResolveLocalUploadSourceUnderRootAcceptsSymlinkedRoot(t *testing.T) {
 	}
 }
 
-// 根不存在时批次必须快速失败，且错误里要说明是哪个映射目录。
-func TestResolveLocalUploadSourceUnderRootFailsOnMissingRoot(t *testing.T) {
+// 根不存在时整批上传必须快速失败，错误里要说明是哪个映射目录（而不是报成 N 个文件错误）。
+func TestResolveLocalUploadRootFailsWithMappingPath(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "不存在")
-	if _, err := filepath.EvalSymlinks(missing); err == nil {
-		t.Fatal("不存在的映射根应解析失败")
+	resolved, err := resolveLocalUploadRoot(missing)
+	if err == nil {
+		t.Fatalf("不存在的映射根应失败，实际解析为 %q", resolved)
+	}
+	if resolved != "" {
+		t.Fatalf("失败时应返回空路径，实际 %q", resolved)
+	}
+	if !strings.Contains(err.Error(), missing) {
+		t.Fatalf("错误应指明映射目录，实际：%v", err)
+	}
+	if appErr, ok := domain.AsAppError(err); !ok || appErr.Code != domain.CodeValidation {
+		t.Fatalf("错误码应为校验错误，实际：%v", err)
+	}
+}
+
+// 映射根本身是符号链接时，批次级解析必须返回真实路径（后续按该真实根做边界判断）。
+func TestResolveLocalUploadRootFollowsSymlinkedRoot(t *testing.T) {
+	realRoot := t.TempDir()
+	linkRoot := filepath.Join(t.TempDir(), "mount-link")
+	if err := os.Symlink(realRoot, linkRoot); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := resolveLocalUploadRoot(linkRoot)
+	if err != nil {
+		t.Fatalf("符号链接根应可解析：%v", err)
+	}
+	want, err := filepath.EvalSymlinks(realRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved != want {
+		t.Fatalf("解析结果 = %q，期望真实路径 %q", resolved, want)
 	}
 }
 

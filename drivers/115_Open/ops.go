@@ -138,6 +138,18 @@ func (d *Driver) cachedPickCode(fileID string) string {
 	return pc
 }
 
+// forgetPickCodes 删除成功后清掉明文 pickcode 缓存，避免残留已不存在的文件凭据。
+func (d *Driver) forgetPickCodes(fileIDs []string) {
+	if len(fileIDs) == 0 {
+		return
+	}
+	d.pickMu.Lock()
+	for _, id := range fileIDs {
+		delete(d.pickBy, id)
+	}
+	d.pickMu.Unlock()
+}
+
 func (d *Driver) DeleteFiles(ctx context.Context, fileIDs []string) error {
 	ids := normalizeIDs(fileIDs)
 	if len(ids) == 0 {
@@ -149,13 +161,9 @@ func (d *Driver) DeleteFiles(ctx context.Context, fileIDs []string) error {
 	} else {
 		err = d.trashFiles(ctx, ids)
 	}
-	// 删除成功后顺手清掉明文 pickcode 缓存，避免残留已不存在的文件凭据。
+	// 删除成功才清理缓存：失败时保留，重试仍可用同一份凭据。
 	if err == nil {
-		d.pickMu.Lock()
-		for _, id := range ids {
-			delete(d.pickBy, id)
-		}
-		d.pickMu.Unlock()
+		d.forgetPickCodes(ids)
 	}
 	return err
 }

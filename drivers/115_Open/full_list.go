@@ -41,6 +41,10 @@ func (d *Driver) ListAllFiles(ctx context.Context, rootID string) ([]driver.Full
 type fullListPageFetcher func(context.Context, int, int) (listPageResp, error)
 
 // collectFullListPages 独立承载完整性敏感的分页逻辑，便于对短页、错误 Count 和重复页做回归验证。
+//
+// 终局判据假设服务端 Count 与"返回的文件条目数"同口径（cur=0 且 show_dir=0）。
+// 该路径目前在本方没有调用方（internal/file 的清单模式方法尚未接线），所以口径差异
+// 不会影响线上行为；将来接线时必须用真实账号确认 Count 是否含目录、是否按挂载子目录计数。
 func collectFullListPages(ctx context.Context, fetch fullListPageFetcher) ([]driver.FullListEntry, error) {
 	var entries []driver.FullListEntry
 	offset := 0

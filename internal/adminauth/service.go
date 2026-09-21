@@ -662,20 +662,22 @@ func (s *Service) loadConfigLocked(ctx context.Context) {
 
 // setConfig 写配置并在写库成功后同步内存快照。
 //
-// 写库成功才更新缓存，且更新在 loadConfigLocked 的临界区之外排队：
-// 若并发的一次快照加载读到的是旧值，本次更新也会落在其后，缓存不会回退。
+// 独占键必须先取 configMu 再写库：这样"落库顺序"与"缓存更新顺序"一致。
+// 若先写库再取锁，两次并发写同一键可能出现 A 落库 → B 落库并更新缓存 → A 更新缓存，
+// 结果库是新值、缓存是旧值，而且 configLoaded 一直为真、不会自愈，
+// 旧密码哈希会一直生效到下一次写入或进程重启。
 func (s *Service) setConfig(ctx context.Context, key, value string) error {
+	_, owned := serviceOwnedConfigKeys[key]
+	if owned {
+		s.configMu.Lock()
+		defer s.configMu.Unlock()
+	}
 	if err := s.configs.Set(ctx, key, value); err != nil {
 		return err
 	}
-	if _, owned := serviceOwnedConfigKeys[key]; !owned {
-		return nil
-	}
-	s.configMu.Lock()
-	if s.configLoaded {
+	if owned && s.configLoaded {
 		s.configValues[key] = strings.TrimSpace(value)
 	}
-	s.configMu.Unlock()
 	return nil
 }
 

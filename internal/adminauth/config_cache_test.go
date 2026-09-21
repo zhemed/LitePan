@@ -5,6 +5,9 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
+
+	"litepan/internal/domain"
 )
 
 // fakeConfigRepo 记录调用次数，用于观察缓存是否真的省掉了读库，以及读写失败时的回退行为。
@@ -71,8 +74,90 @@ func (r *fakeConfigRepo) put(values map[string]string) {
 	}
 }
 
-func newCacheTestService(repo *fakeConfigRepo) *Service {
+func newCacheTestService(repo domain.ConfigRepository) *Service {
 	return New(repo, []byte("test-secret-key-min-16b"), nil)
+}
+
+// blockingSetRepo 让第一次 Set 在"已落库、尚未返回"时停住，用于复现两个并发写的交错。
+// 用调用计数（而不是 sync.Once）区分两次写入：Once 会把后一次挡在门外，等价于已经串行化。
+type blockingSetRepo struct {
+	*fakeConfigRepo
+	entered chan struct{}
+	release chan struct{}
+	callMu  sync.Mutex
+	calls   int
+}
+
+func newBlockingSetRepo(values map[string]string) *blockingSetRepo {
+	return &blockingSetRepo{
+		fakeConfigRepo: newFakeConfigRepo(values),
+		entered:        make(chan struct{}),
+		release:        make(chan struct{}),
+	}
+}
+
+func (r *blockingSetRepo) Set(ctx context.Context, key, value string) error {
+	r.callMu.Lock()
+	r.calls++
+	call := r.calls
+	r.callMu.Unlock()
+	if err := r.fakeConfigRepo.Set(ctx, key, value); err != nil {
+		return err
+	}
+	if call == 1 {
+		close(r.entered)
+		<-r.release
+	}
+	return nil
+}
+
+// 并发写同一独占键后，缓存必须与库里最终值一致。
+// 反例（先写库再取锁）：A 落库 → B 落库并更新缓存 → A 更新缓存，缓存会永久停在旧值。
+func TestConcurrentSetConfigKeepsCacheConsistentWithDatabase(t *testing.T) {
+	repo := newBlockingSetRepo(map[string]string{KeyPublicIndexEnabled: "false"})
+	svc := newCacheTestService(repo)
+	ctx := context.Background()
+	if svc.publicIndexEnabled(ctx) {
+		t.Fatal("初始应为关闭")
+	}
+
+	aDone := make(chan struct{})
+	go func() {
+		_ = svc.setConfig(ctx, KeyPublicIndexEnabled, "false")
+		close(aDone)
+	}()
+	<-repo.entered
+
+	bDone := make(chan struct{})
+	go func() {
+		_ = svc.setConfig(ctx, KeyPublicIndexEnabled, "true")
+		close(bDone)
+	}()
+	// 修复实现下 B 必须等 A 释放锁，这里只等一个短窗口即可；
+	// 旧实现下 B 会抢先落库并更新缓存（这正是要复现的交错）。
+	select {
+	case <-bDone:
+	case <-time.After(200 * time.Millisecond):
+	}
+	close(repo.release)
+	select {
+	case <-aDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("写入 A 未完成")
+	}
+	select {
+	case <-bDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("写入 B 未完成")
+	}
+
+	stored, ok, err := repo.Get(ctx, KeyPublicIndexEnabled)
+	if err != nil || !ok {
+		t.Fatalf("读库失败：ok=%v err=%v", ok, err)
+	}
+	if got := svc.publicIndexEnabled(ctx); got != (stored == "true") {
+		t.Fatalf("缓存 = %v，库里是 %q：并发写后缓存与库不一致", got, stored)
+	}
 }
 
 // 独占键的读取只应触发一次全量加载，之后的读取都命中缓存。

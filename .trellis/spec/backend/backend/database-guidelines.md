@@ -97,9 +97,13 @@ Run with `GOWORK=off go test -race ./internal/store`.
   whole-table cache would serve stale values right after the settings page saves.
   Rule of thumb: cache in-process **only keys your service is the sole writer of**; read the rest
   through. Writes that matter go through the same helper that refreshes the snapshot
-  (`setConfig`), and only after the DB write succeeded. Backup/restore is no exception: it writes a
-  *staging* database and `internal/app/app.go` applies it via `ApplyPending` **before** the store is
-  opened — restoring always restarts the process.
+  (`setConfig`), and only after the DB write succeeded.
+  **Ordering rule:** for cached keys that helper must hold the cache lock *before* issuing the DB
+  write, so DB order and snapshot order are the same. Writing first and locking afterwards lets two
+  concurrent writers commit A→B but update the snapshot B→A, leaving the cache permanently stale
+  (nothing resets it).
+  Backup/restore is no exception: it writes a *staging* database and `internal/app/app.go` applies it
+  via `ApplyPending` **before** the store is opened — restoring always restarts the process.
 
 ---
 

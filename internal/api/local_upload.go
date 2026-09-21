@@ -318,9 +318,9 @@ func (h *Handler) createLocalUploadTasksSync(
 	const batchSize = 100
 	// 批次级解析一次映射根：根不可解析或不可访问时整批快速失败并说明原因，
 	// 而不是逐个文件重复解析符号链接、把同一个根问题报成一堆文件错误。
-	resolvedRoot, err := filepath.EvalSymlinks(m.Path)
+	resolvedRoot, err := resolveLocalUploadRoot(m.Path)
 	if err != nil {
-		return nil, domain.Errorf(domain.CodeValidation, "映射目录 %s 无法访问：%v", m.Path, err)
+		return nil, err
 	}
 	batch := make([]upload.CreateParams, 0, batchSize)
 	seq := 0
@@ -507,6 +507,16 @@ func buildLocalUploadSources(abs, rel string, isDir bool) ([]localUploadSource, 
 		return nil, err
 	}
 	return sources, nil
+}
+
+// resolveLocalUploadRoot 解析映射根的真实路径；根不存在或不可访问时返回带原因的校验错误，
+// 调用方据此让整批上传快速失败（而不是把同一个根问题报成 N 个文件错误）。
+func resolveLocalUploadRoot(mappingPath string) (string, error) {
+	resolvedRoot, err := filepath.EvalSymlinks(mappingPath)
+	if err != nil {
+		return "", domain.Errorf(domain.CodeValidation, "映射目录 %s 无法访问：%v", mappingPath, err)
+	}
+	return resolvedRoot, nil
 }
 
 // resolveLocalUploadSourceUnderRoot 解析单个文件的符号链接并检查边界。
