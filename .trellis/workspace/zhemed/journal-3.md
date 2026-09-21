@@ -1370,3 +1370,51 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 等用户拍板移植范围：批次1（P0 115 驱动四项，建议尽快）、批次2（P1 性能/可观测四项）、批次3（P2 清洁四项）、以及新能力「高级定时」是否要。② 移植纪律（已写进报告 §7）：按本方架构 craft patch 而非直接 apply（上游删了 template 等我们保留的东西）；每批跑全量质量门；按需取用上游对应测试；不引入已删功能依赖。③ 若决定移植，按项目惯例另开任务（复杂项可拆批），完成后视情况发 v0.0.48。
+
+
+## Session 158: 移植上游三批修复（115 完整性 / 性能可观测 / 清洁）
+<!-- trellis-session: v=2 fp=c2528697cf645c19 -->
+
+**Date**: 2026-09-21
+**Task**: 移植上游三批修复（115 完整性 / 性能可观测 / 清洁）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+把上游 Ponphil/LitePan 46a0a89..42a3ee9a 中本方适用的三批修复按本方架构 craft 移植：115 驱动正确性（清单完整性/相对挂载根/段名消毒/pickcode 缓存治理）、性能与可观测（adminauth 配置缓存、慢接口日志降噪、本地映射上传批次级符号链接解析、OAuth 告警）、清洁（Dockerfile type-check、零值分支、commit_writer 幂等下放、日志中文化、删只写不读的僵尸键）。三处刻意偏离上游并写明理由；未 apply 上游补丁、未发版、未动部署与数据。
+
+### Main Changes
+
+- A1 115 全量清单完整性：空页等 250ms 重试一次（ctx 可中断）后仍空才结束，终局用 expectedCount=max(Count) 拦截残缺清单并报 CodeDriverError；注释明确"只以连续空页作为结束信号"
+- A2/A3 ResolveDirPath 相对账号挂载根（父链遇 rootID 截断、越界报错、无入口 CodeNotFound）+ 新增 pathSegmentName 把目录名内 / 与 \ 消毒为 _，防伪造层级
+- A4/A5 115 pickBy 明文缓存 10 万条上限（超限整体 clear）+ 删除成功后清理；189Cloud http→https 正则提包级（与上游 924e4c75 该 hunk 逐字一致）
+- B1 adminauth 配置内存缓存：冷启动 All() 一次性装载、setConfig 写库成功后回写快照；**只缓存本服务独占键**（上游缓存整表）——设置服务会写 oauth_server_url/upload_task_concurrency/log_retention_days/auth_active_refresh_enabled 而本服务 SystemConfig 要读，整表缓存会让设置页保存后显示旧值
+- B2 慢接口日志 INFO→DEBUG + 30 分钟抑制窗口 + suppressed_count；常量名/签名对齐上游（slowDashboardLogInterval、shouldLog(path,now)(int,bool)），但 recovered 只在确有压制记录时结束窗口（上游任何快请求都 delete，间歇性变慢会退化成刷屏）
+- B3 本地映射上传批次级 EvalSymlinks(映射根) 一次 + resolveLocalUploadSourceUnderRoot；删 statLocalFile；根不可用整批快速失败（文案带映射路径与底层原因）。B4 oauth.go 的 _ = lastErr 改为 Warn(url/attempts/err)
+- C1-C5 Dockerfile 加 npm run type-check；accounts/files 去 IsZero 分支（FormatAPITime 零值返回空串，已读码核实）；commitWriter.Write 幂等下放给 WriteHeader；启动/关闭/运行三条日志中文化；删只写不读的 admin_temp_password_last_reset_at（核对上游 924e4c75 同样只删代码、保留备份清洗名单 → 本方保留 internal/store/backup.go 与 internal/backuprestore 名单，不新增迁移）
+- spec 同步：database-guidelines（configs 表共享写入 → 只缓存独占键 + 备份恢复走 staging 且 Store 打开前 ApplyPending）、logging-guidelines（按请求诊断走 DEBUG + 白名单 + 抑制窗口）、api-layering（批次路径只解析一次根）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a54fd7ae` | refactor(upstream): 移植上游三批修复（115 完整性 / 性能可观测 / 清洁） [task:port-upstream-fixes-0921] |
+| `827b9a86` | docs(spec): 记录配置表缓存边界、慢日志抑制与批次路径解析三条约定 [task:port-upstream-fixes-0921] |
+| `ae162c5a` | chore(task): archive 09-21-port-upstream-fixes-0921 [task:port-upstream-fixes-0921] |
+
+### Testing
+
+- [OK] 质量门：make lint 0 issues、go vet exit=0、go test ./... 26 包全 ok 0 FAIL、go test -race ./... 26 包 ok、web vue-tsc -b exit=0 且 vite build 成功（embed 与 web/src 零 diff）
+- [OK] 测试数：drivers/115_Open 14→23、internal/adminauth 8→16、internal/api 14→23（189Cloud 6 不变）；新增用例覆盖空页重试/不完整清单报错/根截断与越界/斜杠消毒/缓存命中与失效与 All 失败回退/非独占键不缓存/抑制窗口与恢复/符号链接根与逃逸/OAuth 全败告警
+- [OK] 基线：deadcode 7（条目与基线逐一一致）、golangci-lint --enable=unused 0 issues、gofmt 15 个脏文件逐一比对 HEAD 全部既有（零新增）；git status 无越界文件（web/src、internal/api/web、go.mod、.golangci.yml、version.go 零改动）
+- [OK] 端到端（数据副本 + 127.0.0.1:35221 临时实例）：health/files upload runtime/本地映射配置/accounts/settings/system-config 全 200，登录 200；B1 写透实测（改 session_timeout 立即回读 3）与非独占键不陈旧实测（设置服务写 log_retention_days=45 立即回读 45）；B3 删除映射根后创建任务 created=0 且日志给出"映射目录 … 无法访问：lstat …"；../ 越界被 400 拒绝；干净启动 ERROR=0（后段那条 ERROR 为故意注入）
+- [OK] 现场：临时实例已停、/tmp/port-verify 已删；:5211 容器 v0.0.47 Up 未动，工作区 data/litepan.db mtime 仍为 Sep 15 13:41
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 是否发 v0.0.48 由用户决定（本轮按范围纪律未 bump 版本）；② 上游「高级定时」AutomationTriggerAdvanced 已留档未做，需要时另开任务；③ 三批在一个提交里，若要单批回滚：A 组 drivers/*、B 组 internal/{adminauth,api}、C 组 Dockerfile+cmd+若干 api 文件可分别 revert（B1 缓存是最需要留意的单点）
