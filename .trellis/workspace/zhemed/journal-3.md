@@ -1335,3 +1335,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 仪表盘已完成两轮瘦身（v0.0.46 删 FUSE 卡片、v0.0.47 删三处假任务展示）：状态行 4→3、卡片 3→2、右列面板 2→1。② 后续可选（已在任务记录里留档，本轮按范围纪律未做）：把状态句『账号、任务与缓存服务状态正常』里的任务改准；若要恢复任务计数，接真实接口 GET /api/files/upload/tasks/summary。③ 回滚：compose 改回 v0.0.46 + up -d 即可，无数据动作；对外删 release/tag/GHCR version。
+
+
+## Session 157: 调查上游 LitePan 最新更新（11 提交）：7 组可用、1 项待拍板、4 提交不适用
+<!-- trellis-session: v=2 fp=4f333cbc74a32333 -->
+
+**Date**: 2026-09-21
+**Task**: 调查上游 LitePan 最新更新（11 提交）：7 组可用、1 项待拍板、4 提交不适用
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+Session summary was not supplied.
+
+### Main Changes
+
+- 只读上游调查（网络仅上游仓库，副作用仅 git fetch 更新远程跟踪 ref upstream/main）。上游 main 从 46a0a89 前进到 42a3ee9a（2026-09-20），tag v0.5.5-beta→v0.5.6-beta，无 GitHub Release；未重写历史（ahead_by=11/behind_by=0）。新增 11 提交、300 改动文件（251 为上上游构建产物）、本方 tree 命中 32 文件。逐条看 diff 后分类：【P0 可用于我方】115 驱动四项正确性修复——全量清单完整性加固（空页 250ms 重试 + expectedCount 拦截不完整清单并报错，我方 internal/file/service.go 清单模式在用该路径）、ResolveDirPath 改为相对账号挂载根且越界报错、目录名里 / 与 \ 消毒为 _（防伪造层级）、pickBy 明文缓存加 10 万上限并在删除成功后清理；【P1】adminauth 配置内存缓存（消除每请求多次 SQLite 读，直击低配设备慢）、慢接口日志降 Debug + 30 分钟抑制（我方该文件正是 0.0.43 从上游移植的，这是其后续改进）、local_upload 符号链接解析从每文件提到每批次、OAuth 转发失败记录真实原因（原为 _ = lastErr）；【P2】Dockerfile 加 npm run type-check、accounts/files 去零值分支（已核实 FormatAPITime 零值返回空串，行为等价）、commit_writer 幂等下放、main.go 日志中文化、删除只写不读的 admin_temp_password_last_reset_at（含 store/backup 清洗名单与 backuprestore 清空名单）；另收 189Cloud 正则提级 3 行。【待用户拍板】自动联动「高级定时」AutomationTriggerAdvanced（按周几/每月几号+时分；我方仅 daily/interval）。【不适用】FUSE 读缓存优化、飞牛影视扫库、jellyfin 反代、目录整理/手动匹配/STRM 及 strm 前端。【别跟着上游做】上游删除 drivers/template 整包（-435 行）——我方故意保留（P3/P4 定案：驱动骨架 + OAuth 守卫测试唯一载体）；上游 dashboard_overview.go 等文件我方没有，不为对齐新建。【已收敛】sse.go streamSSEMessages 与 189Cloud signedForm 我方 0.0.41 已删。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `45ede01c` | chore(task): archive 09-21-upstream-updates-0921 [task:upstream-updates-0921] |
+
+### Testing
+
+- [OK] 只读验证：git status 受跟踪改动 0（仅任务目录）；容器仍 v0.0.47 Up、实例库未动；报告 §8 命令全部实际执行过（gh api commits/tags/compare 三次查询、git fetch 到 upstream/main、11 个提交逐个 --name-only 与本方 git ls-files 交叉过滤、本方现状六项 grep 核对：pickBy 无上限、adminauth 每请求 configs.Get、slow_dashboard_log 无抑制且为 Info、local_upload 每文件 EvalSymlinks、LastReset 无读者、FormatAPITime 零值返回空串）。报告已自检并修正两处细节：local_upload 行号 494→506、上游 local_upload_test 增删数 +85/-2。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 等用户拍板移植范围：批次1（P0 115 驱动四项，建议尽快）、批次2（P1 性能/可观测四项）、批次3（P2 清洁四项）、以及新能力「高级定时」是否要。② 移植纪律（已写进报告 §7）：按本方架构 craft patch 而非直接 apply（上游删了 template 等我们保留的东西）；每批跑全量质量门；按需取用上游对应测试；不引入已删功能依赖。③ 若决定移植，按项目惯例另开任务（复杂项可拆批），完成后视情况发 v0.0.48。
