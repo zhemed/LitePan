@@ -65,7 +65,7 @@
 - [x] D1 **全量质量门**：`make lint` 0 issues、`go vet` exit=0、`go test ./...` 全包 ok、`cd web && npm run type-check` exit=0
 - [x] D2 **基线**：`deadcode` ≤ 7、`unused` = 0、`gofmt` 无新增；`git status` 无越界文件
 - [x] D3 **端到端**：`go build -o /tmp/port-verify/litepan ./cmd/litepan` + 数据副本 → 临时实例（非默认端口）验证 health/登录/accounts/settings/upload runtime 全 200、日志无 ERROR
-- [ ] D4 提交（消息带 `[task:port-upstream-fixes-0921]`）
+- [x] D4 提交（消息带 `[task:port-upstream-fixes-0921]`）→ `a54fd7ae`
 - [ ] D5 `skill trellis-check` → `mark-check` → 勾选验收项 → `pre-archive` → `archive` → `add_session.py` → `git push`
 
 ---

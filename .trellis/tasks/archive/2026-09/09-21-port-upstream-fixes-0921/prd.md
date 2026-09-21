@@ -66,7 +66,7 @@
 - [x] 全量质量门全绿：`make lint` 0 issues、`go vet` exit=0、`go test ./...` 全包 ok（包数与用法基线一致或增加）、`vue-tsc -b` exit=0
 - [x] 基线不劣化：`deadcode` ≤ 7、`unused` = 0、`gofmt` 无新增；`git status` 无越界文件（`web/src/**`、`go.mod`、`.golangci.yml`、`version.go` 零改动）
 - [x] **行为验证**：本机起临时实例（数据副本、非默认端口）验证 —— 健康 200、登录 200、账号列表 200、设置读写 200、`/api/files/upload/runtime` 200；干净启动阶段日志无 ERROR（后段 B3 快速失败为**故意注入**，仅产生 1 条对应 ERROR）
-- [ ] 归档、journal、`main` 与 `origin/main` 同步；提交消息带 `[task:port-upstream-fixes-0921]`
+- [x] 归档、journal、`main` 与 `origin/main` 同步；提交消息带 `[task:port-upstream-fixes-0921]`（`a54fd7ae`、`827b9a86`）
 - [x] 任务**不做**：`AutomationTriggerAdvanced`（用户已定留档）、任何已删功能的回填
 
 ## Notes
