@@ -1460,3 +1460,47 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 是否发 v0.0.48 仍由用户决定；② 若将来接线 115 清单模式，需先用真实账号核对 Count 口径（是否含目录、是否按挂载子目录计数），否则终局完整性判据会误报；③ 上游『高级定时』继续留档。
+
+
+## Session 160: 发布 v0.0.48（上游三批移植上线）
+<!-- trellis-session: v=2 fp=efe23a49672b16f6 -->
+
+**Date**: 2026-09-22
+**Task**: 发布 v0.0.48（上游三批移植上线）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+把 v0.0.47 之后的 10 个提交（3 个代码/文档 + 7 个记账）发布为 v0.0.48：GHCR 三 tag 同 digest、git tag v0.0.48、GitHub Release，并把本机 :5211 容器更新到该镜像。发布前做了发布内容机械核对（无 merge、非 .trellis 改动恰 20 文件且全在移植任务清单内、无越界、无新迁移），并用镜像内字符串做交叉验证。
+
+### Main Changes
+
+- 版本字符串 5 处推进到 v0.0.48（internal/buildinfo/version.go 唯一真值 + README×2 + docker-compose.yml + docker-compose.fnos.yml）；提交 778f5b87 回读恰 4 文件
+- 镜像 ghcr.io/zhemed/litepan:v0.0.48 构建成功（ID f43b75d491f6 ≠ v0.0.47 的 2ae2b2265243）；三 tag（v0.0.48/0.0.48/latest）同 digest 推送；v0.0.47/0.0.47 仍指向旧 digest，回滚退路完好
+- 镜像内交叉验证：二进制含 v0.0.48=1、v0.0.47=0，且含本轮新增文案 启动失败 / OAuth 转发重试均失败 / 映射目录 / 后台概况接口响应较慢 / 后台概况接口已恢复正常
+- git tag v0.0.48 指向版本提交、远端 sha 回读一致；Release 非草稿非预发布，说明写明『无用户可见变化、无数据库变更、回滚只需换回 v0.0.47』
+- 部署：docker compose pull + up -d 重建容器（未手搓 docker run）；容器镜像 ID == 本地构建 ID == GHCR digest 前缀
+- 口径修正两处：① v0.0.47..main 实为 10 个提交（初稿误写 6）；② 发布说明把『删除僵尸键』改为『不再写入该键、备份清洗名单保留键名』（与实现和上游口径一致）。另校正探针：常量名不入二进制，只能验字符串
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `778f5b87` | chore(release): 版本号推进到 v0.0.48（上游三批移植上线） |
+| `0154adf9` | chore(task): archive 09-22-release-0-0-48 [task:release-0-0-48] |
+
+### Testing
+
+- [OK] G1：v0.0.47 零残留、v0.0.48 恰 5 处、diff 恰 4 文件。GQ：make lint 0 issues、go vet exit=0、go test ./... 26 包全 ok 0 FAIL、vue-tsc -b exit=0、embed 与 web/src 零改动
+- [OK] G7a：health 200、登录 200、public/system-config version=v0.0.48。G7b：schema_migrations=25、表数=9、configs=7 行、无 fuse_mounts。G7c：9 个非镜像字段全同，仅 Image/ImageName 变化
+- [OK] G7d：docker logs 与日志文件 level=ERROR 均 0；8 个端点回归全 200。G7f：同值往返 PUT+回读一致、重新登录 200（B1 写路径的完整验证在数据副本上做，线上不做破坏性写入）
+- [OK] G7e 浏览器（真实例 :5211）：首页页脚 LitePan v0.0.48、window.__err=null；仪表盘 hero=3、overview-card=2、右列 panel=1（与 v0.0.47 验收一致），截图无塌陷无错误横幅
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 回滚：compose 换回 v0.0.47 + up -d；对外删 release/tag/GHCR version，无数据动作；② 上游『高级定时』仍留档；③ 115 清单模式若要接线需另开任务并用真实账号核对 Count 口径
