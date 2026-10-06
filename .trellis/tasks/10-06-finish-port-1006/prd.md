@@ -25,10 +25,10 @@
 
 ## Acceptance Criteria
 
-- [ ] 两个任务的归档移动已提交，工作区无未跟踪/未提交的 `.trellis/**` 改动
-- [ ] journal 条目已写入且已提交
-- [ ] `main == origin/main`（推送完成）
-- [ ] 零代码改动（本任务只做记账与推送）
+- [x] 两个任务的归档移动已提交，工作区无未跟踪/未提交的 `.trellis/**` 改动
+- [x] journal 条目已写入且已提交
+- [x] `main == origin/main`（推送完成）
+- [x] 零代码改动（本任务只做记账与推送）
 
 ## Notes
 
