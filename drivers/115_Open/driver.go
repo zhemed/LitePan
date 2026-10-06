@@ -75,7 +75,8 @@ func (d *Driver) Init(ctx context.Context) error {
 		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 30 * time.Second})
 	}
 	if d.uploadClient == nil {
-		d.uploadClient = newOSSUploadHTTPClient(d.client)
+		// 数据面客户端：不设整段传输上限，且默认锁 HTTP/1.1（115 的 OSS 在 h2 下大文件上传明显更慢）。
+		d.uploadClient = httpx.NewUploadClient(d.client, 60*time.Second, config.UploadUseHTTP2)
 	}
 	d.mu.Lock()
 	token := d.token

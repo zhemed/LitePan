@@ -81,9 +81,8 @@ func (d *Driver) Init(ctx context.Context) error {
 	}
 	if d.uploadClient == nil {
 		// 数据面（分片 PUT）复用 API 客户端的连接配置，但不限制整段传输时长：
-		// 只对"连上了却迟迟不返回响应头"判死（upstream 869974b 修复网盘上传超时）。
-		// 响应头兜底 30s（用户 2026-09-12 定的统一值）。
-		d.uploadClient = httpx.NewStreamingClient(d.client, 30*time.Second)
+		// 只对"连上了却迟迟不返回响应头"判死；并默认锁 HTTP/1.1（h2 下大文件上传明显更慢）。
+		d.uploadClient = httpx.NewUploadClient(d.client, 60*time.Second, config.UploadUseHTTP2)
 	}
 	d.mu.Lock()
 	if d.accessToken == "" {
@@ -190,6 +189,10 @@ func (d *Driver) ListFiles(ctx context.Context, parentID string) ([]domain.FileI
 		for _, f := range resp.FileListAO.FolderList {
 			f.isDir = true
 			item := f.toFileItem()
+			if !d.isFamily() && item.ID == "0" {
+				// 同步盘：内部换成独立标识，避免与"根目录别名 0"混淆（apiParentID 会还原）。
+				item.ID = syncRootID
+			}
 			out = append(out, item)
 			count++
 		}
@@ -209,6 +212,9 @@ func (d *Driver) ListFiles(ctx context.Context, parentID string) ([]domain.FileI
 
 func (d *Driver) GetFileInfo(ctx context.Context, fileID string) (*domain.FileItem, error) {
 	id := strings.TrimSpace(fileID)
+	if !d.isFamily() && id == syncRootID {
+		return &domain.FileItem{ID: syncRootID, Name: "同步盘", IsDir: true, IDKind: domain.IDStable}, nil
+	}
 	if id == "" || id == "/" || id == d.rootID() || (d.isFamily() && id == "-11") {
 		return &domain.FileItem{
 			ID:     d.rootID(),

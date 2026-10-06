@@ -30,7 +30,7 @@ import AppStateBlock from "@/components/base/AppStateBlock.vue";
 import StatCard from "@/components/base/StatCard.vue";
 import SvgIcon from "@/components/icons/SvgIcon.vue";
 import { confirm } from "@/composables/useConfirm";
-import { toast } from "@/composables/useToast";
+import { copyTextToClipboard, toast } from "@/composables/useToast";
 import { formatTime } from "@/utils/format";
 
 const props = withDefaults(
@@ -273,7 +273,24 @@ function toggleDetails(id: number) {
 }
 
 function canShowDetails(log: LogEntry): boolean {
-  return log.level >= 40 && !!log.details && Object.keys(log.details).length > 0;
+  // 不再只给错误级别：非错误日志的上下文（账号/驱动/参数）排查时同样需要
+  return !!log.details && Object.keys(log.details).length > 0;
+}
+
+async function copyLog(log: LogEntry) {
+  const entry: Record<string, unknown> = {
+    timestamp: log.timestamp,
+    level: log.level,
+    module: log.module,
+    message: log.message,
+  };
+  if (log.account_id) entry.account_id = log.account_id;
+  if (log.driver_name) entry.driver_name = log.driver_name;
+  if (canShowDetails(log)) entry.details = log.details;
+  await copyTextToClipboard(JSON.stringify(entry, null, 2), {
+    successMessage: "日志已复制",
+    errorMessage: "复制失败，请手动选择日志",
+  });
 }
 
 function detailsText(log: LogEntry): string {
@@ -452,6 +469,9 @@ onUnmounted(() => clearTimeout(searchTimer));
             </div>
 
             <div v-if="canShowDetails(log)" class="log-card__details">
+              <div class="log-card__details-head">
+                <button type="button" class="log-card__details-copy" @click="copyLog(log)">复制日志</button>
+              </div>
               <button type="button" class="log-card__details-toggle" @click="toggleDetails(log.id)">
                 <span>{{ expanded.has(log.id) ? "收起详细信息" : "查看详细信息" }}</span>
                 <span>{{ expanded.has(log.id) ? "▲" : "▼" }}</span>

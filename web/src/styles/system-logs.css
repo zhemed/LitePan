@@ -244,6 +244,30 @@
   font-size: 12px;
 }
 
+.log-card__details-head {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.log-card__details-copy {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-regular);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.log-card__details-copy:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .log-card__details-toggle {
   margin-top: 12px;
   width: 100%;

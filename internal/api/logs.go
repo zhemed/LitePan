@@ -162,9 +162,9 @@ func toLogDTO(e logx.Entry, id int) logEntryDTO {
 		ModuleName:  groupName,
 		ModuleColor: color,
 		Message:     e.Message,
-	}
-	if e.Level >= logx.LevelError {
-		dto.Details = e.Details
+		// 详情不再只给 ERROR：非错误级别也常带上下文（账号/驱动/参数），
+		// 排查时需要能直接看到（前端"复制日志"也会带上它）。
+		Details: e.Details,
 	}
 	if e.AccountID != nil {
 		s := stringifyAny(e.AccountID)

@@ -54,13 +54,14 @@ func TestIsRetryableOSSUploadError(t *testing.T) {
 	}
 }
 
-// TestNewOSSUploadHTTPClientHasNoTotalTimeout 锁定数据面客户端语义：不设总时长上限。
-func TestNewOSSUploadHTTPClientHasNoTotalTimeout(t *testing.T) {
+// TestUploadClientLocksHTTP11AndHasNoTotalTimeout 锁定数据面客户端语义：
+// 不设整段传输上限，且默认锁 HTTP/1.1（115 的 OSS 在 h2 下大文件上传明显更慢）。
+func TestUploadClientLocksHTTP11AndHasNoTotalTimeout(t *testing.T) {
 	api := httpx.NewClient(httpx.ClientOptions{Timeout: 600 * time.Second})
 	if api.Timeout != 600*time.Second {
 		t.Fatalf("前置条件不成立：API 客户端总超时=%v", api.Timeout)
 	}
-	up := newOSSUploadHTTPClient(api)
+	up := httpx.NewUploadClient(api, 60*time.Second, config.UploadUseHTTP2)
 	if up.Timeout != 0 {
 		t.Fatalf("上传客户端不应有总超时，实际 %v", up.Timeout)
 	}
@@ -68,13 +69,16 @@ func TestNewOSSUploadHTTPClientHasNoTotalTimeout(t *testing.T) {
 	if !ok {
 		t.Fatalf("transport 类型异常：%T", up.Transport)
 	}
-	if tr.ResponseHeaderTimeout != 30*time.Second {
-		t.Fatalf("ResponseHeaderTimeout=%v，期望 30s", tr.ResponseHeaderTimeout)
+	if tr.ResponseHeaderTimeout != 60*time.Second {
+		t.Fatalf("ResponseHeaderTimeout=%v，期望 60s", tr.ResponseHeaderTimeout)
+	}
+	if tr.ForceAttemptHTTP2 || tr.Protocols == nil || !tr.Protocols.HTTP1() {
+		t.Fatal("115 未声明 UploadUseHTTP2 时必须锁 HTTP/1.1")
 	}
 }
 
-// TestInitConfiguresDriverTimeouts 锁定 0.0.39 的统一取值：
-// API 客户端总超时 30s；上传客户端无总超时、响应头兜底 30s。
+// TestInitConfiguresDriverTimeouts 锁定 0.0.39 + 2026-10-06 的统一取值：
+// API 客户端总超时 30s；上传客户端无总超时、响应头兜底 60s、协议默认 HTTP/1.1。
 // 该用例不发网络请求（token 非空时 Init 不做刷新）。
 func TestInitConfiguresDriverTimeouts(t *testing.T) {
 	d := &Driver{}
@@ -95,8 +99,11 @@ func TestInitConfiguresDriverTimeouts(t *testing.T) {
 	if !ok {
 		t.Fatalf("上传客户端 transport 类型异常：%T", d.uploadClient.Transport)
 	}
-	if tr.ResponseHeaderTimeout != 30*time.Second {
-		t.Fatalf("上传响应头兜底=%v，期望 30s", tr.ResponseHeaderTimeout)
+	if tr.ResponseHeaderTimeout != 60*time.Second {
+		t.Fatalf("上传响应头兜底=%v，期望 60s", tr.ResponseHeaderTimeout)
+	}
+	if tr.ForceAttemptHTTP2 || tr.Protocols == nil || !tr.Protocols.HTTP1() {
+		t.Fatal("上传客户端必须默认锁 HTTP/1.1")
 	}
 }
 

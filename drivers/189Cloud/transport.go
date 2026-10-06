@@ -44,6 +44,9 @@ const (
 	downloadURLTTLSeconds   = 300
 	defaultUploadPartSize   = 10 * 1024 * 1024
 	qrCodeTimeoutSec        = 300
+	// syncRootID：天翼「同步盘」的真实 ID 为 0，与公共层"根目录别名 0"的约定冲突，
+	// 内部用独立标识区分，出网前由 apiParentID 还原为上游要求的 "0"。
+	syncRootID = "sync:0"
 )
 
 func (d *Driver) rootID() string {
@@ -78,6 +81,9 @@ func (d *Driver) isRootAlias(id string) bool {
 
 func (d *Driver) apiParentID(parentID string) string {
 	parent := d.normalizeParent(parentID)
+	if !d.isFamily() && parent == syncRootID {
+		return "0"
+	}
 	if d.isFamily() && d.isRootAlias(parent) {
 		return ""
 	}
@@ -210,8 +216,7 @@ func (d *Driver) rawJSON(ctx context.Context, method, rawURL string, query url.V
 	// 189 现网对失效 open token/会话返回 HTTP 400 + 失效 payload（UserInvalidOpenToken /
 	// unifyAccountInfo is null 等）。必须与 401/200+payload 一致判为认证失效，否则被动刷新
 	// 恢复路径（WithRetry / Init.isSessionExpired）全部失效（0.0.13 回归，本任务修复）。
-	if resp.StatusCode == http.StatusUnauthorized ||
-		((resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusBadRequest) && is189AuthExpiredPayload(data)) {
+	if is189AuthExpiredResponse(resp.StatusCode, data) {
 		return domain.Errorf(domain.CodeAuthExpired, "天翼云盘认证会话已失效")
 	}
 	if resp.StatusCode == http.StatusForbidden {
@@ -249,8 +254,7 @@ func (d *Driver) rawForm(ctx context.Context, method, rawURL string, query url.V
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
 	// 同 rawJSON：HTTP 400 + 失效 payload 也必须判为认证失效（0.0.13 回归修复）。
-	if resp.StatusCode == http.StatusUnauthorized ||
-		((resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusBadRequest) && is189AuthExpiredPayload(data)) {
+	if is189AuthExpiredResponse(resp.StatusCode, data) {
 		return domain.Errorf(domain.CodeAuthExpired, "天翼云盘认证会话已失效")
 	}
 	if resp.StatusCode == http.StatusForbidden {
@@ -331,6 +335,13 @@ func parse189XMLResponse(data []byte, out any) error {
 		return domain.Wrap(domain.CodeDriverError, err)
 	}
 	return nil
+}
+
+// is189AuthExpiredResponse 判定会话是否失效：401 直接算，200/400 时再看 payload 特征。
+// （400 也会被上游用来表示 invalidsessionkey，403/429 等仍按原状态处理。）
+func is189AuthExpiredResponse(status int, data []byte) bool {
+	return status == http.StatusUnauthorized ||
+		((status == http.StatusOK || status == http.StatusBadRequest) && is189AuthExpiredPayload(data))
 }
 
 func is189AuthExpiredPayload(data []byte) bool {

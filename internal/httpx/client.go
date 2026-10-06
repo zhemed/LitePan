@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"time"
@@ -61,6 +62,32 @@ func NewStreamingClient(base *http.Client, responseHeaderTimeout time.Duration) 
 		tr.ResponseHeaderTimeout = responseHeaderTimeout
 	}
 	return &http.Client{Transport: tr}
+}
+
+// NewUploadClient 创建文件上传客户端：上传默认使用 HTTP/1.1，只有驱动明确声明时才使用 HTTP/2。
+//
+// 115、189 这类上游的 OSS 数据面在 HTTP/2 下大文件上传明显变慢（上游实测，见 0.5.7 的
+// 「优化部分驱动上传慢的问题」），因此这里默认把协议锁到 HTTP/1.1：不仅关掉 h2 升级，
+// 还要清掉 TLSNextProto 并把 ALPN 限制为 http/1.1 —— 只改前者时，服务端仍可能通过 ALPN 协商到 h2。
+func NewUploadClient(base *http.Client, responseHeaderTimeout time.Duration, useHTTP2 bool) *http.Client {
+	client := NewStreamingClient(base, responseHeaderTimeout)
+	if useHTTP2 {
+		return client
+	}
+	tr, ok := client.Transport.(*http.Transport)
+	if !ok {
+		return client
+	}
+	tr.ForceAttemptHTTP2 = false
+	tr.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	tr.Protocols = new(http.Protocols)
+	tr.Protocols.SetHTTP1(true)
+	// Clone 可能已经把 h2 写入 ALPN，必须同时限制 TLS 协商协议。
+	if tr.TLSClientConfig == nil {
+		tr.TLSClientConfig = &tls.Config{}
+	}
+	tr.TLSClientConfig.NextProtos = []string{"http/1.1"}
+	return client
 }
 
 func CloseClient(c *http.Client) {
