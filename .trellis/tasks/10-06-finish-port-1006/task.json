@@ -1,8 +1,8 @@
 {
-  "id": "upstream-followup-1006",
-  "name": "upstream-followup-1006",
-  "title": "上游调查收尾与移植拍板（2026-10-06）",
-  "description": "收尾：提交本次只读调查的归档与 journal（调查任务已归档但记账提交被闸门拦住）；并把 4 项适用修复的移植范围交由用户拍板，按选择决定后续",
+  "id": "finish-port-1006",
+  "name": "finish-port-1006",
+  "title": "移植收尾：归档提交与推送（2026-10-06）",
+  "description": "承接两个已归档任务的记账提交（归档移动 + journal + 推送），并保持为进行中任务以便闸门放行；下一轮可一并归档",
   "status": "in_progress",
   "dev_type": null,
   "scope": "lightweight",
