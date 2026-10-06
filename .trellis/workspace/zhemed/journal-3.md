@@ -1504,3 +1504,43 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 回滚：compose 换回 v0.0.47 + up -d；对外删 release/tag/GHCR version，无数据动作；② 上游『高级定时』仍留档；③ 115 清单模式若要接线需另开任务并用真实账号核对 Count 口径
+
+
+## Session 161: 调查上游更新（2026-10-06）：21 提交中 4 项适用、1 项待拍板
+<!-- trellis-session: v=2 fp=a9d849ba5dccedad -->
+
+**Date**: 2026-10-06
+**Task**: 调查上游更新（2026-10-06）：21 提交中 4 项适用、1 项待拍板
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+只读调查上游 Ponphil/LitePan 自 42a3ee9a（2026-09-20）到 e0e29c0e（2026-10-02）的 21 个提交：线性推进未重写历史，tag v0.5.6-beta→v0.5.7-beta、仍无 GitHub Release；340 改动文件里 178 个是上游构建产物。按『本方是否在线使用该路径』分类：适用 4 项、待拍板 1 项（2FA）、混合 1 项、不适用 15 项（依赖本方已删能力或上游独有文件）。产出 research.md 含逐条证据、本方现状行号与移植建议；本轮零代码改动。
+
+### Main Changes
+
+- 适用 4 项（均给出本方缺口证据）：① 7e0c0040 上传强制 HTTP/1.1（新增 httpx.NewUploadClient + driver.Config.UploadUseHTTP2；本方只有 NewStreamingClient，115/189 上传客户端仍直接用它）② 5df900c5 playback 多段 Range（本方 range.go 与上游父提交逐字节一致＝未移植，仅 parseSingleRange；另含 Range 诊断日志）③ 214e027d 189Cloud 同步盘根 syncRootID + 秒传 parentFolderId 走 apiParentID（本方 grep syncRootID=0）④ 52fcf32e 日志详情恒返回（本方 logs.go:166 仍仅 ERROR 级带 Details）
+- 待拍板 1 项：5db84a63 后台 2FA（TOTP）—— 改 Login 签名、新增 challenge 流程与限流、前端 TwoFactorSettings.vue（422 行）等约 1200 行；属新能力，建议与『高级定时』同样留档，另开任务再议
+- 不适用 15 项分类留档：STRM/刮削（36d715f5、e0e29c0e）、媒体整理（6f076163、f237ab76、9ec8349c）、离线下载（96edffaf）、空间清理（31081290）、分享（f892db55、7778b040、635f4d41）、跨盘传输（d552fa5c）、STRM 删除监控与增强工具（6239018a、dc1258f8）、发布收口（fe7c3204）、上游版本号/UA（6ba253c2）
+- 已收敛/反向核对：189 鉴权失效判定含 400 本方早已具备（transport.go:213,253）；上游 44796906 删的 managed_accounts.accountName 在本方有 3 处调用点（refresh_runner/scheduler/notification）→ 不能跟着删；上游 6ba253c2 删掉的 full_list_test.go 本方保留并扩写；本方 AppVersion 由 buildinfo.Version 派生，无需跟上游版本号
+- 闸门口径学习（写入 journal 与任务记录）：① 提交锚点必须用带日期的任务目录名（[task:10-06-xxx]），短 slug 会被判『任务不存在』；② 每个任务目录必须有 directive.md 逐字记录用户当轮原话，否则提交被拒；③ 任务归档后闸门立即要求『进行中任务』，故归档提交需在下一次任务名下补交
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读验证：git status 受跟踪文件零改动（仅任务目录）；容器 v0.0.48 与 data/ 未动；报告自检 21/21 提交全覆盖、无 TBD 占位
+- [OK] 网络范围（披露）：仅 github.com/Ponphil/LitePan —— git fetch 更新远程跟踪 ref、gh api 读 tags/releases/repo 元信息；未访问其它主机
+- [OK] 唯一状态写操作：git update-ref refs/remotes/upstream/main e0e29c0e（fetch 因本地 ref 目录异常未能自动写入；不涉及受跟踪文件）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 等用户拍板 4 项适用修复的移植范围（全做 / 只做优先级 1 / 先做 playback 多段 Range / 都不做）；用户选择后另开移植任务，纪律同上一轮：按本方 craft、禁止 git apply 上游补丁、每批走全量质量门
+- 2FA（5db84a63）暂按留档处理，与『高级定时』同列，需要时另开设计任务
