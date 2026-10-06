@@ -1586,3 +1586,42 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 是否发版（v0.0.49）由用户决定：本轮未 bump 版本、未推镜像、未部署；② A2/A3 如需真实环境验证，需要一个可播放账号与一个 189 账号；③ 收尾任务 10-06-finish-port-1006 保持进行中（闸门要求），下一轮可一并归档
+
+
+## Session 163: 发布 v0.0.49（上游 4 项修复上线）
+<!-- trellis-session: v=2 fp=489568b5c2347a05 -->
+
+**Date**: 2026-10-06
+**Task**: 发布 v0.0.49（上游 4 项修复上线）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+把 v0.0.48 之后的四项移植发布为 v0.0.49 并上线 :5211：A1 上传默认 HTTP/1.1、A2 playback 多段 Range、A3 189Cloud 同步盘根、A4 日志详情恒返回+前端复制。GHCR 三 tag 同 digest、tag v0.0.49、Release 非草稿、容器已更新；库未变、形态未变、0 ERROR、日志页 43 处「复制日志」渲染正常。
+
+### Main Changes
+
+- 版本字符串 5 处推进到 v0.0.49（唯一真值 + README×2 + 两个 compose），提交 ba2f2fef 回读恰 4 文件；推送后 origin/main 同步
+- 镜像 ghcr.io/zhemed/litepan:v0.0.49（ID 6ddd6e7973da）构建并推三 tag；镜像内交叉验证：v0.0.49=1、v0.0.48=0、同步盘=1；GHCR 单条 version 三 tag 同 digest，v0.0.48/v0.0.47 旧 digest 未动
+- 部署：docker compose pull + up -d（未手搓 docker run），容器镜像 ID 与本地构建 ID 一致
+- 诚实口径：configs 行数基线为 8（v0.0.48 记录为 7，因当时做过一次同值设置写入插入了 log_retention_days），本轮以部署前实测为基线；A2/A3 运行时行为未端到端（需真实账号），以单测为判据
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ba2f2fef` | chore(release): 版本号推进到 v0.0.49（上游 4 项修复上线） [task:10-06-release-0-0-49] |
+
+### Testing
+
+- [OK] 发布内容核对：v0.0.48..main 7 提交 0 merge；G1 旧版本串零残留、diff 恰 4 文件；GQ lint 0 / vet 0 / 26 包 ok / vue-tsc 0
+- [OK] 部署后：health 200、登录 200、version=v0.0.49；库 25/9/8 与部署前一致；9 个非镜像字段全同；ERROR=0；6 端点 200；A4 线上抽验 40 条日志中 33 条带 details 且全为非 ERROR 级；浏览器页脚 v0.0.49、日志页 43 个「复制日志」按钮、window.__err 空
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 如需真实环境验证 A2/A3，需要一个可播放账号与一个 189 账号；② GHCR 历史版本与旧 tag/release 保留作回滚退路；③ 收尾任务 10-06-finish-port-1006 仍进行中，下轮可归档
