@@ -1544,3 +1544,45 @@ Session summary was not supplied.
 
 - 等用户拍板 4 项适用修复的移植范围（全做 / 只做优先级 1 / 先做 playback 多段 Range / 都不做）；用户选择后另开移植任务，纪律同上一轮：按本方 craft、禁止 git apply 上游补丁、每批走全量质量门
 - 2FA（5db84a63）暂按留档处理，与『高级定时』同列，需要时另开设计任务
+
+
+## Session 162: 移植上游 4 项适用修复（上传 HTTP/1.1 / 多段 Range / 189 同步盘 / 日志详情）
+<!-- trellis-session: v=2 fp=e7fab75dd6231c06 -->
+
+**Date**: 2026-10-06
+**Task**: 移植上游 4 项适用修复（上传 HTTP/1.1 / 多段 Range / 189 同步盘 / 日志详情）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+按用户拍板（四项全做）移植上游 42a3ee9a..e0e29c0e 中 4 项适用修复：A1 上传强制 HTTP/1.1（httpx.NewUploadClient + driver.Config.UploadUseHTTP2，115/189 接入，响应头兜底 30s→60s）；A2 playback 多段 Range（parseRanges + multipart/byteranges 流式响应 + streamer 三态分支）；A3 189Cloud 同步盘根 syncRootID + apiParentID 还原 + 秒传父目录修正；A4 日志详情恒返回 + 日志页「复制日志」（前端按本方卡片布局适配，embed 已重建）。2FA 按用户决定留档。
+
+### Main Changes
+
+- A1：internal/httpx/client.go 新增 NewUploadClient（关 h2 升级、清 TLSNextProto、Protocols 仅 HTTP/1.1、ALPN 锁 http/1.1）；driver.Config 增 UploadUseHTTP2；115 删除 newOSSUploadHTTPClient 改用它，189 同步接入
+- A2：range.go 55→110 行（byteRange/errRangeNoOverlap/parseRanges：多段、越界跳过、分段≥32 或累计超长则忽略 Range）；新增 multipart_range.go 精确计算 multipart Content-Length 并复用分片代理；streamer.go 三态分支（多段→206 multipart / 单段→206 / 忽略→200 全量），streamer_range_test.go 取自上游
+- A3：transport.go 增 syncRootID=sync:0 与 apiParentID 还原映射，抽 is189AuthExpiredResponse（等价重构）；driver.go 列表把 ID 0 重写为 syncRootID、GetFileInfo 认同步盘；ops.go containsRoot 计入同步盘、RenameFile 改用 containsRoot；upload.go 秒传 parentFolderId 改走 apiParentID
+- A4：internal/api/logs.go 的 Details 不再限 ERROR 级；SystemLogs.vue 放开详情条件并加「复制日志」（复用 copyTextToClipboard）；system-logs.css 补两块样式；前端改动已重建 embed（93 个产物文件）
+- 偏差：A2 未移植 service.go 的 logAction 改动（本方 playback 无 logger，恢复诊断日志属另一决策）；A4 前端按本方 log-card 结构适配而非照搬上游 log-row 类名
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `548b56b2` | feat(upstream): 移植上游 4 项适用修复（上传 HTTP/1.1 / 多段 Range / 189 同步盘 / 日志详情） [task:10-06-port-upstream-1006] |
+
+### Testing
+
+- [OK] 全量门：make lint 0 issues、go vet exit=0、go test ./... 26 包全 ok 0 FAIL、vue-tsc -b exit=0、npm run build 成功；基线 deadcode 7（同值）、unused 0、gofmt 15（同数，均既有）；越界文件（version.go/Dockerfile/Makefile/.golangci.yml/go.mod/go.sum）零改动
+- [OK] 新增测试：httpx 上传客户端 3 例（HTTP/1.1 断言、h2 保留、不改动基底客户端）、playback parseRanges 表驱动 15 例 + helper 1 例 + 上游 streamer_range_test 3 例、189Cloud 同步盘 5 例、api toLogDTO 1 例；四项均给出『旧实现必失败』的判据
+- [OK] 端到端（数据副本 + 127.0.0.1:35231）：health/登录/upload runtime/admin settings/system-config/本地映射配置全 200、level=ERROR=0；A4 实证 GET /api/logs 的 6 条中 4 条带 details（全部 INFO 级，旧实现不带）。A2/A3 运行时行为需真实账号与播放器，未做端到端，以单测为判据并如实记录
+- [OK] 现场：临时实例已停、临时目录已删；:5211 容器 v0.0.48 未动；data/ 未做写操作（容器自身运行写入除外）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 是否发版（v0.0.49）由用户决定：本轮未 bump 版本、未推镜像、未部署；② A2/A3 如需真实环境验证，需要一个可播放账号与一个 189 账号；③ 收尾任务 10-06-finish-port-1006 保持进行中（闸门要求），下一轮可一并归档

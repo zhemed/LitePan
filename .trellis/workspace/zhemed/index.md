@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 161
+- **Total Sessions**: 162
 - **Last Active**: 2026-10-06
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1546 | Active |
+| `journal-3.md` | ~1588 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 162 | 2026-10-06 | 移植上游 4 项适用修复（上传 HTTP/1.1 / 多段 Range / 189 同步盘 / 日志详情） | `548b56b2` | `main` |
 | 161 | 2026-10-06 | 调查上游更新（2026-10-06）：21 提交中 4 项适用、1 项待拍板 | - | `main` |
 | 160 | 2026-09-22 | 发布 v0.0.48（上游三批移植上线） | `778f5b87`, `0154adf9` | `main` |
 | 159 | 2026-09-21 | 移植评审跟进：修并发写缓存顺序 + 补 A4/B3 单测 + 三处口径更正 | `2adc1bd1` | `main` |
