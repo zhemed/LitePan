@@ -1838,3 +1838,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 用户如需，可在 Alist 上按结论调整并复测手机下载；② 归档提交仍留本地待决定是否推送
+
+
+## Session 170: 真机验证通过：v0.0.50 手机与电脑均可 302 下载
+<!-- trellis-session: v=2 fp=862ca7cc28435a8d -->
+
+**Date**: 2026-10-16
+**Task**: 真机验证通过：v0.0.50 手机与电脑均可 302 下载
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户确认：v0.0.50 下手机与电脑都能正常走 302 直链下载 —— 安卓两跳握手在真机上验证通过（手机侧此前报 net::ERR_INVALID_RESPONSE）。至此本条问题闭环：115 CDN 签名只绑取链 UA → 安卓把直链交给系统下载组件（UA 不同）→ 403；两跳握手让下载组件用自己的 UA 回来重新取链，字节仍直连 CDN、302 语义保留。
+
+### Main Changes
+
+- 同轮补充排查：本仓只注册 115/天翼/本地三个驱动（无 Alist）；只有 115 把客户端 UA 送进取链；Alist 上游同型（DownloadWithUA），需打开存储的「Web 代理」或避开 WebDAV 302_redirect
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `66e313e2` | chore(release): 归档 v0.0.50 发布任务与 journal（Session 166） [task:10-06-finish-port-1006] |
+
+### Testing
+
+- [OK] 真机验证（用户手机）：下载正常；电脑端不变。服务端曾在生产机做过两跳模拟（200 空附件 → 302 → 206）与不回归（桌面 UA 直接 302）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 本机有 2 个未推记录提交（驱动排查 + Alist 核对），待用户决定是否推送；② 收尾任务 10-06-finish-port-1006 仍进行中（闸门要求），下轮可一并归档
