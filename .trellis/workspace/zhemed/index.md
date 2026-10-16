@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 164
+- **Total Sessions**: 165
 - **Last Active**: 2026-10-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1663 | Active |
+| `journal-3.md` | ~1703 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 165 | 2026-10-16 | 安卓 302 下载两跳握手：115 直链签名只绑 UA | `40307ad8` | `main` |
 | 164 | 2026-10-16 | 排查 115 直链手机端打不开：签名绑定请求方 IP | - | `main` |
 | 163 | 2026-10-06 | 发布 v0.0.49（上游 4 项修复上线） | `ba2f2fef` | `main` |
 | 162 | 2026-10-06 | 移植上游 4 项适用修复（上传 HTTP/1.1 / 多段 Range / 189 同步盘 / 日志详情） | `548b56b2` | `main` |

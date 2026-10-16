@@ -1661,3 +1661,43 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 等用户做两个对照实验确认（同 Wi-Fi / 核对桌面文件大小）；② 若要做 LitePan 侧改进（默认代理或失败回退），另开任务；③ 本次调查的记账提交待推送
+
+
+## Session 165: 安卓 302 下载两跳握手：115 直链签名只绑 UA
+<!-- trellis-session: v=2 fp=d74c87264fd0ccfc -->
+
+**Date**: 2026-10-16
+**Task**: 安卓 302 下载两跳握手：115 直链签名只绑 UA
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+在飞牛生产机上实测确认 115 CDN 直链签名只绑定取链时的 User-Agent（同 UA 跨 IP 206 成功，换 UA 一律 403 invalid signature）；安卓浏览器把最终 URL 交给系统下载组件（UA 不同）→ 必然 403，而该 403 带 application/zip + attachment → 手机报 net::ERR_INVALID_RESPONSE。按用户要求保住 302 直链，实现两跳握手：对安卓浏览器先回空附件，让系统组件带着自己的 UA 回来请求，再按该 UA 取链 302（字节仍直连 CDN）。
+
+### Main Changes
+
+- 新增 internal/playback/handoff.go：isAndroidBrowserUA（安卓浏览器/WebView 标识表，系统下载组件不命中）、handoffTracker（按 accountID+fileID 记 90s 窗口，容量保护）、writeHandoffStub（200 + attachment + octet-stream + Content-Length 0）
+- internal/playback/service.go：Service 增 handoff 状态与懒初始化访问器；ServeHTTP 的 ActionRedirect 分支先试握手再 writeRedirect（代理模式走 ActionStream，不经此分支）
+- 判定口径：仅 GET + 非 Inline（播放不吃空附件）+ 安卓浏览器 UA + 窗口内首次；第二跳按 r.UserAgent() 正常取链（解析缓存按完整 UA 分变体，故组件拿到的是自己的链）
+- spec 同步：.trellis/spec/backend/backend/driver-development.md 新增「下载直链与 302：UA 绑定」一节（含实测表、安卓交接机制、排查口径：先比取链 UA 与下载 UA，再怀疑 IP/时效）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `40307ad8` | fix(playback): 安卓 302 下载两跳握手（115 直链签名绑 UA） [task:10-06-finish-port-1006] |
+
+### Testing
+
+- [OK] 新增 internal/playback/handoff_test.go 共 11 例：安卓首次空附件（无 Location、0 字节）、同 UA 第二次 302、下载组件 UA 第二次 302 且按该 UA 取链、桌面/iOS 首次即 302、HEAD 302、Inline 302、不同文件 key 隔离、窗口过期可再握手、ForceProxy 仍走流式、UA 判定表、状态表清理
+- [OK] 反向验证：临时把 handoffStub 置恒 false → 3 个空附件用例失败；恢复后全绿
+- [OK] 质量门：make lint 0 issues、go vet exit=0、go test ./... 26 包全 ok、vue-tsc -b exit=0；基线 deadcode 7 / unused 0 / gofmt 15 未变；改动仅 internal/playback 三个文件 + spec，前端/embed/驱动/存储零改动
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 真机验证（用户手机）——若安卓把空附件当成已完成下载而不发起第二跳，需回退；② 发版并部署到生产 NAS（飞牛）才能真机验证，需用户授权；③ 若真机验证发现系统组件不带 cookie 而 401，需为下载地址补短期令牌（另开任务）
