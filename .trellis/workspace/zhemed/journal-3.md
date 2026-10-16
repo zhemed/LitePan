@@ -1804,3 +1804,37 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 若用户需要 Alist 侧的具体设置项/版本差异，联网查其文档（需授权）；② 归档提交留在本地待用户决定是否推送
+
+
+## Session 169: 联网核对 Alist 的 115 直链/代理设置
+<!-- trellis-session: v=2 fp=cf97e4eb05674c9e -->
+
+**Date**: 2026-10-16
+**Task**: 联网核对 Alist 的 115 直链/代理设置
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户授权联网核对 Alist 侧如何避免 115 手机下载失败。抓上游源码三文件后确认：Alist 的 115 驱动 Link() 同样把客户端 UA 传进取链（client.DownloadWithUA(pickCode, userAgent)），与 LitePan 同型 —— 直链同样绑 UA，手机端会踩同一个坑；同文件注释还说明 115 代理下载需带账号 Cookie（403 no cookie value）。代理开关在存储通用设置 Proxy 组：web_proxy（默认 false）、webdav_policy（302_redirect / use_proxy_url / native）、proxy_range、down_proxy_url。结论：115 存储打开「Web 代理」、WebDAV 策略避开 302_redirect，即可绕开。
+
+### Main Changes
+
+- 来源：AlistGo/alist 的 drivers/115/driver.go、drivers/115/meta.go、internal/model/storage.go（附 URL 于归档 research.md）
+- 声明：以上为上游源码事实，未在 Alist 上实测；LitePan→115 的同型链路已实测（换 UA 必 403）。本轮未访问用户内网主机，只读外部仓库文件
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 核对：115 驱动 Addition 内无代理开关 → 代理开关确在存储通用设置；Webdav302/WebdavProxy/WebdavNative 三个判定对应 302_redirect/use_proxy_url/其它
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 用户如需，可在 Alist 上按结论调整并复测手机下载；② 归档提交仍留本地待决定是否推送

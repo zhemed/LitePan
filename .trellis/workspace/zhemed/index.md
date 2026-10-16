@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 168
+- **Total Sessions**: 169
 - **Last Active**: 2026-10-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1806 | Active |
+| `journal-3.md` | ~1840 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 169 | 2026-10-16 | 联网核对 Alist 的 115 直链/代理设置 | - | `main` |
 | 168 | 2026-10-16 | 回答：其它软件（Alist/Emby 等）会不会踩 115 直链 UA 绑定 | - | `main` |
 | 167 | 2026-10-16 | 排查其它驱动是否会踩 115 同类的直链 UA 绑定（含 Alist） | - | `main` |
 | 166 | 2026-10-16 | 发布 v0.0.50（安卓 302 两跳握手）并更新飞牛生产机 | `6ce9004d` | `main` |
