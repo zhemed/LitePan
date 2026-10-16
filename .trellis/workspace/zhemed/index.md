@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 166
+- **Total Sessions**: 167
 - **Last Active**: 2026-10-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1741 | Active |
+| `journal-3.md` | ~1776 | Active |
 | `journal-2.md` | ~1995 | Archived |
 | `journal-1.md` | ~1973 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 167 | 2026-10-16 | 排查其它驱动是否会踩 115 同类的直链 UA 绑定（含 Alist） | - | `main` |
 | 166 | 2026-10-16 | 发布 v0.0.50（安卓 302 两跳握手）并更新飞牛生产机 | `6ce9004d` | `main` |
 | 165 | 2026-10-16 | 安卓 302 下载两跳握手：115 直链签名只绑 UA | `40307ad8` | `main` |
 | 164 | 2026-10-16 | 排查 115 直链手机端打不开：签名绑定请求方 IP | - | `main` |

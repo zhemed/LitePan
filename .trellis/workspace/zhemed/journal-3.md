@@ -1739,3 +1739,38 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 用户手机真机验证（点下载即可）；② 若组件不带登录态导致 401，另开任务补短期令牌；③ 回滚：compose 换回 v0.0.49 + up -d（NAS 上已有 docker-compose.yml.bak-v049）
+
+
+## Session 167: 排查其它驱动是否会踩 115 同类的直链 UA 绑定（含 Alist）
+<!-- trellis-session: v=2 fp=6b13fef30768154b -->
+
+**Date**: 2026-10-16
+**Task**: 排查其它驱动是否会踩 115 同类的直链 UA 绑定（含 Alist）
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户问：其它挂载（如 Alist）会不会有同样问题。只读排查结论：本仓只注册 115_Open / 189Cloud / LocalFs 三个驱动，全仓已无 Alist（早前瘦身删除）；三家里只有 115 把客户端 UA 送进取链（已修）；天翼取链不带客户端 UA（待实测）；LocalFs 强制代理、根本无第三方直链。两跳握手写在 playback 层、与驱动无关，将来任何走 302 的驱动自动受保护；但 IP 绑定与必须带 Referer 两类救不了，只能走代理。
+
+### Main Changes
+
+- 关键代码事实：115_Open 用 apiCallWithHeaders 把 req.UA 传给取链接口（UA 进入签名）；189Cloud 取链走 apiRequest（驱动自身 UA/Cookie），resolveUA(req.UA) 只用于代理模式请求头；LocalFs 返回 LocalPath + DownloadProxy + ForceProxy
+- Alist 特别说明：本仓已无该驱动；将来加回时若 Alist 背后挂的是 115 这类存储，签名会在 Alist 请求时用 Alist 的 UA 定死 → 浏览器再取仍 403，两跳握手解决不了（需 Alist 侧或 LitePan 侧走代理）
+- 新增驱动检查清单（写进归档 research.md）：客户端 UA 是否进取链 / 直链是否第三方 CDN 且含 ua/ip/设备字段 / 是否依赖 Referer（我们 302 会剥离）/ 直链时效 / 能否回落到代理
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 只读核对：drivers/all.go 注册表、全仓 grep alist 零命中、三个驱动 ResolveDownload 逐段读；未访问任何外部主机、未改代码/配置/部署
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 建议用户先在手机上试一次天翼云盘下载（零成本）：能下即结案；② 若不能下，我再按需授权在生产机上对天翼做与 115 相同的 UA 对照实测；③ 归档提交待用户决定是否推送
