@@ -1701,3 +1701,41 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 真机验证（用户手机）——若安卓把空附件当成已完成下载而不发起第二跳，需回退；② 发版并部署到生产 NAS（飞牛）才能真机验证，需用户授权；③ 若真机验证发现系统组件不带 cookie 而 401，需为下载地址补短期令牌（另开任务）
+
+
+## Session 166: 发布 v0.0.50（安卓 302 两跳握手）并更新飞牛生产机
+<!-- trellis-session: v=2 fp=5bd3b9b0ca613e42 -->
+
+**Date**: 2026-10-16
+**Task**: 发布 v0.0.50（安卓 302 两跳握手）并更新飞牛生产机
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+把 40307ad8 发布为 v0.0.50 并更新飞牛生产机的 LitePan 容器：GHCR 三 tag 同 digest eeda8ce7d49a、tag v0.0.50、Release 非草稿、main 推送（含此前 4 个未推提交）。服务端两跳模拟全过：安卓浏览器 UA → 200 空附件（attachment/0 字节/无 Location）；同资源系统组件 UA → 302 指向 115 CDN；组件 UA 取该链接 → 206；桌面 UA → 302 不回归；库 25/9/2 与容器形态未变、0 ERROR。真机验证由用户执行。
+
+### Main Changes
+
+- 版本号 5 处推进到 v0.0.50（提交 6ce9004d，diff 恰 4 文件）；镜像 eeda8ce7d49a 含 v0.0.50、不含 v0.0.49、含握手特征串 HeyTapBrowser
+- 生产机部署：compose 项目 litepan（配置文件在 NAS 上，非仓库内文件）改 tag 后 docker compose pull && up -d，未手搓 docker run；容器已跑 v0.0.50
+- 如实记录：用户中途要求「生产机升级我来做」，经只读确认——那条命令在被中止前已执行完毕；此后我只做了用户逐项许可的只读核对，未再写入
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ce9004d` | chore(release): 版本号推进到 v0.0.50（安卓 302 两跳握手） [task:10-16-release-0-0-50] |
+
+### Testing
+
+- [OK] 质量门 lint 0 / vet 0 / go test 26 包 ok / vue-tsc -b 0；前端与 embed 零改动；库计数与容器挂载/网络模式/环境与部署前逐项一致
+- [OK] 两跳模拟三条 + 不回归两条 + 0 ERROR（详见归档 implement.md 的 G7 表）
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 用户手机真机验证（点下载即可）；② 若组件不带登录态导致 401，另开任务补短期令牌；③ 回滚：compose 换回 v0.0.49 + up -d（NAS 上已有 docker-compose.yml.bak-v049）

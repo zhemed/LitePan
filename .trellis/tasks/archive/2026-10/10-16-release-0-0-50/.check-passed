@@ -1,0 +1,2 @@
+checked_at=2026-10-16 10:27:11
+note=质量门通过（go vet / go test / web type-check+build 等）
