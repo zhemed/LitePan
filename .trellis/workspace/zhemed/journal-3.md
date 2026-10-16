@@ -1625,3 +1625,39 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 如需真实环境验证 A2/A3，需要一个可播放账号与一个 189 账号；② GHCR 历史版本与旧 tag/release 保留作回滚退路；③ 收尾任务 10-06-finish-port-1006 仍进行中，下轮可归档
+
+
+## Session 164: 排查 115 直链手机端打不开：签名绑定请求方 IP
+<!-- trellis-session: v=2 fp=ac303d3bb79995ab -->
+
+**Date**: 2026-10-16
+**Task**: 排查 115 直链手机端打不开：签名绑定请求方 IP
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户报同一条 115 CDN 直链电脑可下、手机报 net::ERR_INVALID_RESPONSE。只读排查（6 次最小请求）后判定：链接未过期（t= 还有 28 分钟），签名与 UA/Referer/请求方式无关（桌面与移动 UA 响应逐字节相同，恒定 403 invalid signature），故归属“签名绑定请求方 IP 的热点保护”；手机（蜂窝/别的网络）源 IP 不同被拒，403 响应体又带 application/zip + attachment，移动端 WebView 因此显示 ERR_INVALID_RESPONSE。
+
+### Main Changes
+
+- 证据：HEAD 桌面 UA 与安卓 UA 均为 HTTP/1.1 403 + AliyunOSS + Content-Length 85 + Content-Disposition attachment；带 115 Referer / 115 浏览器 UA / 无 UA / 1 字节 Range 变体全部 403 invalid signature；t=1792146341 解码为 2026-10-16 18:25:41 CST（尚有 28 分钟）
+- 给用户的对照实验：① 手机连同一 Wi-Fi 再试（通=IP 绑定确认）② 核对电脑上“下载成功”的文件大小（若仅几十字节，说明桌面也只是把 403 的 JSON 存成了文件）
+- 绕行办法：LitePan 下载接口支持 force_proxy=1 走服务器代为取文件（手机端 IP 不参与签名校验）/ 用 115 官方 App / 同 Wi-Fi 下载 / 避免微信 QQ 内置浏览器
+- 产品级建议（未实施）：115 直链短时且绑定请求方 IP，可考虑对 115 账号默认走代理、直读失败自动回退代理、前端给出“一键切代理”提示
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] 零越界：未改代码/配置/部署；git status 仅任务目录；网络动作仅对用户给出的那一条 115 直链做最小请求（未下载内容、未访问其它主机）；签名链接原文未写入仓库/日志/journal
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 等用户做两个对照实验确认（同 Wi-Fi / 核对桌面文件大小）；② 若要做 LitePan 侧改进（默认代理或失败回退），另开任务；③ 本次调查的记账提交待推送
