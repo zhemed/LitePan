@@ -1774,3 +1774,33 @@ Session summary was not supplied.
 ### Next Steps
 
 - ① 建议用户先在手机上试一次天翼云盘下载（零成本）：能下即结案；② 若不能下，我再按需授权在生产机上对天翼做与 115 相同的 UA 对照实测；③ 归档提交待用户决定是否推送
+
+
+## Session 168: 回答：其它软件（Alist/Emby 等）会不会踩 115 直链 UA 绑定
+<!-- trellis-session: v=2 fp=d66a05a1fa291eed -->
+
+**Date**: 2026-10-16
+**Task**: 回答：其它软件（Alist/Emby 等）会不会踩 115 直链 UA 绑定
+**Package**: backend
+**Branch**: `main`
+
+### Summary
+
+用户澄清他问的是“其它软件本体（Alist、Emby…）”而非 LitePan 驱动。结论：唯一判据是“取链方与下载方是否同一身份”——115 官方 App/网页不会；Alist 本体若用直链模式（服务端取链→手机下载）会踩同型问题，用代理/中转模式不会；Emby/Jellyfin 常规部署不会，但若用 STRM/直链指向 115 CDN 则会。手机侧还有变量：真正下载的往往是系统下载组件/内置浏览器（各不相同）。解法两种：让下载方自己取链（两跳握手）或服务器中转。UA 绑定是各家 CDN 自家策略，并非所有网盘都有。
+
+### Main Changes
+
+- 未联网、未改代码/配置；结论基于本次实测事实（115 签名只绑 UA、同 UA 跨 IP 可下）与各工具通用架构（直链 vs 中转）
+- 边界：Alist 具体配置项名称未联网核对；如需其官方文档口径须另经授权
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- ① 若用户需要 Alist 侧的具体设置项/版本差异，联网查其文档（需授权）；② 归档提交留在本地待用户决定是否推送
