@@ -3,6 +3,7 @@ package playback
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"litepan/internal/cache"
 	"litepan/internal/core/driverexec"
@@ -17,6 +18,9 @@ type Service struct {
 	clientH2    *http.Client
 	rangeLimits accountRangeLimiter
 	resolveHook DownloadResolverHook
+	// handoff：安卓两跳握手状态（见 handoff.go），懒初始化以兼容直接构造的 Service。
+	handoff     *handoffTracker
+	handoffOnce sync.Once
 }
 
 // DownloadResolverHook 允许外部插件在驱动解析前接管下载直链。
@@ -68,6 +72,11 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request, req Request,
 	}
 	action := PickAction(res.Mode, res.Link, intent)
 	if action == ActionRedirect {
+		// 安卓浏览器不自己下载附件，会把直链交给系统下载组件（UA 不同 → 115 拒签名）。
+		// 先回一个空附件，让组件带着自己的 UA 回来请求，再由下面这次 302 按其 UA 取链。
+		if s.handoffStub(w, r, req, intent) {
+			return nil
+		}
 		writeRedirect(w, r, res, intent)
 		return nil
 	}

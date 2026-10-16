@@ -139,3 +139,28 @@ Enforced by `.golangci.yml: drivers-pure`. If you need business logic, put it in
 
 - `internal/driver/manager_test.go`, `internal/driver/delay.go` unit tests pattern.
 - Driver `Ping` and `ListFiles` should be mocked via `transport.go` interface for `go test -race ./drivers/FooCloud`.
+
+---
+
+## 下载直链与 302：UA 绑定（2026-10-16 实测）
+
+**结论**：115 CDN 直链的签名**只绑定"取链时的 `User-Agent`"**（与请求方 IP 无关）：
+
+| 实验 | 结果 |
+|---|---|
+| 同一 UA、换一台机器（不同出口 IP）取 CDN | `206` ✓ |
+| 换 UA（桌面 Chrome / 安卓 Chrome / 安卓下载器 / 无 UA） | `403 {"message":"invalid signature"}` ✗ |
+
+失败响应是 **85 字节 JSON**，却带 `Content-Type: application/zip` + `Content-Disposition: attachment`
+→ 安卓浏览器把这种"附件 + 非 2xx"显示为 `net::ERR_INVALID_RESPONSE`（桌面浏览器则"下载"出这个小文件）。
+
+**因此 302（`download_mode=redirect`）模式下必须保证"取链 UA == 下载 UA"**：
+
+- 桌面浏览器 / iOS Safari：自己就是下载器，UA 全程一致 → 现有 302 可用。
+- **安卓浏览器**：把最终 URL 交给**系统下载组件**，组件 UA 与浏览器不同 → 必然 403。
+  处置见 `internal/playback/handoff.go`：对安卓浏览器先回一个"空附件"（不 302），让组件带着自己的 UA
+  回来请求，再由正常 302 按其 UA 取链（字节仍直连 CDN，服务器不中转）。窗口 90s 内只发一次，防循环。
+
+**驱动侧注意**：`ResolveDownload` 收到的 `req.UA` 会经 `apiCallWithHeaders` 传给上游并进入签名；
+解析缓存按**完整 UA** 分变体（`resolveCacheVariant`），所以不同 UA 的取链互不串味。
+排查同类问题时，**先确认"取链 UA"与"下载 UA"是否同一个**，再怀疑 IP/时效。
